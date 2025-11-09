@@ -205,14 +205,16 @@
     // ===============================================
     // 1. 전역 변수 및 초기 설정
     // ===============================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbx9bbpf4XEfRajFAu_w5ya-A5I_jV3-YMnTMYCiVNXzQAcnQVZhQt45zEHfb1wII5ED/exec"; // ✅ code.js 배포 주소
+    
+    // ✅ 1단계: code.js를 배포(v2)했을 때 받은 '웹 앱 URL'을 여기에 붙여넣으세요.
+    const API_URL = "https://script.google.com/macros/s/AKfycbx9bbpf4XEfRajFAu_w5ya-A5I_jV3-YMnTMYCiVNXzQAcnQVZhQt45zEHfb1wII5ED/exec"; 
     
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
 
-    // ✅ [신규] T맵 API 키를 미리 저장할 전역 변수
+    // ✅ T맵 API 키를 미리 저장할 전역 변수
     let tmapApiKey = null; 
     let isMapInitialized = false;
     let map; 
@@ -225,26 +227,316 @@
       document.getElementById('generate-button').disabled = false;
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
-      // ✅ [수정] 백그라운드 작업 2개 시작
+      // ✅ 백그라운드 작업 2개 시작
       fetchReportsForMonth(currentYear, currentMonth, true); // 1. 달력 데이터 로딩
       preloadTmapApiKey(); // 2. T맵 API 키 미리 로딩
     });
 
     // ===============================================
-    // 2. 핵심 기능 함수들 (사용자님의 최신 코드를 기반으로 함)
+    // 2. 핵심 기능 함수들 (달력 및 보고서)
     // ===============================================
 
-    // ... (fetchReportsForMonth, preloadAdjacentMonths, changeMonth, formatDate, callAppsScript, 
-    //      generateTodayReport, createMonthlySummary, onDateClick, renderCalendar, 
-    //      showLoader, hideLoader, openModal, closeModal, confirmGenerateReport, getMobileOS, openSheetApp
-    //      함수들은 이전과 100% 동일합니다. 편의상 전체 스크립트를 맨 아래에 다시 제공합니다.) ...
+    /**
+     * [사용자 최신 코드] 월별 데이터를 불러오고, 인접한 월 데이터를 미리 가져오는 함수
+     */
+    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
+      const monthKey = year + '-' + month;
+      if (reportsMap[monthKey] === 'completed') {
+        renderCalendar();
+        if (!isInitialLoad) preloadAdjacentMonths(year, month);
+        return;
+      }
+      isDataLoading = true;
+      if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...');
+      try {
+        const result = await callAppsScript('getReportFilesByMonth', {
+          year,
+          month
+        });
+        if (Array.isArray(result)) {
+          result.forEach(report => {
+            reportsMap[report.date] = report;
+          });
+          reportsMap[monthKey] = 'completed';
+          document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.';
+        } else {
+          document.getElementById('review-status').textContent = '❌ 오류: ' + result.message;
+        }
+      } finally {
+        isDataLoading = false;
+        hideLoader();
+        renderCalendar();
+        preloadAdjacentMonths(year, month);
+      }
+    }
 
+    /**
+     * [사용자 최신 코드] 인접한 월의 데이터를 미리 불러오는 함수
+     */
+    function preloadAdjacentMonths(year, month) {
+      const prevDate = new Date(year, month - 2, 1);
+      const prevYear = prevDate.getFullYear();
+      const prevMonth = prevDate.getMonth() + 1;
+      const prevMonthKey = prevYear + '-' + prevMonth;
+      
+      const nextDate = new Date(year, month, 1);
+      const nextYear = nextDate.getFullYear();
+      const nextMonth = nextDate.getMonth() + 1;
+      const nextMonthKey = nextYear + '-' + nextMonth;
+
+      if (!reportsMap[prevMonthKey]) {
+        callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+          if (Array.isArray(result)) {
+            result.forEach(report => { reportsMap[report.date] = report; });
+            reportsMap[prevMonthKey] = 'completed';
+          }
+        });
+      }
+      if (!reportsMap[nextMonthKey]) {
+        callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+          if (Array.isArray(result)) {
+            result.forEach(report => { reportsMap[report.date] = report; });
+            reportsMap[nextMonthKey] = 'completed';
+          }
+        });
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 월 변경
+     */
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
+    }
+
+    /**
+     * [사용자 최신 코드] 날짜 포맷팅
+     */
+    function formatDate(date) {
+      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+
+    /**
+     * [사용자 최신 코드] API 호출 헬퍼
+     */
+    async function callAppsScript(action, params = {}) {
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      for (const key in params) {
+        url.searchParams.set(key, params[key]);
+      }
+      try {
+        const response = await fetch(url.toString(), {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error('HTTP 오류: ' + response.status);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API 호출 오류:', error);
+        return {
+          status: 'error',
+          message: error.message
+        };
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 오늘 일보 생성
+     */
+    async function generateTodayReport() {
+      showLoader('오늘 일보를 생성 중...');
+      try {
+        const result = await callAppsScript('generate');
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url); // OS 감지 및 앱 열기
+          if (new Date().getMonth() + 1 === currentMonth) {
+            fetchReportsForMonth(currentYear, currentMonth, true);
+          }
+        } else {
+          hideLoader();
+          alert('보고서 생성 실패: ' + result.message);
+        }
+      } catch (error) {
+        hideLoader();
+        alert('오류 발생: ' + error.message);
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 월별 통계 생성
+     */
+    async function createMonthlySummary() {
+      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
+      try {
+        const result = await callAppsScript('createSummary', {
+          year: currentYear,
+          month: currentMonth
+        });
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url); // OS 감지 및 앱 열기
+        } else {
+          hideLoader();
+          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        hideLoader();
+        alert('월별 통계 생성 오류: ' + error.message);
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 날짜 클릭
+     */
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url); // OS 감지 및 앱 열기
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 달력 그리기 (today-highlight 버그 수정)
+     */
+    function renderCalendar() {
+      const display = document.getElementById('current-month-display');
+      display.textContent = currentYear + '년 ' + currentMonth + '월';
+      document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
+      const container = document.getElementById('calendar-days');
+      container.innerHTML = '';
+      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const startDayOfWeek = firstDayOfMonth.getDay();
+      const today = new Date();
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth() + 1;
+      const todayDay = today.getDate();
+
+      for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+        const isToday = todayYear === currentYear && todayMonth === currentMonth && todayDay === day;
+        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        const isReportExists = reportsMap[dateKey];
+        
+        let boxClasses = ['date-box'];
+        if (isSunday) {
+          boxClasses.push('sunday-date');
+        } else if (isReportExists) {
+          boxClasses.push('report-exists');
+        } else {
+          boxClasses.push('no-report');
+        }
+        
+        if (isToday && !isSunday) {
+          boxClasses.push('today-highlight');
+        }
+        
+        container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] 로딩 팝업
+     */
+    function showLoader(message) {
+      document.getElementById('loading-message').textContent = message;
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+    function hideLoader() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    /**
+     * [사용자 최신 코드] 확인 모달
+     */
+    function openModal() {
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+    function closeModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      selectedDateForGeneration = null;
+    }
+
+    /**
+     * [사용자 최신 코드] 보고서 생성 확인
+     */
+    async function confirmGenerateReport() {
+      if (!selectedDateForGeneration) {
+        closeModal();
+        return;
+      }
+      const dateToGenerate = selectedDateForGeneration;
+      closeModal();
+      const [year, month, day] = dateToGenerate.split('-').map(Number);
+      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
+      try {
+        const result = await callAppsScript('generateByDate', {
+          year,
+          month,
+          day,
+          shouldPropagate: true
+        });
+        if (result.status === 'success' && result.url) {
+          if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
+          renderCalendar();
+          openSheetApp(result.url); // OS 감지 및 앱 열기
+        } else {
+          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        alert('보고서 생성 중 오류 발생: ' + error.message);
+      } finally {
+        hideLoader();
+      }
+    }
+
+    /**
+     * [사용자 최신 코드] OS 감지
+     */
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      return "Other";
+    }
+
+    /**
+     * [사용자 최신 코드] Sheets 앱 열기
+     */
+    function openSheetApp(url) {
+      const os = getMobileOS();
+      let appUrl = url;
+      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+      }
+      window.open(appUrl, '_blank');
+    }
 
     // ===============================================
     // 4. 🗺️ T맵 지도 관련 함수 (최종 수정)
     // ===============================================
 
-    /** [신규] 백엔드에서 T맵 API 키를 미리 불러와 전역 변수에 저장합니다. */
+    /**
+     * [신규] 백엔드에서 T맵 API 키를 미리 불러와 전역 변수에 저장합니다.
+     */
     async function preloadTmapApiKey() {
       try {
         const keyResult = await callAppsScript('getTmapApiKey');
@@ -259,12 +551,11 @@
       }
     }
 
-    /** '거래처 현황' 버튼 클릭 시 실행됩니다. */
+    /**
+     * '거래처 현황' 버튼 클릭 시 실행됩니다.
+     */
     function openMapOverlay() {
       document.getElementById('map-overlay').classList.remove('hidden');
-
-      // ✅ [수정] T맵 스크립트가 'initTmap'을 자동으로 호출해주므로, 
-      //      우리는 맵이 생성되었는지(isMapInitialized)만 확인하면 됩니다.
       if (!isMapInitialized) {
         // T맵 스크립트 로딩/API 키 로딩/지도 생성이 아직 안 끝난 경우
         showLoader('거래처 지도를 불러오는 중...');
@@ -281,7 +572,9 @@
       }
     }
 
-    /** 오버레이를 닫습니다. */
+    /**
+     * 오버레이를 닫습니다.
+     */
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
@@ -324,24 +617,6 @@
         hideLoader();
       }
     }
-
-    // --- (아래는 사용자님의 최신 코드를 그대로 복사한 것입니다) ---
-    async function fetchReportsForMonth(year, month, isInitialLoad = false) { const monthKey = year + '-' + month; if (reportsMap[monthKey] === 'completed') { renderCalendar(); if(!isInitialLoad) preloadAdjacentMonths(year, month); return; } isDataLoading = true; if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...'); try { const result = await callAppsScript('getReportFilesByMonth', { year, month }); if (Array.isArray(result)) { result.forEach(report => { reportsMap[report.date] = report; }); reportsMap[monthKey] = 'completed'; document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.'; } else { document.getElementById('review-status').textContent = '❌ 오류: ' + result.message; } } finally { isDataLoading = false; hideLoader(); renderCalendar(); preloadAdjacentMonths(year, month); } }
-    function preloadAdjacentMonths(year, month) { const prevDate = new Date(year, month - 2, 1); const prevYear = prevDate.getFullYear(); const prevMonth = prevDate.getMonth() + 1; const prevMonthKey = prevYear + '-' + prevMonth; const nextDate = new Date(year, month, 1); const nextYear = nextDate.getFullYear(); const nextMonth = nextDate.getMonth() + 1; const nextMonthKey = nextYear + '-' + nextMonth; if (!reportsMap[prevMonthKey]) { callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => { if (Array.isArray(result)) { result.forEach(report => { reportsMap[report.date] = report; }); reportsMap[prevMonthKey] = 'completed'; } }); } if (!reportsMap[nextMonthKey]) { callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => { if (Array.isArray(result)) { result.forEach(report => { reportsMap[report.date] = report; }); reportsMap[nextMonthKey] = 'completed'; } }); } }
-    async function changeMonth(delta) { const date = new Date(currentYear, currentMonth - 1 + delta, 1); currentYear = date.getFullYear(); currentMonth = date.getMonth() + 1; fetchReportsForMonth(currentYear, currentMonth); }
-    function formatDate(date) { return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일'; }
-    async function callAppsScript(action, params = {}) { const url = new URL(API_URL); url.searchParams.set('action', action); for (const key in params) url.searchParams.set(key, params[key]); try { const response = await fetch(url.toString(), { method: 'GET' }); if (!response.ok) { throw new Error('HTTP 오류: ' + response.status); } return await response.json(); } catch (error) { console.error('API 호출 오류:', error); return { status: 'error', message: error.message }; } }
-    async function generateTodayReport() { showLoader('오늘 일보를 생성 중...'); try { const result = await callAppsScript('generate'); if (result.status === 'success' && result.url) { hideLoader(); openSheetApp(result.url); if (new Date().getMonth() + 1 === currentMonth) { fetchReportsForMonth(currentYear, currentMonth, true); } } else { hideLoader(); alert('보고서 생성 실패: ' + result.message); } } catch (error) { hideLoader(); alert('오류 발생: ' + error.message); } }
-    async function createMonthlySummary() { showLoader(currentMonth + '월 매출현황 보고서를 생성 중...'); try { const result = await callAppsScript('createSummary', { year: currentYear, month: currentMonth }); if (result.status === 'success' && result.url) { hideLoader(); openSheetApp(result.url); } else { hideLoader(); alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류')); } } catch (error) { hideLoader(); alert('월별 통계 생성 오류: ' + error.message); } }
-    function onDateClick(day, isSunday) { if (isSunday) return; const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0'); selectedDateForGeneration = formattedDate; const report = reportsMap[formattedDate]; if (report && report.url) { openSheetApp(report.url); } else { const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일'; document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?'; openModal(); } }
-    function renderCalendar() { const display = document.getElementById('current-month-display'); display.textContent = currentYear + '년 ' + currentMonth + '월'; document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기'; const container = document.getElementById('calendar-days'); container.innerHTML = ''; const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1); const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); const startDayOfWeek = firstDayOfMonth.getDay(); const today = new Date(); for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>'; for (let day = 1; day <= daysInMonth; day++) { const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0; const isToday = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth && today.getDate() === day; const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0'); const isReportExists = reportsMap[dateKey]; let boxClasses = ['date-box']; if (isSunday) boxClasses.push('sunday-date'); else if (isReportExists) boxClasses.push('report-exists'); else if (isToday) boxClasses.push('today-highlight'); else boxClasses.push('no-report'); container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>'; } }
-    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
-    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
-    async function confirmGenerateReport() { if (!selectedDateForGeneration) { closeModal(); return; } const dateToGenerate = selectedDateForGeneration; closeModal(); const [year, month, day] = dateToGenerate.split('-').map(Number); showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...'); try { const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true }); if (result.status === 'success' && result.url) { if (result.newReport) reportsMap[result.newReport.date] = result.newReport; renderCalendar(); openSheetApp(result.url); } else { alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류')); } } catch (error) { alert('보고서 생성 중 오류 발생: ' + error.message); } finally { hideLoader(); } }
-    function getMobileOS() { const ua = navigator.userAgent; if (/android/i.test(ua)) return "Android"; if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS"; return "Other"; }
-    function openSheetApp(url) { const os = getMobileOS(); let appUrl = url; const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/); if (fileIdMatch && fileIdMatch[1]) { const fileId = fileIdMatch[1]; if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId; else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId; } window.open(appUrl, '_blank'); }
   </script>
     <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
       <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
@@ -361,6 +636,7 @@
   </div>
   </body>
 </html>
+
 
 
 
