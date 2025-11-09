@@ -485,66 +485,32 @@
       document.getElementById('map-overlay').classList.add('hidden');
     }
 
-/**
-     * [최종 수정] T맵을 초기화합니다.
-     * Tmapv2 스크립트가 로드될 때까지 100ms마다 확인하며 안전하게 대기합니다.
-     */
-    async function initTmap() {
-      // 중복 실행 방지
-      if (isMapInitialized) return; 
-      isMapInitialized = true; // 신호등 켜기
+async function initTmap() {
+  // ✅ [수정] 'isMapInitialized' 신호등을 함수 안으로 이동 (선택 사항이지만 더 깔끔함)
+  if (isMapInitialized) return; 
+  isMapInitialized = true; 
 
-      try {
-        // 1. 백엔드에 API 키를 요청합니다. (이 부분은 동일)
-        const keyResult = await callAppsScript('getTmapApiKey');
-        if (keyResult.status === 'error' || !keyResult.apiKey) {
-          console.error("T맵 API 키를 불러오는 데 실패했습니다.");
-          document.getElementById('map_overlay_content').textContent = "지도 API 키를 불러올 수 없습니다.";
-          hideLoader();
-          return;
-        }
+  try {
+    // 1. ❌ API 키 요청 부분을 삭제합니다.
 
-        // 2. [핵심] Tmapv2 스크립트가 로드되었는지 확인하는 '대기' 함수를 만듭니다.
-        const checkTmapReady = () => {
-          // 'Tmapv2' 객체와 그 안의 'Map' 기능이 모두 정의되었는지 확인
-          if (typeof Tmapv2 !== 'undefined' && Tmapv2.Map) {
-            
-            // 3. 로드가 확인되면, 지도를 생성합니다.
-            console.log("Tmap 스크립트 로딩 완료. 지도를 생성합니다.");
-            try {
-              map = new Tmapv2.Map("map_overlay_content", {
-                center: new Tmapv2.LatLng(35.2128, 128.9806), // 부산 강서구청 좌표
-                width: "100%",
-                height: "100%",
-                zoom: 12,
-                appKey: keyResult.apiKey
-              });
-              
-              // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
-              // loadClientMarkers(); 
+    // 2. T맵을 로드하고 API 키를 직접 입력합니다.
+    map = new Tmapv2.Map("map_overlay_content", {
+      center: new Tmapv2.LatLng(35.2128, 128.9806),
+      width: "100%",
+      height: "100%",
+      zoom: 12,
+      appKey: "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0" // 👈 여기에 키를 직접 넣습니다.
+    });
 
-            } catch (mapError) {
-               console.error("지도 생성 중 오류 발생:", mapError);
-               document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
-            } finally {
-              hideLoader(); // 지도가 성공하든 실패하든 로더를 닫음
-            }
-            
-          } else {
-            // 4. 로드가 안 됐으면, 100ms 후에 다시 시도합니다.
-            console.log("Tmap 스크립트 로딩 대기 중...");
-            setTimeout(checkTmapReady, 100);
-          }
-        };
+    // 3. (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
+    loadClientMarkers(); // (이 함수는 새로 만들어야 합니다)
 
-        // 5. 대기 함수를 처음으로 실행합니다.
-        checkTmapReady();
-
-      } catch (error) {
-        console.error("API 키 요청 중 오류 발생:", error);
-        hideLoader(); // API 키 요청 실패 시에도 로더를 닫음
-      }
-    }
+  } catch (error) {
+    console.error("지도 초기화 중 오류 발생:", error);
+  } finally {
+    hideLoader();
+  }
+}
   </script>
     <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
       <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
@@ -564,3 +530,4 @@
   </div>
   </body>
 </html>
+
