@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f7f9fc; /* Light background */
+    }
+    .tab-active {
+      border-color: #10b981; /* green-500 */
+      color: #059669; /* green-600 */
+      background-color: #ecfdf5; /* green-50 */
+    }
+    .date-box {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 9999px; /* 원형 테두리 */
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: transparent; 
+      border: none;
+      box-shadow: none;
+    }
+    
+    .sunday {
+      color: #ef4444; /* red-500 */
+    }
+    
+    .report-exists {
+      background-color: #10b981; /* green-500 */
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1);
+    }
+    .report-exists:hover {
+      background-color: #059669; /* green-600 */
+      transform: scale(1.05);
+    }
+    
+    .no-report {
+        color: #4b5563; /* gray-700 (일반 날짜 색상) */
+        cursor: pointer; 
+    }
+    .no-report:hover {
+        background-color: transparent;
+        transform: none;
+    }
+
+    .sunday-date {
+        color: #ef4444; /* red-500 */
+        cursor: default; /* 클릭 불가 표시 */
+    }
+    .sunday-date:hover {
+        background-color: transparent;
+        transform: none; 
+    }
+    
+    .today-highlight {
+        border: 2px solid #ef4444; /* red-500 */
+    }
+
+    .modal-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+<script src="https://apis.openapi.sk.com/tmap/jsv2?version=1"></script>
+</head>
+<body class="p-4 md:p-8">
+
+  <!-- 제목 -->
+  <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
+
+  <!-- 탭 메뉴 -->
+  <div class="flex border-b border-gray-200 mb-6">
+    <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
+      일보 작성 및 열기
+    </button>
+    <button id="tab-review" onclick="changeTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600">
+      날짜 검색/검토
+    </button>
+  </div>
+
+  <!-- 탭 내용 컨테이너 -->
+  <div id="tab-content">
+    
+    <!-- 1. 일보 작성 탭 (기존 내용) -->
+    <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
+      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
+        <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
+        
+      </div>
+      <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
+        오늘 일보 생성 & 열기
+      </button>
+
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
+      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
+        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
+      </div>
+      <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
+    </div>
+
+    <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
+    <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+      <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
+    </div>
+    <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+      거래처 현황 지도 보기
+    </button>
+    <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
+  </div>
+
+  <div id="content-review" class="hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
+    </div>
+
+    <!-- 2. 날짜 검색/검토 탭 (달력 UI 및 통계 버튼 추가) -->
+    <div id="content-review" class="hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
+      
+      <!-- 연/월 선택 및 표시 -->
+      <div class="flex justify-between items-center mb-4">
+          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
+          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+      </div>
+
+      <!-- 달력 그리드 -->
+      <div class="calendar-grid text-center text-sm font-medium">
+          <!-- 요일 헤더 -->
+          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
+            <div class="p-2 sunday">일</div>
+            <div class="p-2">월</div>
+            <div class="p-2">화</div>
+            <div class="p-2">수</div>
+            <div class="p-2">목</div>
+            <div class="p-2">금</div>
+            <div class="p-2">토</div>
+          </div>
+
+
+          <!-- 날짜 셀 (JavaScript로 채워짐) -->
+          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
+              <!-- 날짜 셀들이 여기에 렌더링됩니다. -->
+          </div>
+      </div>
+      
+      <!-- ⭐ 월별 통계 생성 버튼 추가 ⭐ -->
+      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
+        <span id="summary-button-text">XX월 매출현황표 생성</span>
+      </button>
+
+      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
+      
+    </div>
+  </div>
+  
+  <p class="text-center text-xs text-gray-400 mt-8">Powered by Google Apps Script & Tailwind CSS</p>
+  
+  <!-- 🚨 보고서 생성 확인 모달 -->
+  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
+      <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
+          <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
+          <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
+          <div class="flex justify-end space-x-3">
+              <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                  아니오
+              </button>
+              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">
+                  예
+              </button>
+          </div>
+      </div>
+  </div>
+<script>
+    // ✅ [수정 1] 탭 제어 함수를 2개 탭용으로 되돌립니다.
+    function changeTab(tabName) {
+      document.getElementById('tab-write').classList.remove('tab-active');
+      document.getElementById('tab-review').classList.remove('tab-active');
+      document.getElementById('content-write').classList.add('hidden');
+      document.getElementById('content-review').classList.add('hidden');
+
+      if (tabName === 'write') {
+        document.getElementById('tab-write').classList.add('tab-active');
+        document.getElementById('content-write').classList.remove('hidden');
+      } else if (tabName === 'review') {
+        document.getElementById('tab-review').classList.add('tab-active');
+        document.getElementById('content-review').classList.remove('hidden');
+        
+        if (isDataLoading) {
+          showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
+        } else {
+          renderCalendar();
+        }
+      }
+    }
+
+    // ===============================================
+    // 1. 전역 변수 및 초기 설정
+    // ===============================================
+    const API_URL = "<?= ScriptApp.getService().getUrl() ?>";
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
+    let isDataLoading = false; 
+    let isMapInitialized = false;
+    let map; 
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth() + 1;
+      document.getElementById('current-date').textContent = formatDate(today);
+      document.getElementById('generate-button').disabled = false;
+      document.getElementById('app-status').textContent = '상태: 준비 완료.';
+      
+      fetchReportsForMonth(currentYear, currentMonth, true);
+    });
+
+    // ===============================================
+    // 2. 핵심 기능 함수들 (사용자님의 최신 코드를 기반으로 함)
+    // ===============================================
+
+    /** [사용자 최신 코드] 월별 데이터 로딩 (프리로드 포함) */
+    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
+      const monthKey = year + '-' + month;
+      if (reportsMap[monthKey] === 'completed') {
+        renderCalendar();
+        if(!isInitialLoad) preloadAdjacentMonths(year, month);
+        return;
+      }
+      isDataLoading = true;
+      if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...');
+      try {
+        const result = await callAppsScript('getReportFilesByMonth', { year, month });
+        if (Array.isArray(result)) {
+          result.forEach(report => { reportsMap[report.date] = report; });
+          reportsMap[monthKey] = 'completed';
+          document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.';
+        } else { 
+          document.getElementById('review-status').textContent = '❌ 오류: ' + result.message; 
+        }
+      } finally {
+        isDataLoading = false;
+        hideLoader();
+        renderCalendar();
+        preloadAdjacentMonths(year, month);
+      }
+    }
+
+    /** [사용자 최신 코드] 인접 월 프리로드 */
+    function preloadAdjacentMonths(year, month) {
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMonthKey = prevYear + '-' + prevMonth;
+        const nextDate = new Date(year, month, 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = nextDate.getMonth() + 1;
+        const nextMonthKey = nextYear + '-' + nextMonth;
+        if (!reportsMap[prevMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+                if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[prevMonthKey] = 'completed';
+                }
+            });
+        }
+        if (!reportsMap[nextMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+                 if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[nextMonthKey] = 'completed';
+                }
+            });
+        }
+    }
+
+    /** [사용자 최신 코드] 월 변경 */
+    async function changeMonth(delta) {
+        const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+        currentYear = date.getFullYear();
+        currentMonth = date.getMonth() + 1;
+        fetchReportsForMonth(currentYear, currentMonth);
+    }
+        
+    /** [사용자 최신 코드] 날짜 포맷팅 */
+    function formatDate(date) {
+        return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+
+    /** [사용자 최신 코드] API 호출 헬퍼 */
+    async function callAppsScript(action, params = {}) {
+        const url = new URL(API_URL);
+        url.searchParams.set('action', action);
+        for (const key in params) {
+            url.searchParams.set(key, params[key]);
+        }
+        try {
+            const response = await fetch(url.toString(), { method: 'GET' });
+            if (!response.ok) { throw new Error('HTTP 오류: ' + response.status); }
+            return await response.json();
+        } catch (error) {
+            console.error('API 호출 오류:', error);
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    /** [사용자 최신 코드] 오늘 일보 생성 */
+    async function generateTodayReport() {
+        showLoader('오늘 일보를 생성 중...');
+        try {
+            const result = await callAppsScript('generate'); 
+            if (result.status === 'success' && result.url) {
+                hideLoader(); 
+                const os = getMobileOS();
+                let appUrl = result.url;
+                const fileIdMatch = result.url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (fileIdMatch && fileIdMatch[1]) {
+                    const fileId = fileIdMatch[1];
+                    if (os === "iOS") appUrl = "googlesheets://docs.google.com/spreadsheets/d/" + fileId + "/edit";
+                }
+                window.open(appUrl, '_blank'); 
+                if (new Date().getMonth() + 1 === currentMonth) {
+                    fetchReportsForMonth(currentYear, currentMonth, true); 
+                }
+            } else {
+                hideLoader(); 
+                alert('보고서 생성 실패: ' + result.message);
+            }
+        } catch (error) {
+            hideLoader(); 
+            alert('오류 발생: ' + error.message);
+        }
+    }
+
+    /** [사용자 최신 코드] 월별 통계 생성 */
+    async function createMonthlySummary() {
+        showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
+        try {
+            const result = await callAppsScript('createSummary', { year: currentYear, month: currentMonth });
+            if (result.status === 'success' && result.url) {
+                hideLoader();
+                const os = getMobileOS();
+                let appUrl = result.url;
+                const fileIdMatch = result.url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (fileIdMatch && fileIdMatch[1]) {
+                    const fileId = fileIdMatch[1];
+                    if (os === "iOS") appUrl = "googlesheets://docs.google.com/spreadsheets/d/" + fileId + "/edit";
+                }
+                window.open(appUrl, '_blank'); 
+            } else {
+                hideLoader();
+                alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            hideLoader();
+            alert('월별 통계 생성 오류: ' + error.message);
+        }
+    }
+
+    /** [사용자 최신 코드] 날짜 클릭 */
+    function onDateClick(day, isSunday) {
+        if (isSunday) return; 
+        const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        selectedDateForGeneration = formattedDate; 
+        const report = reportsMap[formattedDate];
+        if (report && report.url) {
+            const os = getMobileOS();
+            let appUrl = report.url; 
+            const fileIdMatch = report.url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (fileIdMatch && fileIdMatch[1]) {
+                const fileId = fileIdMatch[1]; 
+                if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+                else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+            }
+            window.open(appUrl, '_blank');
+        } else {
+            const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+            document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+            openModal(); 
+        }
+    }
+
+    /** [사용자 최신 코드] 달력 그리기 */
+    function renderCalendar() {
+        const display = document.getElementById('current-month-display');
+        display.textContent = currentYear + '년 ' + currentMonth + '월';
+        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
+        const container = document.getElementById('calendar-days');
+        container.innerHTML = '';
+        const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        const startDayOfWeek = firstDayOfMonth.getDay();
+        const today = new Date();
+        for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+            const isToday = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth && today.getDate() === day;
+            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            const isReportExists = reportsMap[dateKey];
+            let boxClasses = ['date-box'];
+            if (isSunday) boxClasses.push('sunday-date');
+            else if (isReportExists) boxClasses.push('report-exists');
+            else boxClasses.push('no-report');
+            if (isToday && !isSunday) boxClasses.push('today-highlight');
+            container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
+        }
+    }
+
+    /** [사용자 최신 코드] 로딩 팝업 */
+    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
+
+    /** [사용자 최신 코드] 확인 모달 */
+    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
+
+    /** [사용자 최신 코드] 보고서 생성 확인 */
+    async function confirmGenerateReport() {
+      if (!selectedDateForGeneration) { closeModal(); return; }
+      const dateToGenerate = selectedDateForGeneration;
+      closeModal(); 
+      const [year, month, day] = dateToGenerate.split('-').map(Number);
+      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...'); 
+      try {
+        const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
+        if (result.status === 'success' && result.url) { 
+          if (result.newReport) {
+            reportsMap[result.newReport.date] = result.newReport;
+          }
+          renderCalendar();
+          const os = getMobileOS();
+          let appUrl = result.url;
+          const fileIdMatch = result.url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+          if (fileIdMatch && fileIdMatch[1]) {
+              const fileId = fileIdMatch[1];
+              if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+              else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+          }
+          window.open(appUrl, '_blank');
+        } else {
+          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류')); 
+        }
+      } catch (error) { 
+          alert('보고서 생성 중 오류 발생: ' + error.message);
+      } finally {
+        hideLoader();
+      }
+    }
+    
+    /** [사용자 최신 코드] OS 감지 */
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      return "Other";
+    }
+
+    // ===============================================
+    // 4. 🗺️ T맵 지도 관련 함수들 (수정됨)
+    // ===============================================
+
+    function openMapOverlay() {
+      document.getElementById('map-overlay').classList.remove('hidden');
+      if (!isMapInitialized) {
+        // ✅ [수정] showLoader를 initTmap 안으로 이동시키지 않고, 여기서 먼저 호출합니다.
+        showLoader('거래처 지도를 불러오는 중...');
+        initTmap();
+      }
+    }
+
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
+    }
+
+/**
+     * [최종 수정] T맵을 초기화합니다.
+     * Tmapv2 스크립트가 로드될 때까지 100ms마다 확인하며 안전하게 대기합니다.
+     */
+    async function initTmap() {
+      // 중복 실행 방지
+      if (isMapInitialized) return; 
+      isMapInitialized = true; // 신호등 켜기
+
+      try {
+        // 1. 백엔드에 API 키를 요청합니다. (이 부분은 동일)
+        const keyResult = await callAppsScript('getTmapApiKey');
+        if (keyResult.status === 'error' || !keyResult.apiKey) {
+          console.error("T맵 API 키를 불러오는 데 실패했습니다.");
+          document.getElementById('map_overlay_content').textContent = "지도 API 키를 불러올 수 없습니다.";
+          hideLoader();
+          return;
+        }
+
+        // 2. [핵심] Tmapv2 스크립트가 로드되었는지 확인하는 '대기' 함수를 만듭니다.
+        const checkTmapReady = () => {
+          // 'Tmapv2' 객체와 그 안의 'Map' 기능이 모두 정의되었는지 확인
+          if (typeof Tmapv2 !== 'undefined' && Tmapv2.Map) {
+            
+            // 3. 로드가 확인되면, 지도를 생성합니다.
+            console.log("Tmap 스크립트 로딩 완료. 지도를 생성합니다.");
+            try {
+              map = new Tmapv2.Map("map_overlay_content", {
+                center: new Tmapv2.LatLng(35.2128, 128.9806), // 부산 강서구청 좌표
+                width: "100%",
+                height: "100%",
+                zoom: 12,
+                appKey: keyResult.apiKey
+              });
+              
+              // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
+              // loadClientMarkers(); 
+
+            } catch (mapError) {
+               console.error("지도 생성 중 오류 발생:", mapError);
+               document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
+            } finally {
+              hideLoader(); // 지도가 성공하든 실패하든 로더를 닫음
+            }
+            
+          } else {
+            // 4. 로드가 안 됐으면, 100ms 후에 다시 시도합니다.
+            console.log("Tmap 스크립트 로딩 대기 중...");
+            setTimeout(checkTmapReady, 100);
+          }
+        };
+
+        // 5. 대기 함수를 처음으로 실행합니다.
+        checkTmapReady();
+
+      } catch (error) {
+        console.error("API 키 요청 중 오류 발생:", error);
+        hideLoader(); // API 키 요청 실패 시에도 로더를 닫음
+      }
+    }
+  </script>
+    <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
+      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
+          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
+          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
+      </div>
+  </div>
+  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+      <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
+      <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <div id="map_overlay_content" class="flex-1 w-full h-full">
+      </div>
+  </div>
+  </body>
+</html>
