@@ -8,19 +8,20 @@
   "description": "일일 보고서 및 거래처 관리 앱",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/128/1086/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/1086088.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/192/1086/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/1086088.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/1086/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/1086088.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ]
+
 }
