@@ -1,0 +1,26 @@
+{
+  "name": "강서 도매소 대시보드",
+  "short_name": "일보 대시보드",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "description": "일일 보고서 및 거래처 관리 앱",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/128/1086/1086088.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/192/1086/1086088.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1086/1086088.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
