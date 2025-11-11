@@ -1,6 +1,6 @@
 {
   "name": "강서 도매소 대시보드",
-  "short_name": "일보 대시보드",
+  "short_name": "강서도매소",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -25,3 +25,4 @@
   ]
 
 }
+
