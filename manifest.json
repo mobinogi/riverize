@@ -4,7 +4,7 @@
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#10b981",
+  "theme_color": "#ffffff",
   "description": "일일 보고서 및 거래처 관리 앱",
   "icons": [
     {
@@ -25,4 +25,5 @@
   ]
 
 }
+
 
