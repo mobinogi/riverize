@@ -221,24 +221,23 @@
       }
     }
 
-// ... (기존 function showLoader, hideLoader, openModal 등 유지) ...
-
-    // ===============================================
+// ===============================================
     // 1. 전역 변수 및 초기 설정
     // ===============================================
     
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQyDZ-2/exec"; 
     
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
     
-    let isMapInitialized = false;     // T맵 깃발
-    let loadedClientData = {};       // ✅ [유지] 거래처 데이터 저장소
-    let activeClientUser = null;     // ✅ [유지] 현재 활성화된 담당자
-    let isPanelMinimized = false;    // ✅ [유지] 패널 축소 상태 깃발
-
+    // ✅ [수정] 아래 변수들은 원래 선언 위치에서 옮겨와서 여기에 한 번만 선언합니다.
+    let isMapInitialized = false;     
+    let loadedClientData = {};       
+    let activeClientUser = null;     
+    let isPanelMinimized = false;    
+    
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       currentYear = today.getFullYear();
@@ -665,6 +664,7 @@
   </script>
 </body>
 </html>
+
 
 
 
