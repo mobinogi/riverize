@@ -11,413 +11,71 @@
     frame-src 'self' blob:; 
   ">
   
-  <base target="_top">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="manifest.json">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
-    .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
-    .date-box { width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; }
-    .sunday { color: #ef4444; }
-    .report-exists { background-color: #10b981; color: white; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1); }
-    .report-exists:hover { background-color: #059669; transform: scale(1.05); }
-    .no-report { color: #4b5563; cursor: pointer; }
-    .no-report:hover { background-color: transparent; transform: none; }
-    .sunday-date { color: #ef4444; cursor: default; }
-    .sunday-date:hover { background-color: transparent; transform: none; }
-    .today-highlight { border: 2px solid #ef4444; }
-    .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+    /* 2. 맵이 뜰 공간을 100%로 채움 */
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map-container { width: 100%; height: 100%; }
+    iframe { width: 100%; height: 100%; border: none; }
   </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
 
-  <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-  <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
-    거래처 현황 지도 보기
-  </button>
-  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
-    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-      <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
-      <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
-    </div>
-    
-    <div id="map_overlay_content" class="flex-1 w-full h-full">
-      <iframe id="map-iframe" 
-              style="width:100%; height:100%; border:none;" 
-              sandbox="allow-scripts allow-same-origin">
-      </iframe>
-    </div>
-  </div>
+  <h1>T맵 로딩 실험실 (이 글자가 보이면 메인 페이지는 성공)</h1>
 
-  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
-      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
-          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
-          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
-      </div>
+  <div id="map-container">
+    <iframe id="map-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
   </div>
 
   <script>
-    // (모든 함수들... changeTab, fetchReportsForMonth 등은 그대로)
-    // ===============================================
-    // 1. 전역 변수 및 초기 설정
-    // ===============================================
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
-    let reportsMap = {}; 
-    let currentYear, currentMonth;
-    let selectedDateForGeneration = null;
-    let isDataLoading = false; 
-    let tmapApiKey = null; 
-    let isMapInitialized = false; 
+    // 4. API 키 (실험용으로 하드코딩)
+    // (주의: 이 파일은 테스트 후 삭제해야 함)
+    const TMAP_API_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
 
+    // 5. 페이지가 로드되면 <iframe>에 지도 주입
     document.addEventListener('DOMContentLoaded', () => {
-      const today = new Date();
-      currentYear = today.getFullYear();
-      currentMonth = today.getMonth() + 1;
-      document.getElementById('current-date').textContent = formatDate(today);
-      document.getElementById('generate-button').disabled = false;
-      document.getElementById('app-status').textContent = '상태: 준비 완료.';
-      fetchReportsForMonth(currentYear, currentMonth, true);
-    });
-    
-    // ... (모든 핵심 기능 함수들 생략) ...
-    function changeTab(tabName) {
-      document.getElementById('tab-write').classList.remove('tab-active');
-      document.getElementById('tab-review').classList.remove('tab-active');
-      document.getElementById('content-write').classList.add('hidden');
-      document.getElementById('content-review').classList.add('hidden');
-
-      if (tabName === 'write') {
-        document.getElementById('tab-write').classList.add('tab-active');
-        document.getElementById('content-write').classList.remove('hidden');
-      } else if (tabName === 'review') {
-        document.getElementById('tab-review').classList.add('tab-active');
-        document.getElementById('content-review').classList.remove('hidden');
-        if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
-        else renderCalendar();
-      }
-    }
-    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
-      const monthKey = year + '-' + month;
-      if (reportsMap[monthKey] === 'completed') {
-        renderCalendar();
-        if (!isInitialLoad) preloadAdjacentMonths(year, month);
-        return;
-      }
-      isDataLoading = true;
-      if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...');
-      try {
-        const result = await callAppsScript('getReportFilesByMonth', { year, month });
-        if (Array.isArray(result)) {
-          result.forEach(report => { reportsMap[report.date] = report; });
-          reportsMap[monthKey] = 'completed';
-          document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.';
-        } else { 
-          document.getElementById('review-status').textContent = '❌ 오류: ' + result.message; 
-        }
-      } finally {
-        isDataLoading = false;
-        hideLoader();
-        renderCalendar();
-        preloadAdjacentMonths(year, month);
-      }
-    }
-    function preloadAdjacentMonths(year, month) {
-        const prevDate = new Date(year, month - 2, 1);
-        const prevYear = prevDate.getFullYear();
-        const prevMonth = prevDate.getMonth() + 1;
-        const prevMonthKey = prevYear + '-' + prevMonth;
-        const nextDate = new Date(year, month, 1);
-        const nextYear = nextDate.getFullYear();
-        const nextMonth = nextDate.getMonth() + 1;
-        const nextMonthKey = nextYear + '-' + nextMonth;
-        if (!reportsMap[prevMonthKey]) {
-            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
-                if (Array.isArray(result)) {
-                    result.forEach(report => { reportsMap[report.date] = report; });
-                    reportsMap[prevMonthKey] = 'completed';
-                }
-            });
-        }
-        if (!reportsMap[nextMonthKey]) {
-            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
-                 if (Array.isArray(result)) {
-                    result.forEach(report => { reportsMap[report.date] = report; });
-                    reportsMap[nextMonthKey] = 'completed';
-                }
-            });
-        }
-    }
-    async function changeMonth(delta) {
-      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
-      currentYear = date.getFullYear();
-      currentMonth = date.getMonth() + 1;
-      fetchReportsForMonth(currentYear, currentMonth);
-    }
-    function formatDate(date) {
-      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
-    }
-    async function callAppsScript(action, params = {}) {
-      const url = new URL(API_URL);
-      url.searchParams.set('action', action);
-      for (const key in params) {
-        url.searchParams.set(key, params[key]);
-      }
-      try {
-        const response = await fetch(url.toString(), {
-          method: 'GET'
-        });
-        if (!response.ok) {
-          throw new Error('HTTP 오류: ' + response.status);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        return {
-          status: 'error',
-          message: error.message
-        };
-      }
-    }
-    async function generateTodayReport() {
-      showLoader('오늘 일보를 생성 중...');
-      try {
-        const result = await callAppsScript('generate');
-        if (result.status === 'success' && result.url) {
-          hideLoader();
-          openSheetApp(result.url);
-          if (new Date().getMonth() + 1 === currentMonth) {
-            fetchReportsForMonth(currentYear, currentMonth, true);
-          }
-        } else {
-          hideLoader();
-          alert('보고서 생성 실패: ' + result.message);
-        }
-      } catch (error) {
-        hideLoader();
-        alert('오류 발생: ' + error.message);
-      }
-    }
-    async function createMonthlySummary() {
-      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
-      try {
-        const result = await callAppsScript('createSummary', {
-          year: currentYear,
-          month: currentMonth
-        });
-        if (result.status === 'success' && result.url) {
-          hideLoader();
-          openSheetApp(result.url);
-        } else {
-          hideLoader();
-          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
-        }
-      } catch (error) {
-        hideLoader();
-        alert('월별 통계 생성 오류: ' + error.message);
-      }
-    }
-    function onDateClick(day, isSunday) {
-      if (isSunday) return;
-      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-      selectedDateForGeneration = formattedDate;
-      const report = reportsMap[formattedDate];
-      if (report && report.url) {
-        openSheetApp(report.url);
-      } else {
-        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
-        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
-        openModal();
-      }
-    }
-    function renderCalendar() {
-      const display = document.getElementById('current-month-display');
-      if (!display) return;
-      display.textContent = currentYear + '년 ' + currentMonth + '월';
-      document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
-      const container = document.getElementById('calendar-days');
-      if (!container) return;
-      container.innerHTML = '';
-      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
-      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-      const startDayOfWeek = firstDayOfMonth.getDay();
-      const today = new Date();
-      const todayYear = today.getFullYear();
-      const todayMonth = today.getMonth() + 1;
-      const todayDay = today.getDate();
-      for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
-      for (let day = 1; day <= daysInMonth; day++) {
-        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
-        const isToday = todayYear === currentYear && todayMonth === currentMonth && todayDay === day;
-        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        const isReportExists = reportsMap[dateKey];
-        let boxClasses = ['date-box'];
-        if (isSunday) { boxClasses.push('sunday-date'); } else if (isReportExists) { boxClasses.push('report-exists'); } else { boxClasses.push('no-report'); }
-        if (isToday && !isSunday) { boxClasses.push('today-highlight'); }
-        container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
-      }
-    }
-    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
-    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
-    async function confirmGenerateReport() {
-      if (!selectedDateForGeneration) { closeModal(); return; }
-      const dateToGenerate = selectedDateForGeneration;
-      closeModal();
-      const [year, month, day] = dateToGenerate.split('-').map(Number);
-      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
-      try {
-        const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
-        if (result.status === 'success' && result.url) {
-          if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
-          renderCalendar();
-          openSheetApp(result.url);
-        } else {
-          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
-        }
-      } catch (error) {
-        alert('보고서 생성 중 오류 발생: ' + error.message);
-      } finally {
-        hideLoader();
-      }
-    }
-    function getMobileOS() {
-      const ua = navigator.userAgent;
-      if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
-      return "Other";
-    }
-    function openSheetApp(url) {
-      const os = getMobileOS();
-      let appUrl = url;
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
-      }
-      window.open(appUrl, '_blank');
-    }
-
-    // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (sandbox + doc.write + 하트비트)
-    // ===============================================
-
-    /**
-     * ✅ [수정 3] <iframe>으로부터 오는 모든 메시지를 처리하는 '수신기' 함수
-     */
-    function handleIframeMessage(event) {
-      if (event.data === 'TmapHeartbeat') {
-        showLoader('✓ 7/7: Tmap 콜백 수신! 지도 생성 시도 중...');
-        console.log("✓ 7/7: Received 'TmapHeartbeat' from iframe. Tmap is now attempting to build the map.");
-      } 
-      else if (event.data === 'TmapLoaded') {
-        console.log("✓ 8/8: iframe으로부터 'TmapLoaded' 메시지 수신! 성공!");
-        isMapInitialized = true;
-        hideLoader(); 
-        window.removeEventListener('message', handleIframeMessage);
-      } 
-      else if (event.data === 'TmapError') {
-        console.error("✗ iframe으로부터 'TmapError' 메시지 수신. (iframe 콘솔 확인)");
-        showLoader("오류: iframe이 지도를 그리지 못했습니다.");
-        window.removeEventListener('message', handleIframeMessage);
-      }
-    }
-
-    async function openMapOverlay() {
-      document.getElementById('map-overlay').classList.remove('hidden');
-      if (isMapInitialized) return; 
+      console.log("페이지 로드 완료. <iframe>에 지도 주입 시작...");
       
-      showLoader('거래처 지도를 불러오는 중...');
-      console.log("Overlay opened. Initializing map...");
+      const iframe = document.getElementById('map-iframe');
+      const doc = iframe.contentWindow.document;
 
-      try {
-        if (!tmapApiKey) {
-          showLoader('1/7: Tmap API 키 요청 중...');
-          console.log("1/7: Requesting Tmap API key...");
-          const keyResult = await callAppsScript('getTmapApiKey');
+      doc.open();
+      // 6. 'doc.write'로 격리실 내부에 HTML을 씁니다.
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }<\/style>
           
-          if (keyResult && keyResult.apiKey) {
-            tmapApiKey = keyResult.apiKey;
-            showLoader('2/7: Tmap API 키 확보 완료.');
-            console.log("2/7: Tmap API key received.");
-          } else {
-            throw new Error(keyResult.message || "API 키를 서버에서 받지 못했습니다.");
-          }
-        } else {
-            showLoader('2/7: Tmap API 키 (캐시됨) 확보 완료.');
-            console.log("2/7: Tmap API key (cached) found.");
-        }
-        
-        // 1. '메시지 수신기'를 *먼저* 켭니다.
-        showLoader('3/7: <iframe> 통신 수신기 활성화...');
-        console.log("3/7: Activating iframe message listener...");
-        window.addEventListener('message', handleIframeMessage); 
-        
-        // 2. 'doc.write' 방식으로 iframe에 콘텐츠 주입
-        const iframe = document.getElementById('map-iframe');
-        const doc = iframe.contentWindow.document;
-
-        doc.open();
-        
-        showLoader('4/7 & 5/7: <iframe>에 함수 정의 및 HTML 작성 (doc.write)...');
-        console.log("4/7 & 5/7: Writing HTML, function definitions, and Tmap script to iframe (doc.write)...");
-        
-        doc.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }<\/style>
-            
-            <script>
-              function initMapInFrame() {
-                window.parent.postMessage('TmapHeartbeat', '*'); 
-                try {
-                  new Tmapv2.Map("map_div", {
-                    center: new Tmapv2.LatLng(35.2128, 128.9806),
-                    width: "100%",
-                    height: "100%",
-                    zoom: 12
-                  });
-                  window.parent.postMessage('TmapLoaded', '*');
-                } catch (e) {
-                  document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
-                  window.parent.postMessage('TmapError', '*');
-                }
+          <script>
+            function initMapInFrame() {
+              console.log("IFRAME: initMapInFrame() 호출됨. 지도 생성 시도...");
+              try {
+                new Tmapv2.Map("map_div", {
+                  center: new Tmapv2.LatLng(35.2128, 128.9806),
+                  width: "100%",
+                  height: "100%",
+                  zoom: 12
+                });
+                console.log("IFRAME: 지도 생성 성공!");
+              } catch (e) {
+                console.error("IFRAME: 지도 생성 실패!", e);
+                document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
               }
-            <\/script>
-          </head>
-          <body>
-            <div id="map_div"><\/div>
-            <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
-          <\/body>
-          <\/html>
-        `);
-                
-        // 3. '실행!' 명령을 내립니다.
-        showLoader('6/7: <iframe> 로드 시작. Tmap 콜백 대기 중...');
-        console.log("6/7: Closing iframe doc. Waiting for Tmap callback...");
-        doc.close(); 
-
-      } catch (e) {
-        console.error("지도 iframe 생성 중 치명적 오류 (catch 블록):", e);
-        showLoader(`오류: ${e.message}`);
-        window.removeEventListener('message', handleIframeMessage);
-      }
-    } // <-- openMapOverlay 닫힘
-
-    function closeMapOverlay() {
-      document.getElementById('map-overlay').classList.add('hidden');
-      window.removeEventListener('message', handleIframeMessage);
-    }
-    
+            }
+          <\/script>
+        </head>
+        <body>
+          <div id="map_div"></div>
+          
+          <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${TMAP_API_KEY}&callback=initMapInFrame"><\/script>
+        <\/body>
+        <\/html>
+      `);
+      doc.close();
+      
+      console.log("<iframe> 주입 완료. Tmap 응답 대기 중...");
+    });
   </script>
 </body>
 </html>
