@@ -1,111 +1,520 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>T맵 오버레이 단독 실험</title>
-  
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.openapi.sk.com https://*.tmap.co.kr;
-    connect-src 'self'; 
-    style-src 'self' 'unsafe-inline';
-    font-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src https://fonts.gstatic.com;
     img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com https://*.tmap.co.kr;
     frame-src 'self' blob:; 
   ">
   
-  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
+  <base target="_top">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap"></script>
   
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
-    
-    /* [3] 오버레이 (처음엔 숨겨짐) */
-    #map-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5); /* 반투명 배경 */
-      display: none; /* [핵심] 처음엔 숨김 */
-      z-index: 100;
-    }
-    
-    #map-container {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      height: 80%;
-      background: white;
-      border: 0px solid red;
-    }
-    
-    #map_div { width: 100%; height: 100%; }
-    
-    #close-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 10px;
-      background: white;
-      border: 1px solid black;
-      cursor: pointer;
-      z-index: 200;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+    .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
+    .date-box { width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; }
+    .sunday { color: #ef4444; }
+    .report-exists { background-color: #10b981; color: white; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1); }
+    .report-exists:hover { background-color: #059669; transform: scale(1.05); }
+    .no-report { color: #4b5563; cursor: pointer; }
+    .no-report:hover { background-color: transparent; transform: none; }
+    .sunday-date { color: #ef4444; cursor: default; }
+    .sunday-date:hover { background-color: transparent; transform: none; }
+    .today-highlight { border: 2px solid #ef4444; }
+    .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
   </style>
 </head>
-<body>
+<body class="p-4 md:p-8">
 
-  <h1>T맵 오버레이 실험실</h1>
-  <button id="open-button" style="padding: 20px; font-size: 20px;">
-    오버레이로 지도 띄우기
-  </button>
+  <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
 
-  <div id="map-overlay">
-    <button id="close-button">닫기</button>
-    <div id="map-container">
-      <div id="map_div"></div>
+  <div class="flex border-b border-gray-200 mb-6">
+    <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
+      일보 작성
+    </button>
+    <button id="tab-review" onclick="changeTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600">
+      날짜 검색
+    </button>
+  </div>
+
+  <div id="tab-content">
+    
+    <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
+      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
+        <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
+      </div>
+      <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
+        오늘 일보 생성 & 열기
+      </button>
+
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
+      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
+        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
+      </div>
+      
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
+      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
+      </div>
+      <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+        거래처 현황 지도 보기
+      </button>
+
+      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
     </div>
+
+    <div id="content-review" class="hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
+      
+      <div class="flex justify-between items-center mb-4">
+          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
+          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+      </div>
+
+      <div class="calendar-grid text-center text-sm font-medium">
+          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
+            <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
+            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
+            <div class="p-2">토</div>
+          </div>
+          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
+              </div>
+      </div>
+      
+      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
+        <span id="summary-button-text">XX월 매출현황표 생성</span>
+      </button>
+
+      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
+    </div>
+    
+  </div> 
+  
+  <p class="text-center text-xs text-gray-400 mt-8">Powered by GitHub Pages & Google Apps Script</p>
+  
+  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
+      <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
+          <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
+          <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
+          <div class="flex justify-end space-x-3">
+              <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">아니오</button>
+              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
+      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
+          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
+          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
+      </div>
+  </div>
+
+  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+      <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
+      <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    
+    <div id="map_overlay_content" class="flex-1 w-full h-full">
+      </div>
   </div>
 
   <script>
-    let isMapInitialized = false; // [5] 맵이 로드됐는지 확인하는 '깃발'
+    // 1. 탭 제어 함수 (2개 탭용)
+    function changeTab(tabName) {
+      document.getElementById('tab-write').classList.remove('tab-active');
+      document.getElementById('tab-review').classList.remove('tab-active');
+      document.getElementById('content-write').classList.add('hidden');
+      document.getElementById('content-review').classList.add('hidden');
 
-    // [6] '오버레이 열기' 버튼
-    document.getElementById('open-button').onclick = function() {
-      // 오버레이를 화면에 표시
-      document.getElementById('map-overlay').style.display = 'block';
-      
-      // 맵이 아직 안 만들어졌으면 (isMapInitialized == false 이면)
-      if (!isMapInitialized) {
-        console.log("맵이 없으므로, 지금부터 생성합니다...");
-        try {
-          // <head>에서 로드한 Tmapv2를 사용해 지도를 그림
-          new Tmapv2.Map("map_div", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          isMapInitialized = true; // '깃발'을 세움 (다음부턴 생성 안 함)
-          console.log("지도 생성 성공!");
-          
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-          document.getElementById('map_div').textContent = "지도 생성 실패: " + e.message;
-        }
-      } else {
-        console.log("이미 맵이 있으므로, 그냥 보여주기만 합니다.");
+      if (tabName === 'write') {
+        document.getElementById('tab-write').classList.add('tab-active');
+        document.getElementById('content-write').classList.remove('hidden');
+      } else if (tabName === 'review') {
+        document.getElementById('tab-review').classList.add('tab-active');
+        document.getElementById('content-review').classList.remove('hidden');
+        if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
+        else renderCalendar();
       }
-    };
+    }
 
-    // [7] '닫기' 버튼
-    document.getElementById('close-button').onclick = function() {
-      document.getElementById('map-overlay').style.display = 'none';
-    };
+    // ===============================================
+    // 1. 전역 변수 및 초기 설정
+    // ===============================================
+    
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
+    let isDataLoading = false; 
+    
+    // ✅ [핵심] T맵 관련 전역 변수
+    let tmapApiKey = null;        // 1. API 키 (연장)
+    let isMapInitialized = false; // 2. 맵 로드 '깃발'
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth() + 1;
+      
+      document.getElementById('current-date').textContent = formatDate(today);
+      document.getElementById('generate-button').disabled = false;
+      document.getElementById('app-status').textContent = '상태: 준비 완료.';
+      
+      fetchReportsForMonth(currentYear, currentMonth, true);
+      
+      // ✅ [핵심] 3. '연장 배달부' 호출
+      // 페이지가 열리자마자 '연장'(API 키)을 code.js에서 가져오기 시작
+      preloadTmapApiKey();
+    });
+
+    // ===============================================
+    // 2. 핵심 기능 함수들 (달력 및 보고서)
+    // ✅ "생략" 안 하고 다 넣었습니다
+    // ===============================================
+
+    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
+      const monthKey = year + '-' + month;
+      if (reportsMap[monthKey] === 'completed') {
+        renderCalendar();
+        if (!isInitialLoad) preloadAdjacentMonths(year, month);
+        return;
+      }
+      isDataLoading = true;
+      if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...');
+      try {
+        const result = await callAppsScript('getReportFilesByMonth', { year, month });
+        if (Array.isArray(result)) {
+          result.forEach(report => { reportsMap[report.date] = report; });
+          reportsMap[monthKey] = 'completed';
+          document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.';
+        } else { 
+          document.getElementById('review-status').textContent = '❌ 오류: ' + result.message; 
+        }
+      } finally {
+        isDataLoading = false;
+        hideLoader();
+        renderCalendar();
+        preloadAdjacentMonths(year, month);
+      }
+    }
+
+    function preloadAdjacentMonths(year, month) {
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMonthKey = prevYear + '-' + prevMonth;
+        const nextDate = new Date(year, month, 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = nextDate.getMonth() + 1;
+        const nextMonthKey = nextYear + '-' + nextMonth;
+        if (!reportsMap[prevMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+                if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[prevMonthKey] = 'completed';
+                }
+            });
+        }
+        if (!reportsMap[nextMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+                 if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[nextMonthKey] = 'completed';
+                }
+            });
+        }
+    }
+    
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
+    }
+    
+    function formatDate(date) {
+      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+    
+    async function callAppsScript(action, params = {}) {
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      for (const key in params) {
+        url.searchParams.set(key, params[key]);
+      }
+      try {
+        const response = await fetch(url.toString(), {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error('HTTP 오류: ' + response.status);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API 호출 오류:', error);
+        return {
+          status: 'error',
+          message: error.message
+        };
+      }
+    }
+    
+    async function generateTodayReport() {
+      showLoader('오늘 일보를 생성 중...');
+      try {
+        const result = await callAppsScript('generate');
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url);
+          if (new Date().getMonth() + 1 === currentMonth) {
+            fetchReportsForMonth(currentYear, currentMonth, true);
+          }
+        } else {
+          hideLoader();
+          alert('보고서 생성 실패: ' + result.message);
+        }
+      } catch (error) {
+        hideLoader();
+        alert('오류 발생: ' + error.message);
+      }
+    }
+    
+    async function createMonthlySummary() {
+      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
+      try {
+        const result = await callAppsScript('createSummary', {
+          year: currentYear,
+          month: currentMonth
+        });
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url);
+        } else {
+          hideLoader();
+          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        hideLoader();
+        alert('월별 통계 생성 오류: ' + error.message);
+      }
+    }
+    
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url);
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
+    }
+    
+    function renderCalendar() {
+      const display = document.getElementById('current-month-display');
+      if (!display) return;
+      display.textContent = currentYear + '년 ' + currentMonth + '월';
+      document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
+      const container = document.getElementById('calendar-days');
+      if (!container) return;
+      container.innerHTML = '';
+      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const startDayOfWeek = firstDayOfMonth.getDay();
+      const today = new Date();
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth() + 1;
+      const todayDay = today.getDate();
+
+      for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+        const isToday = todayYear === currentYear && todayMonth === currentMonth && todayDay === day;
+        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        const isReportExists = reportsMap[dateKey];
+        
+        let boxClasses = ['date-box'];
+        if (isSunday) {
+          boxClasses.push('sunday-date');
+        } else if (isReportExists) {
+          boxClasses.push('report-exists');
+        } else {
+          boxClasses.push('no-report');
+        }
+        
+        if (isToday && !isSunday) {
+          boxClasses.push('today-highlight');
+        }
+        
+        container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
+      }
+    }
+    
+    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
+    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
+
+    async function confirmGenerateReport() {
+      if (!selectedDateForGeneration) { closeModal(); return; }
+      const dateToGenerate = selectedDateForGeneration;
+      closeModal();
+      const [year, month, day] = dateToGenerate.split('-').map(Number);
+      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
+      try {
+        const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
+        if (result.status === 'success' && result.url) {
+          if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
+          renderCalendar();
+          openSheetApp(result.url);
+        } else {
+          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        alert('보고서 생성 중 오류 발생: ' + error.message);
+      } finally {
+        hideLoader();
+      }
+    }
+    
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      return "Other";
+    }
+    
+    function openSheetApp(url) {
+      const os = getMobileOS();
+      let appUrl = url;
+      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+      }
+      window.open(appUrl, '_blank');
+    }
+
+    // ===============================================
+    // 4. 🗺️ T맵 지도 관련 함수 (iframe 제거, 오버레이 방식)
+    // ===============================================
+
+    /**
+     * '연장 배달부': API 키를 code.js에서 미리 가져와 전역 변수에 저장
+     */
+    async function preloadTmapApiKey() {
+      try {
+        const keyResult = await callAppsScript('getTmapApiKey');
+        if (keyResult && keyResult.apiKey) {
+          tmapApiKey = keyResult.apiKey; // ✅ 5. '연장' 도착!
+          console.log("Tmap API 키 미리 로딩 완료.");
+        } else {
+          console.error("Tmap API 키 미리 로딩 실패:", keyResult.message);
+        }
+      } catch (e) {
+        console.error("Tmap API 키 요청 오류:", e);
+      }
+    }
+
+    /**
+     * '인부': T맵 스크립트가 로드된 후 <head>에서 자동 호출됨
+     */
+    function initTmap() {
+      console.log("Tmap 스크립트 로드 완료 -> initTmap() 호출됨.");
+      
+      // ✅ [핵심] 6. '연장'(API 키)이 올 때까지 대기
+      if (!tmapApiKey) {
+        console.log("...아직 API 키 로딩 중... 100ms 대기...");
+        setTimeout(initTmap, 100); // 100ms 후에 이 함수를 다시 실행
+        return; 
+      }
+      
+      // ✅ 8. '연장'이 도착했으므로, 지도를 '생성'은 하되,
+      // 'div'가 화면에 보일 때까지 기다립니다.
+      try {
+        // 'map_overlay_content' div에 지도를 생성
+        new Tmapv2.Map("map_overlay_content", {
+          center: new Tmapv2.LatLng(35.2128, 128.9806),
+          width: "100%",
+          height: "100%",
+          zoom: 12,
+          appKey: tmapApiKey // ✅ 드디어 받아온 API 키를 사용
+        });
+        
+        isMapInitialized = true; // ✅ 9. '깃발'을 세움
+        console.log("Tmap API 키 확인 완료! 지도 생성 성공!");
+        
+        // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
+        // loadClientMarkers(); 
+
+      } catch (mapError) {
+         console.error("지도 생성 중 오류 발생:", mapError);
+         document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
+      }
+    }
+    
+    /**
+     * '오버레이 열기' 버튼
+     */
+    function openMapOverlay() {
+      console.log("지도 열기 버튼 클릭.");
+      // ✅ 7. 오버레이를 화면에 표시
+      document.getElementById('map-overlay').classList.remove('hidden');
+      
+      if (!isMapInitialized) {
+        // 이 메시지는 initTmap()이 아직 8단계에 도달하지 못했을 때 표시됨
+        console.log("...아직 맵이 생성되지 않았습니다. API 키를 기다리는 중일 수 있습니다...");
+        // 맵이 로딩될 때까지 로더를 띄울 수 있습니다.
+        showLoader('지도 로딩 중... (API 키 대기 중일 수 있음)');
+        // initTmap이 성공하면 로더를 숨겨야 합니다.
+        // initTmap이 맵 생성에 성공하면 깃발을 세우므로, 
+        // 맵이 아직 안 만들어졌다면 initTmap이 끝날 때까지 기다려야 합니다.
+        
+        // initTmap이 맵을 다 만들면 isMapInitialized가 true가 됩니다.
+        // 하지만 initTmap은 이미 실행 중이거나, 곧 실행될 것입니다.
+        // 100ms마다 깃발을 확인해서 로더를 숨깁니다.
+        const checkMapInterval = setInterval(function() {
+          if (isMapInitialized) {
+            hideLoader();
+            clearInterval(checkMapInterval);
+          }
+        }, 100);
+
+      }
+    }
+
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
+    }
+    
   </script>
 </body>
 </html>
-
