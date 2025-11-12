@@ -423,7 +423,7 @@
     }
 
 // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: srcdoc 방식)
+    // 4. 🗺️ T맵 지도 관련 함수 (수정: sandbox + doc.write 조합)
     // ===============================================
 
     /**
@@ -477,12 +477,16 @@
         console.log("3/7: Activating iframe message listener...");
         window.addEventListener('message', handleIframeMessage); 
         
-        // ✅ [핵심 수정] 2. doc.write() 대신 'srcdoc'을 사용합니다.
-        // 먼저 <iframe>에 들어갈 HTML 전체를 문자열로 만듭니다.
-        showLoader('4/7 & 5/7: <iframe>에 삽입할 HTML 콘텐츠 생성...');
-        console.log("4/7 & 5/7: Generating HTML content for iframe srcdoc...");
+        // ✅ [핵심 수정] 2. 'srcdoc' 대신 'doc.write' 방식으로 복귀
+        const iframe = document.getElementById('map-iframe');
+        const doc = iframe.contentWindow.document;
+
+        doc.open();
         
-        const htmlContent = `
+        showLoader('4/7 & 5/7: <iframe>에 함수 정의 및 HTML 작성 (doc.write)...');
+        console.log("4/7 & 5/7: Writing HTML, function definitions, and Tmap script to iframe (doc.write)...");
+        
+        doc.write(`
           <!DOCTYPE html>
           <html>
           <head>
@@ -512,15 +516,12 @@
             <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
           <\/body>
           <\/html>
-        `;
-        
-        // 3. <iframe>의 'srcdoc' 속성에 HTML 콘텐츠를 통째로 할당합니다.
-        showLoader('6/7: <iframe>에 콘텐츠 주입. Tmap 콜백 대기 중...');
-        console.log("6/7: Setting iframe.srcdoc. Waiting for Tmap callback...");
-        const iframe = document.getElementById('map-iframe');
-        iframe.srcdoc = htmlContent;
-        
-        // (doc.open, doc.write, doc.close 모두 삭제됨)
+        `);
+                
+        // 3. '실행!' 명령을 내립니다.
+        showLoader('6/7: <iframe> 로드 시작. Tmap 콜백 대기 중...');
+        console.log("6/7: Closing iframe doc. Waiting for Tmap callback...");
+        doc.close(); 
 
       } catch (e) {
         console.error("지도 iframe 생성 중 치명적 오류 (catch 블록):", e);
