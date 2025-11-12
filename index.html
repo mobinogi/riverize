@@ -412,37 +412,37 @@
       window.open(appUrl, '_blank');
     }
 
-    // ===============================================
+// ===============================================
     // 4. 🗺️ T맵 지도 관련 함수 (Velog.io 해결책 적용됨)
     // ===============================================
 
     /**
-     * ✅ [수정] 1. Tmap API 키를 서버(code.js)에서 가져옵니다.
-     * ✅ [수정] 2. 키를 성공적으로 받은 *후에만* Tmap 스크립트를 동적으로 로드합니다.
+     * ✅ [최종 수정] 1. Tmap API 키를 서버(code.js)에서 가져옵니다.
+     * ✅ [최종 수정] 2. 키를 스크립트 URL에 포함하여 동적으로 로드합니다.
      */
     async function preloadTmapApiKey() {
       try {
         const keyResult = await callAppsScript('getTmapApiKey');
         
-        // 1. 백엔드에서 성공적으로 키를 받아왔는지 확인 (code.js의 반환 형식에 맞게)
         if (keyResult && keyResult.apiKey) {
           tmapApiKey = keyResult.apiKey;
           console.log("Tmap API 키 미리 로딩 완료.");
           
-          // 2. [핵심] 키를 성공적으로 받은 *후에* Tmap 스크립트를 동적으로 생성
           const script = document.createElement('script');
-          script.src = "https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap";
-          script.async = true; // 비동기 로드
-          script.onerror = () => {
-             // 스크립트 로드 자체가 실패했을 때 (예: 인터넷 끊김)
-             console.error("Tmap 스크립트 로드 실패.");
-             document.getElementById('map_overlay_content').textContent = "Tmap 스크립트 로드에 실패했습니다. 인터넷 연결을 확인하세요.";
+          
+          // ✅ [핵심 수정] 
+          // 스크립트의 src URL 자체에 appKey를 포함시켜야 합니다.
+          script.src = "https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap&appKey=" + tmapApiKey;
+          
+          script.async = true; 
+          script.onerror = (e) => { // (e)를 추가해서 상세 오류를 볼 수 있게 합니다.
+             console.error("Tmap 스크립트 로드 실패.", e);
+             document.getElementById('map_overlay_content').textContent = "Tmap 스크립트 로드에 실패했습니다. (API키가 잘못되었거나, Tmap 서버 문제일 수 있습니다)";
              hideLoader();
           };
-          document.head.appendChild(script); // 3. 헤더에 스크립트 추가
+          document.head.appendChild(script);
           
         } else {
-          // 4. 백엔드에서 키를 못 받았을 때 (예: code.js 속성 설정 안 함)
           console.error("Tmap API 키 미리 로딩 실패:", keyResult.message);
           const errorMsg = "오류: Tmap API 키를 서버에서 불러오지 못했습니다. (서버 메시지: " + (keyResult.message || '없음') + ")";
           document.getElementById('map_overlay_content').textContent = errorMsg;
@@ -509,4 +509,5 @@
   </script>
 </body>
 </html>
+
 
