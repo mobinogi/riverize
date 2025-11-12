@@ -8,8 +8,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
-  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap"></script>
-  
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
@@ -82,8 +80,7 @@
       <div class="calendar-grid text-center text-sm font-medium">
           <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
             <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
-            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
-            <div class="p-2">토</div>
+            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div> <div class="p-2">토</div>
           </div>
           <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
               </div>
@@ -172,11 +169,12 @@
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
       fetchReportsForMonth(currentYear, currentMonth, true);
-      preloadTmapApiKey();
+      preloadTmapApiKey(); // ✅ T맵 API 키 로딩 시작
     });
 
     // ===============================================
     // 2. 핵심 기능 함수들 (달력 및 보고서)
+    // (이 섹션의 코드는 수정되지 않았습니다)
     // ===============================================
 
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
@@ -267,7 +265,7 @@
     }
     
     async function generateTodayReport() {
-      showLoader('오늘 일보를 생성 중...'); // 👈 오류가 났던 지점
+      showLoader('오늘 일보를 생성 중...');
       try {
         const result = await callAppsScript('generate');
         if (result.status === 'success' && result.url) {
@@ -278,7 +276,7 @@
           }
         } else {
           hideLoader();
-          alert('보고서 생성 실패: ' + result.message); // ✅ 오타 수정됨
+          alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
@@ -408,32 +406,54 @@
     }
 
     // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (Tistory 해결책 적용됨)
+    // 4. 🗺️ T맵 지도 관련 함수 (Velog.io 해결책 적용됨)
     // ===============================================
 
+    /**
+     * ✅ [수정] 1. Tmap API 키를 서버(code.js)에서 가져옵니다.
+     * ✅ [수정] 2. 키를 성공적으로 받은 *후에만* Tmap 스크립트를 동적으로 로드합니다.
+     */
     async function preloadTmapApiKey() {
       try {
         const keyResult = await callAppsScript('getTmapApiKey');
-        if (keyResult.apiKey) {
+        
+        // 1. 백엔드에서 성공적으로 키를 받아왔는지 확인 (code.js의 반환 형식에 맞게)
+        if (keyResult && keyResult.apiKey) {
           tmapApiKey = keyResult.apiKey;
           console.log("Tmap API 키 미리 로딩 완료.");
+          
+          // 2. [핵심] 키를 성공적으로 받은 *후에* Tmap 스크립트를 동적으로 생성
+          const script = document.createElement('script');
+          script.src = "https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap";
+          script.async = true; // 비동기 로드
+          script.onerror = () => {
+             // 스크립트 로드 자체가 실패했을 때 (예: 인터넷 끊김)
+             console.error("Tmap 스크립트 로드 실패.");
+             document.getElementById('map_overlay_content').textContent = "Tmap 스크립트 로드에 실패했습니다. 인터넷 연결을 확인하세요.";
+             hideLoader();
+          };
+          document.head.appendChild(script); // 3. 헤더에 스크립트 추가
+          
         } else {
-          console.error("Tmap API 키 미리 로딩 실패.");
+          // 4. 백엔드에서 키를 못 받았을 때 (예: code.js 속성 설정 안 함)
+          console.error("Tmap API 키 미리 로딩 실패:", keyResult.message);
+          const errorMsg = "오류: Tmap API 키를 서버에서 불러오지 못했습니다. (서버 메시지: " + (keyResult.message || '없음') + ")";
+          document.getElementById('map_overlay_content').textContent = errorMsg;
+          hideLoader();
         }
       } catch (e) {
         console.error("Tmap API 키 요청 오류:", e);
+        document.getElementById('map_overlay_content').textContent = "Tmap API 키 요청 중 오류가 발생했습니다.";
+        hideLoader();
       }
     }
 
     function openMapOverlay() {
       document.getElementById('map-overlay').classList.remove('hidden');
       if (!isMapInitialized) {
+        // 'initTmap'이 아직 호출되지 않았다면 로더를 보여줍니다.
+        // 'initTmap' 함수가 실행 완료된 후 'finally' 블록에서 로더를 숨깁니다.
         showLoader('거래처 지도를 불러오는 중...');
-        const checkMapReady = () => {
-          if (isMapInitialized) hideLoader();
-          else setTimeout(checkMapReady, 100);
-        };
-        checkMapReady();
       }
     }
 
@@ -441,21 +461,29 @@
       document.getElementById('map-overlay').classList.add('hidden');
     }
 
+    /**
+     * ✅ [수정] Tmap 스크립트가 로드를 완료하면 이 함수가 '콜백'으로 자동 호출됩니다.
+     */
     function initTmap() {
       console.log("Tmap 스크립트가 로드를 완료하여 initTmap()을 호출했습니다.");
+      
+      // 이 시점에는 'preloadTmapApiKey'가 이미 tmapApiKey를 설정했어야 합니다.
       if (!tmapApiKey) {
-        console.log("Tmap API 키 로딩 대기 중...");
+        // 만약의 경우(정말 희박한 타이밍 이슈)를 대비한 안전장치
+        console.log("Tmap API 키 로딩 대기 중... (100ms 후 재시도)");
         setTimeout(initTmap, 100); 
         return;
       }
+      
       console.log("Tmap API 키 확인 완료. 지도를 생성합니다.");
+      
       try {
         map = new Tmapv2.Map("map_overlay_content", {
           center: new Tmapv2.LatLng(35.2128, 128.9806),
           width: "100%",
           height: "100%",
           zoom: 12,
-          appKey: tmapApiKey
+          appKey: tmapApiKey // ✅ 안전하게 확보된 API 키를 사용
         });
         isMapInitialized = true;
         
@@ -466,7 +494,9 @@
          console.error("지도 생성 중 오류 발생:", mapError);
          document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
       } finally {
-        hideLoader();
+        // ✅ [수정] 지도가 성공적으로 생성되든, 오류가 나든,
+        // 'openMapOverlay'에서 켠 로더를 여기서 최종적으로 숨깁니다.
+        hideLoader(); 
       }
     }
   </script>
