@@ -566,9 +566,9 @@ const markerColors = {
         }
         
         // 3. 마커 이미지 설정 (담당자별 색상 구분)
-        const markerImageUrl = markerColors[user] === 'red' ? 
-            'http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_1.png' : 
-            'http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_1.png';
+       const markerImageUrl = markerColors[user] === 'red' ? 
+        'pin_r_m_s.png' : // 파일명으로 바로 사용
+        'pin_b_m_s.png';   // 파일명으로 바로 사용
 
         // 4. 새 마커 생성
         currentMarker = new Tmapv2.Marker({
@@ -752,6 +752,7 @@ const markerColors = {
   </script>
 </body>
 </html>
+
 
 
 
