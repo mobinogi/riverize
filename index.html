@@ -33,6 +33,22 @@
     .sunday-date:hover { background-color: transparent; transform: none; }
     .today-highlight { border: 2px solid #ef4444; }
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+    .toggle-button {
+      transition: all 0.2s;
+      border-radius: 0.5rem;
+      border: 1px solid #10b981;
+      background-color: #ecfdf5;
+    }
+    .toggle-active {
+      background-color: #10b981;
+      color: white;
+    }
+
+    /* ✅ [핵심 수정] 목록 패널 배경을 투명하게 */
+    #client-list-panel {
+      background-color: rgba(247, 249, 252, 0.85); /* 85% 불투명한 회색 배경 */
+      backdrop-filter: blur(4px); /* 뒤에 있는 지도를 살짝 흐리게 */
+    }
   </style>
 </head>
 <body class="p-4 md:p-8">
@@ -128,28 +144,38 @@
       </div>
   </div>
 
-  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
-    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-      <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
-      <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
+<div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+  <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+    <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
+    <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+  </div>
+  
+  <div class="flex-1 flex flex-row overflow-hidden"> 
+    
+    <div id="client-list-panel" class="w-1/3 p-4 overflow-y-auto border-r border-gray-200">
+      
+      <div class="flex space-x-2 mb-3">
+        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="flex-1 py-2 text-sm font-medium toggle-button">
+          김원대
+        </button>
+        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="flex-1 py-2 text-sm font-medium toggle-button">
+          정병준
+        </button>
+      </div>
+
+      <div id="client-list-container">
+        <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
+      </div>
+
     </div>
     
-    <div class="flex-1 flex flex-row overflow-hidden"> 
-      
-      <div id="client-list-panel" class="w-1/3 p-4 bg-gray-100 overflow-y-auto border-r border-gray-200">
-        <h4 class="text-lg font-bold mb-2">거래처 목록 (김원대)</h4>
-        <ul id="client-list-ul">
-          <li class="p-2 text-gray-500">로딩 중...</li>
-        </ul>
+    <div id="map_overlay_content" class="w-2/3 h-full">
       </div>
-      
-      <div id="map_overlay_content" class="w-2/3 h-full">
-        </div>
-      
-    </div>
+    
   </div>
+</div>
 
   <script>
     // 1. 탭 제어 함수 (2개 탭용)
@@ -603,5 +629,6 @@
   </script>
 </body>
 </html>
+
 
 
