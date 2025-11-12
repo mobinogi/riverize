@@ -203,8 +203,36 @@
   </div>
 </div>
 
-  <script>
-    // 1. 탭 제어 함수 (2개 탭용)
+<script>
+    // ===============================================
+    // 1. 전역 변수 및 초기 설정
+    // ===============================================
+    
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
+    let isDataLoading = false; 
+    
+    let isMapInitialized = false;     
+    let loadedClientData = {};       
+    let activeClientUser = null;     
+    let isPanelMinimized = false;    
+
+    // T맵 관련 전역 변수
+    let currentMapInstance = null;
+    let currentMarker = null; 
+    const markerColors = {
+        '김원대': 'blue', 
+        '정병준': 'red'   
+    };
+    window.pendingGeocodingPromises = []; // JSONP 응답 처리를 위한 전역 변수
+
+    // ===============================================
+    // 2. 유틸리티 함수 (가장 먼저 정의)
+    // ===============================================
+
     function changeTab(tabName) {
       document.getElementById('tab-write').classList.remove('tab-active');
       document.getElementById('tab-review').classList.remove('tab-active');
@@ -221,40 +249,298 @@
         else renderCalendar();
       }
     }
+    
+    function formatDate(date) {
+      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+    
+    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
+    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
 
-    // ===============================================
-    // 1. 전역 변수 및 초기 설정
-    // ===============================================
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      return "Other";
+    }
     
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
-    
-    // ✅ [수정] 모든 전역 변수를 여기서 한 번만 선언합니다.
-    let reportsMap = {}; 
-    let currentYear, currentMonth;
-    let selectedDateForGeneration = null;
-    let isDataLoading = false; 
+    // ===============================================
+    // 3. 비동기/T맵 통신 함수
+    // ===============================================
 
-    let isMapInitialized = false;     // <--- ✅ 이 변수가 필요합니다.
-    let loadedClientData = {};       
-    let activeClientUser = null;     
-    let isPanelMinimized = false;
-    
-    document.addEventListener('DOMContentLoaded', () => {
-      const today = new Date();
-      currentYear = today.getFullYear();
-      currentMonth = today.getMonth() + 1;
+    async function callAppsScript(action, params = {}) {
+      if (action === 'getTmapApiKey') {
+        console.warn("getTmapApiKey is deprecated. Key is now hardcoded.");
+        return; 
+      }
       
-      document.getElementById('current-date').textContent = formatDate(today);
-      document.getElementById('generate-button').disabled = false;
-      document.getElementById('app-status').textContent = '상태: 준비 완료.';
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      for (const key in params) {
+        url.searchParams.set(key, params[key]);
+      }
+      try {
+        const response = await fetch(url.toString(), {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error('HTTP 오류: ' + response.status);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API 호출 오류:', error);
+        return {
+          status: 'error',
+          message: error.message
+        };
+      }
+    }
+
+    // T맵 지오코딩 API의 응답을 받는 전역 콜백 함수 (JSONP)
+    function handleGeocodingResponse(data) {
+        if (window.pendingGeocodingPromises) {
+            for (const { resolve, reject } of window.pendingGeocodingPromises) {
+                try {
+                    if (data.coordinateInfo && data.coordinateInfo.coordinate.length > 0) {
+                        const coord = data.coordinateInfo.coordinate[0];
+                        const lat = parseFloat(coord.lat || coord.newLat);
+                        const lon = parseFloat(coord.lon || coord.newLon);
+                        
+                        if (!isNaN(lat) && !isNaN(lon)) {
+                            resolve(new Tmapv2.LatLng(lat, lon));
+                            continue; 
+                        }
+                    }
+                    reject(new Error("좌표 응답 구조 불일치"));
+                } catch (e) {
+                    reject(e);
+                }
+            }
+            window.pendingGeocodingPromises = [];
+        }
+    }
+    
+    // T맵 API를 사용하여 주소를 좌표로 변환하는 함수 (JSONP)
+    async function getCoordsFromAddress(address) {
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
+        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}&callback=handleGeocodingResponse`;
+
+        return new Promise((resolve, reject) => {
+            window.pendingGeocodingPromises.push({ resolve, reject });
+            
+            const script = document.createElement('script');
+            script.src = url;
+            script.onerror = () => {
+                reject(new Error("T맵 지오코딩 스크립트 로드 실패 또는 CSP 차단."));
+            };
+            document.head.appendChild(script);
+            
+            setTimeout(() => {
+                reject(new Error("지오코딩 요청 시간 초과 (5초)."));
+            }, 5000);
+        });
+    }
+
+    async function fetchClientList(user) {
+        if (loadedClientData[user]) return; 
+        
+        try {
+            const result = await callAppsScript('getClients', { user: user });
+            if (result.status === 'success' && result.clients.length > 0) {
+                loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
+            } else {
+                loadedClientData[user] = []; 
+                console.warn(`거래처 목록 로드 실패 (${user}): ${result.message || '거래처 없음'}`);
+            }
+        } catch (e) {
+            console.error(`거래처 목록 로드 오류 (${user}):`, e);
+            loadedClientData[user] = []; 
+        }
+    }
+
+    // ===============================================
+    // 4. UI 및 이벤트 처리 함수
+    // ===============================================
+    
+    // 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수
+    async function setSingleMarkerAndCenter(client, user) {
+        if (!currentMapInstance) return;
+
+        // 1. 기존 마커 제거
+        if (currentMarker) {
+            currentMarker.setMap(null);
+            currentMarker = null;
+        }
+        
+        // 2. 좌표가 없으면 지오코딩 시도
+        if (!client.coords) {
+            console.log(`[지오코딩] ${client.name} 주소 변환 시작...`);
+            try {
+                client.coords = await getCoordsFromAddress(client.address);
+            } catch(e) {
+                console.error(e);
+                alert(`[지오코딩 실패] 주소: ${client.address}. 오류: ${e.message}`);
+                return;
+            }
+
+            // 지오코딩 실패 시 중단
+            if (!client.coords) {
+                alert(`[오류] ${client.name}의 주소를 찾을 수 없습니다. (주소: ${client.address})`);
+                return;
+            }
+            // 획득한 좌표를 clients 데이터에 바로 저장
+            const userData = loadedClientData[user].find(c => c.name === client.name);
+            if (userData) {
+                userData.coords = client.coords;
+            }
+        }
+        
+        // 3. 마커 이미지 설정 (로컬 이미지 사용)
+        const markerImageUrl = markerColors[user] === 'red' ? 
+            'pin_r_m_s.png' : 
+            'pin_b_m_s.png';
+
+        // 4. 새 마커 생성
+        currentMarker = new Tmapv2.Marker({
+            position: client.coords,
+            map: currentMapInstance,
+            title: client.name,
+            icon: markerImageUrl
+        });
+
+        // 5. 지도 중앙 이동 및 확대
+        currentMapInstance.setCenter(client.coords);
+        currentMapInstance.setZoom(15);
+        console.log(`[맵 이동] ${client.name} 마커로 이동 및 확대.`);
+    }
+
+    // 실제 목록을 화면에 뿌리는 함수
+    function displayClientList(user, clients) {
+        const container = document.getElementById('client-list-container');
+        
+        if (clients.length === 0) {
+            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
+            return;
+        }
+
+        const listUl = document.createElement('ul');
+        listUl.id = `list-${user}`;
+        
+        for (const client of clients) {
+            const li = document.createElement('li');
+            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
+            
+            li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
+            
+            // 목록 클릭 시 지도 중앙 이동 이벤트
+            li.onclick = () => {
+                setSingleMarkerAndCenter(client, user); 
+            }; 
+            listUl.appendChild(li);
+        }
+        container.innerHTML = ''; 
+        container.appendChild(listUl);
+    }
+    
+    // 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
+    async function toggleClientList(user, buttonElement) {
+        const container = document.getElementById('client-list-container');
+        const allButtons = document.querySelectorAll('#client-list-panel button');
+        
+        allButtons.forEach(btn => {
+            if (btn.id !== 'btn-toggle') {
+                 btn.classList.remove('toggle-active');
+            }
+        });
+        
+        if (activeClientUser === user) {
+            activeClientUser = null;
+            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+            if (currentMarker) {
+                currentMarker.setMap(null);
+                currentMarker = null;
+            }
+            return;
+        }
+        
+        buttonElement.classList.add('toggle-active');
+        activeClientUser = user;
+
+        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
+        
+        if (!loadedClientData[user]) {
+            try {
+                const result = await callAppsScript('getClients', { user: user });
+                if (result.status === 'success' && result.clients.length > 0) {
+                    loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
+                } else {
+                    loadedClientData[user] = []; 
+                }
+            } catch (e) {
+                loadedClientData[user] = []; 
+            }
+        }
+        
+        displayClientList(user, loadedClientData[user]);
+        
+        if (isPanelMinimized) {
+            togglePanelMinimize();
+        }
+    }
+    
+    // 오버레이 열기 버튼
+    function openMapOverlay() {
+      console.log("지도 열기 버튼 클릭.");
       
-      fetchReportsForMonth(currentYear, currentMonth, true);
-    });
+      document.getElementById('map-overlay').classList.remove('hidden');
+      
+      if (!isMapInitialized) {
+        console.log("맵이 없으므로, 지금부터 생성합니다...");
+        try {
+          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
+            center: new Tmapv2.LatLng(35.2128, 128.9806),
+            width: "100%",
+            height: "100%",
+            zoom: 12
+          });
+          
+          isMapInitialized = true; 
+          console.log("지도 생성 성공!");
 
-    // ===============================================
-    // 2. 핵심 기능 함수들 (달력 및 보고서)
-    // ===============================================
+        } catch (e) {
+          console.error("지도 생성 실패:", e);
+          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
+        }
+      }
+      
+      // 지도 생성과 별개로 목록 로드 시작
+      if (Object.keys(loadedClientData).length === 0 || !activeClientUser) {
+         const targetUser = activeClientUser || '김원대';
+         const targetButton = document.getElementById(`btn-${targetUser === '김원대' ? 'kim' : 'jung'}`);
+         if (targetButton) {
+             toggleClientList(targetUser, targetButton);
+         }
+      }
+    }
 
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
+    }
+    
+    function togglePanelMinimize() {
+        const panel = document.getElementById('client-list-panel');
+        const icon = document.getElementById('toggle-icon');
+        
+        panel.classList.toggle('client-list-minimized');
+        isPanelMinimized = !isPanelMinimized;
+
+        icon.textContent = isPanelMinimized ? '▶️' : '◀️';
+    }
+    
+    // ... (나머지 함수들: fetchReportsForMonth, generateTodayReport, etc.)
+    
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
       const monthKey = year + '-' + month;
       if (reportsMap[monthKey] === 'completed') {
@@ -313,39 +599,6 @@
       currentYear = date.getFullYear();
       currentMonth = date.getMonth() + 1;
       fetchReportsForMonth(currentYear, currentMonth);
-    }
-    
-    function formatDate(date) {
-      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
-    }
-    
-    async function callAppsScript(action, params = {}) {
-      if (action === 'getTmapApiKey') {
-        console.warn("getTmapApiKey is deprecated. Key is now hardcoded.");
-        return; 
-      }
-      
-      // ✅ [수정] 오타를 제거했습니다.
-      const url = new URL(API_URL);
-      url.searchParams.set('action', action);
-      for (const key in params) {
-        url.searchParams.set(key, params[key]);
-      }
-      try {
-        const response = await fetch(url.toString(), {
-          method: 'GET'
-        });
-        if (!response.ok) {
-          throw new Error('HTTP 오류: ' + response.status);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        return {
-          status: 'error',
-          message: error.message
-        };
-      }
     }
     
     async function generateTodayReport() {
@@ -443,312 +696,6 @@
       }
     }
     
-    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
-    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
-
-    async function confirmGenerateReport() {
-      if (!selectedDateForGeneration) { closeModal(); return; }
-      const dateToGenerate = selectedDateForGeneration;
-      closeModal();
-      const [year, month, day] = dateToGenerate.split('-').map(Number);
-      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
-      try {
-        const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
-        if (result.status === 'success' && result.url) {
-          if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
-          renderCalendar();
-          openSheetApp(result.url);
-        } else {
-          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
-        }
-      } catch (error) {
-        alert('보고서 생성 중 오류 발생: ' + error.message);
-      } finally {
-        hideLoader();
-      }
-    }
-    
-    function getMobileOS() {
-      const ua = navigator.userAgent;
-      if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
-      return "Other";
-    }
-    
-    function openSheetApp(url) {
-      const os = getMobileOS();
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      let webUrl = url; 
-      let appUrl = url; 
-      
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS" || os === "Android") {
-            appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        }
-      }
-      
-      if (os === "iOS" || os === "Android") {
-        window.open(appUrl, '_blank');
-        
-        setTimeout(function() {
-            window.open(webUrl, '_blank');
-        }, 100); 
-
-      } else {
-        window.open(webUrl, '_blank');
-      }
-    }
-
-// ===============================================
-// 4. 🗺️ T맵 지도 관련 함수 (선택적 마커 및 UI)
-// ===============================================
-
-let currentMapInstance = null;
-let currentMarker = null; // ✅ [수정] 현재 지도에 표시된 마커는 하나만 저장
-
-const markerColors = {
-        '김원대': 'blue', 
-        '정병준': 'red'   
-    };
-    
-    // ✅ [복구된 함수 1] T맵 API를 사용하여 주소를 좌표로 변환하는 함수 (지오코딩)
-    async function getCoordsFromAddress(address) {
-        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&callback=callback&fullAddr=${encodeURIComponent(address)}&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0`;
-        
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.coordinateInfo && data.coordinateInfo.coordinate.length > 0) {
-                const coord = data.coordinateInfo.coordinate[0];
-                return new Tmapv2.LatLng(parseFloat(coord.lat), parseFloat(coord.lon));
-            }
-            console.warn(`지오코딩 실패: ${address}의 좌표를 찾을 수 없습니다.`);
-            return null;
-
-        } catch (e) {
-            console.error(`지오코딩 API 호출 오류 (${address}):`, e);
-            return null;
-        }
-    }
-
-    /**
-     * ✅ [복구된 함수 2] 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수
-     */
-    async function setSingleMarkerAndCenter(client, user) {
-        if (!currentMapInstance) return;
-
-        // 1. 기존 마커 제거
-        if (currentMarker) {
-            currentMarker.setMap(null);
-            currentMarker = null;
-        }
-        
-        // 2. 좌표가 없으면 지오코딩 시도 (트래픽 발생 지점)
-        if (!client.coords) {
-            console.log(`[지오코딩] ${client.name} 주소 변환 시작...`);
-            client.coords = await getCoordsFromAddress(client.address); // <-- 이제 이 함수가 존재합니다.
-
-            // 지오코딩 실패 시 중단
-            if (!client.coords) {
-                alert(`[오류] ${client.name}의 주소를 찾을 수 없습니다. (주소: ${client.address})`);
-                return;
-            }
-            // 획득한 좌표를 clients 데이터에 바로 저장 (다음 클릭 시 지오코딩 방지)
-            const userData = loadedClientData[user].find(c => c.name === client.name);
-            if (userData) {
-                userData.coords = client.coords;
-            }
-        }
-        
-        // 3. 마커 이미지 설정 (담당자별 색상 구분)
-       const markerImageUrl = markerColors[user] === 'red' ? 
-        'pin_r_m_s.png' : // 파일명으로 바로 사용
-        'pin_b_m_s.png';   // 파일명으로 바로 사용
-
-        // 4. 새 마커 생성
-        currentMarker = new Tmapv2.Marker({
-            position: client.coords,
-            map: currentMapInstance,
-            title: client.name,
-            icon: markerImageUrl
-        });
-
-        // 5. 지도 중앙 이동 및 확대
-        currentMapInstance.setCenter(client.coords);
-        currentMapInstance.setZoom(15);
-        console.log(`[맵 이동] ${client.name} 마커로 이동 및 확대.`);
-    }
-
-    /**
-     * '오버레이 열기' 버튼
-     */
-    function openMapOverlay() {
-      console.log("지도 열기 버튼 클릭.");
-      
-      document.getElementById('map-overlay').classList.remove('hidden');
-      
-      if (!isMapInitialized) {
-        console.log("맵이 없으므로, 지금부터 생성합니다...");
-        try {
-          // ✅ [수정] 지도 객체를 전역 변수에 저장
-          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          isMapInitialized = true; 
-          console.log("지도 생성 성공!");
-
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
-        }
-      }
-      
-      // 3. 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없으면)
-      if (Object.keys(loadedClientData).length === 0) {
-         const kimButton = document.getElementById('btn-kim');
-         if (kimButton) {
-             toggleClientList('김원대', kimButton);
-         }
-      } else if (!activeClientUser) {
-         const kimButton = document.getElementById('btn-kim');
-         if (kimButton) {
-             toggleClientList('김원대', kimButton);
-         }
-      }
-    }
-
-    /**
-     * '닫기' 버튼
-     */
-    function closeMapOverlay() {
-      document.getElementById('map-overlay').classList.add('hidden');
-    }
-    
-    /**
-     * 목록 패널을 축소/확대하는 함수
-     */
-    function togglePanelMinimize() {
-        const panel = document.getElementById('client-list-panel');
-        const icon = document.getElementById('toggle-icon');
-        
-        panel.classList.toggle('client-list-minimized');
-        isPanelMinimized = !isPanelMinimized;
-
-        icon.textContent = isPanelMinimized ? '▶️' : '◀️';
-    }
-    
-    /**
-     * 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
-     */
-    async function fetchClientList(user) {
-        if (loadedClientData[user]) return; 
-        
-        try {
-            const result = await callAppsScript('getClients', { user: user });
-            if (result.status === 'success' && result.clients.length > 0) {
-                // ✅ [수정] coords를 null로 초기화하여, 클릭 시 지오코딩이 필요함을 알립니다.
-                loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
-            } else {
-                loadedClientData[user] = []; 
-                console.warn(`거래처 목록 로드 실패 (${user}): ${result.message || '거래처 없음'}`);
-            }
-        } catch (e) {
-            console.error(`거래처 목록 로드 오류 (${user}):`, e);
-            loadedClientData[user] = []; 
-        }
-    }
-
-    /**
-     * 실제 목록을 화면에 뿌리는 함수
-     */
-    function displayClientList(user, clients) {
-        const container = document.getElementById('client-list-container');
-        
-        if (clients.length === 0) {
-            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
-            return;
-        }
-
-        const listUl = document.createElement('ul');
-        listUl.id = `list-${user}`;
-        
-        for (const client of clients) {
-            const li = document.createElement('li');
-            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
-            
-            li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
-            
-            // 목록 클릭 시 지도 중앙 이동 이벤트
-            li.onclick = () => {
-                setSingleMarkerAndCenter(client, user); // ✅ 이제 이 함수가 존재합니다.
-            }; 
-            listUl.appendChild(li);
-        }
-        container.innerHTML = ''; 
-        container.appendChild(listUl);
-    }
-    
-    /**
-     * 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
-     */
-    async function toggleClientList(user, buttonElement) {
-        const container = document.getElementById('client-list-container');
-        const allButtons = document.querySelectorAll('#client-list-panel button');
-        
-        // 1. 버튼 활성화/비활성화 상태 변경
-        allButtons.forEach(btn => {
-            if (btn.id !== 'btn-toggle') {
-                 btn.classList.remove('toggle-active');
-            }
-        });
-        
-        if (activeClientUser === user) {
-            activeClientUser = null;
-            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
-            // 목록을 닫을 때 단일 마커 제거
-            if (currentMarker) {
-                currentMarker.setMap(null);
-                currentMarker = null;
-            }
-            return;
-        }
-        
-        buttonElement.classList.add('toggle-active');
-        activeClientUser = user;
-
-        // 2. 데이터 로드 및 화면 표시
-        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
-        
-        if (!loadedClientData[user]) {
-            try {
-                const result = await callAppsScript('getClients', { user: user });
-                if (result.status === 'success' && result.clients.length > 0) {
-                    loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
-                } else {
-                    loadedClientData[user] = []; 
-                }
-            } catch (e) {
-                loadedClientData[user] = []; 
-            }
-        }
-        
-        // 3. 목록 표시
-        displayClientList(user, loadedClientData[user]);
-        
-        // 4. 목록을 표시한 후, 혹시 미니멀 모드였다면 확장
-        if (isPanelMinimized) {
-            togglePanelMinimize();
-        }
-    }
   </script>
 </body>
 </html>
