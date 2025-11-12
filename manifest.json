@@ -8,22 +8,23 @@
   "description": "일일 보고서 및 거래처 관리 앱",
   "icons": [
     {
-      "src": "https://mobinogi.github.io/riverize/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/12.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "https://mobinogi.github.io/riverize/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/12.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://mobinogi.github.io/riverize/1086088.png",
+      "src": "https://mobinogi.github.io/riverize/12.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ]
 
 }
+
 
 
