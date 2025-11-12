@@ -421,62 +421,79 @@
     }
 
 // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: 실시간 로더 적용)
+    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: 하트비트 추가)
     // ===============================================
+
+    /**
+     * ✅ [신규] 0. <iframe>으로부터 오는 모든 메시지를 처리하는 '수신기' 함수
+     */
+    function handleIframeMessage(event) {
+      // 7/7: T맵 콜백이 성공적으로 '시작'되었는지 확인
+      if (event.data === 'TmapHeartbeat') {
+        showLoader('✓ 7/7: Tmap 콜백 수신! 지도 생성 시도 중...');
+        console.log("✓ 7/7: Received 'TmapHeartbeat' from iframe. Tmap is now attempting to build the map.");
+      } 
+      // 8/8: 지도가 성공적으로 '완료'되었는지 확인
+      else if (event.data === 'TmapLoaded') {
+        console.log("✓ 8/8: iframe으로부터 'TmapLoaded' 메시지 수신! 성공!");
+        isMapInitialized = true;
+        hideLoader(); // 성공!
+        // 성공했으니 리스너 제거
+        window.removeEventListener('message', handleIframeMessage);
+      } 
+      // T맵 콜백이 '실패'했는지 확인
+      else if (event.data === 'TmapError') {
+        console.error("✗ iframe으로부터 'TmapError' 메시지 수신. (iframe 콘솔 확인)");
+        showLoader("오류: iframe이 지도를 그리지 못했습니다.");
+        // 실패했으니 리스너 제거
+        window.removeEventListener('message', handleIframeMessage);
+      }
+    }
 
     async function openMapOverlay() {
       document.getElementById('map-overlay').classList.remove('hidden');
       if (isMapInitialized) return; 
       
-      // ✅ [수정] 1단계: 최초 로더
       showLoader('거래처 지도를 불러오는 중...');
       console.log("Overlay opened. Initializing map...");
 
       try {
         if (!tmapApiKey) {
-          // ✅ [수정] 2단계: API 키 요청
-          showLoader('1/6: Tmap API 키 요청 중...');
-          console.log("1/6: Requesting Tmap API key...");
+          showLoader('1/7: Tmap API 키 요청 중...');
+          console.log("1/7: Requesting Tmap API key...");
           const keyResult = await callAppsScript('getTmapApiKey');
           
           if (keyResult && keyResult.apiKey) {
             tmapApiKey = keyResult.apiKey;
-            // ✅ [수정] 3단계: API 키 확보
-            showLoader('2/6: Tmap API 키 확보 완료.');
-            console.log("2/6: Tmap API key received.");
+            showLoader('2/7: Tmap API 키 확보 완료.');
+            console.log("2/7: Tmap API key received.");
           } else {
             throw new Error(keyResult.message || "API 키를 서버에서 받지 못했습니다.");
           }
         } else {
-            showLoader('2/6: Tmap API 키 (캐시됨) 확보 완료.');
-            console.log("2/6: Tmap API key (cached) found.");
+            showLoader('2/7: Tmap API 키 (캐시됨) 확보 완료.');
+            console.log("2/7: Tmap API key (cached) found.");
         }
         
-        // ✅ [수정] 4단계: 메시지 수신기 켜기
-        showLoader('3/6: <iframe> 통신 수신기 활성화...');
-        console.log("3/6: Activating iframe message listener...");
-        window.addEventListener('message', (event) => {
-          if (event.data === 'TmapLoaded') {
-            console.log("✓ 6/6: iframe으로부터 'TmapLoaded' 메시지 수신! 성공!");
-            isMapInitialized = true;
-            hideLoader(); // 성공!
-          } else if (event.data === 'TmapError') {
-            console.error("✗ iframe으로부터 'TmapError' 메시지 수신. (iframe 콘솔 확인)");
-            showLoader("오류: iframe이 지도를 그리지 못했습니다."); // 로더를 숨기지 않고 오류 표시
-          }
-        }, { once: true });
+        // 1. '메시지 수신기'를 *먼저* 켭니다.
+        showLoader('3/7: <iframe> 통신 수신기 활성화...');
+        console.log("3/7: Activating iframe message listener...");
+        window.addEventListener('message', handleIframeMessage); 
         
         const iframe = document.getElementById('map-iframe');
         const doc = iframe.contentWindow.document;
 
         doc.open();
 
-        // ✅ [수정] 5단계: iframe에 콜백 함수 정의
-        showLoader('4/6: <iframe> 내부 지도 생성 함수 정의...');
-        console.log("4/6: Defining map init function inside iframe...");
+        // 2. Tmap 스크립트가 호출할 함수를 *먼저* 정의합니다.
+        showLoader('4/7: <iframe> 내부 지도 생성 함수 정의...');
+        console.log("4/7: Defining map init function inside iframe...");
         iframe.contentWindow.initMapInFrame = function() {
+          
+          // ✅ [핵심] '하트비트' 메시지를 맨 처음에 보냅니다.
+          window.parent.postMessage('TmapHeartbeat', '*'); 
+          
           try {
-            // (이 로그는 'iframe 콘솔'에서만 보입니다)
             console.log("iframe: initMapInFrame() 호출됨. 지도 생성 시도...");
             
             new Tmapv2.Map("map_div", {
@@ -489,19 +506,17 @@
             console.log("iframe: Tmapv2.Map 객체 생성 성공.");
             // loadClientMarkers(); 
 
-            // 성공 메시지를 부모(메인 페이지)에게 보냄
             window.parent.postMessage('TmapLoaded', '*');
           } catch (e) {
             console.error("iframe: 지도 생성 중 치명적 오류!", e);
             iframe.contentWindow.document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
-            // 실패 메시지를 부모에게 보냄
             window.parent.postMessage('TmapError', '*');
           }
         };
 
-        // ✅ [수정] 6단계: iframe에 HTML 작성
-        showLoader('5/6: <iframe>에 HTML 및 Tmap 스크립트 작성...');
-        console.log("5/6: Writing HTML and Tmap script to iframe...");
+        // 3. HTML과 *스크립트*를 씁니다.
+        showLoader('5/7: <iframe>에 HTML 및 Tmap 스크립트 작성...');
+        console.log("5/7: Writing HTML and Tmap script to iframe...");
         doc.write(`
           <!DOCTYPE html>
           <html>
@@ -511,28 +526,33 @@
           </head>
           <body>
             <div id="map_div"><\/div>
-            <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
+            <script src="https.apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
           <\/body>
           <\/html>
         `);
                 
-        // ✅ [수정] 7단계: iframe 로드 시작
-        showLoader('6/6: <iframe> 로드 시작. Tmap 응답 대기 중...');
-        console.log("6/6: Closing iframe doc. Waiting for Tmap response...");
+        // 4. '실행!' 명령을 내립니다.
+        showLoader('6/7: <iframe> 로드 시작. Tmap 콜백 대기 중...');
+        console.log("6/7: Closing iframe doc. Waiting for Tmap callback...");
         doc.close(); 
 
       } catch (e) {
         console.error("지도 iframe 생성 중 치명적 오류 (catch 블록):", e);
-        showLoader(`오류: ${e.message}`); // 로더에 치명적 오류 메시지 표시
+        showLoader(`오류: ${e.message}`);
+        // 치명적 오류 발생 시에도 리스너 제거
+        window.removeEventListener('message', handleIframeMessage);
       }
     } // <-- openMapOverlay 닫힘
 
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
+      // ✅ [수정] 맵을 닫을 때도 리스너를 정리합니다.
+      window.removeEventListener('message', handleIframeMessage);
     }
     
   </script> </body>
 </html>
+
 
 
 
