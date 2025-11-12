@@ -4,7 +4,9 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+    
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com;
+    
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
     img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com https://*.tmap.co.kr;
@@ -759,6 +761,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
