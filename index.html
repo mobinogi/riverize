@@ -421,31 +421,26 @@
     }
 
 // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: 하트비트 추가)
+    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: iframe 내부 함수 정의)
     // ===============================================
 
     /**
-     * ✅ [신규] 0. <iframe>으로부터 오는 모든 메시지를 처리하는 '수신기' 함수
+     * ✅ [유지] 0. <iframe>으로부터 오는 모든 메시지를 처리하는 '수신기' 함수
      */
     function handleIframeMessage(event) {
-      // 7/7: T맵 콜백이 성공적으로 '시작'되었는지 확인
       if (event.data === 'TmapHeartbeat') {
         showLoader('✓ 7/7: Tmap 콜백 수신! 지도 생성 시도 중...');
         console.log("✓ 7/7: Received 'TmapHeartbeat' from iframe. Tmap is now attempting to build the map.");
       } 
-      // 8/8: 지도가 성공적으로 '완료'되었는지 확인
       else if (event.data === 'TmapLoaded') {
         console.log("✓ 8/8: iframe으로부터 'TmapLoaded' 메시지 수신! 성공!");
         isMapInitialized = true;
-        hideLoader(); // 성공!
-        // 성공했으니 리스너 제거
+        hideLoader(); 
         window.removeEventListener('message', handleIframeMessage);
       } 
-      // T맵 콜백이 '실패'했는지 확인
       else if (event.data === 'TmapError') {
         console.error("✗ iframe으로부터 'TmapError' 메시지 수신. (iframe 콘솔 확인)");
         showLoader("오류: iframe이 지도를 그리지 못했습니다.");
-        // 실패했으니 리스너 제거
         window.removeEventListener('message', handleIframeMessage);
       }
     }
@@ -484,54 +479,50 @@
         const doc = iframe.contentWindow.document;
 
         doc.open();
-
-        // 2. Tmap 스크립트가 호출할 함수를 *먼저* 정의합니다.
-        showLoader('4/7: <iframe> 내부 지도 생성 함수 정의...');
-        console.log("4/7: Defining map init function inside iframe...");
-        iframe.contentWindow.initMapInFrame = function() {
-          
-          // ✅ [핵심] '하트비트' 메시지를 맨 처음에 보냅니다.
-          window.parent.postMessage('TmapHeartbeat', '*'); 
-          
-          try {
-            console.log("iframe: initMapInFrame() 호출됨. 지도 생성 시도...");
-            
-            new Tmapv2.Map("map_div", {
-              center: new Tmapv2.LatLng(35.2128, 128.9806),
-              width: "100%",
-              height: "100%",
-              zoom: 12
-            });
-            
-            console.log("iframe: Tmapv2.Map 객체 생성 성공.");
-            // loadClientMarkers(); 
-
-            window.parent.postMessage('TmapLoaded', '*');
-          } catch (e) {
-            console.error("iframe: 지도 생성 중 치명적 오류!", e);
-            iframe.contentWindow.document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
-            window.parent.postMessage('TmapError', '*');
-          }
-        };
-
-        // 3. HTML과 *스크립트*를 씁니다.
-        showLoader('5/7: <iframe>에 HTML 및 Tmap 스크립트 작성...');
-        console.log("5/7: Writing HTML and Tmap script to iframe...");
+        
+        // ✅ [핵심 수정] 2. Tmap 스크립트가 호출할 함수를 <script> 태그로 *직접* 써줍니다.
+        //    (iframe.contentWindow.initMapInFrame = ... 코드를 삭제)
+        showLoader('4/7 & 5/7: <iframe>에 함수 정의 및 HTML 작성...');
+        console.log("4/7 & 5/7: Writing HTML, function definitions, and Tmap script to iframe...");
+        
         doc.write(`
           <!DOCTYPE html>
           <html>
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }<\/style>
+            
+            <script>
+              function initMapInFrame() {
+                // '하트비트' 메시지를 맨 처음에 보냄
+                window.parent.postMessage('TmapHeartbeat', '*'); 
+                
+                try {
+                  new Tmapv2.Map("map_div", {
+                    center: new Tmapv2.LatLng(35.2128, 128.9806),
+                    width: "100%",
+                    height: "100%",
+                    zoom: 12
+                  });
+                  
+                  // loadClientMarkers(); 
+                  window.parent.postMessage('TmapLoaded', '*');
+                } catch (e) {
+                  document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
+                  window.parent.postMessage('TmapError', '*');
+                }
+              }
+            <\/script>
           </head>
           <body>
             <div id="map_div"><\/div>
-            <script src="https.apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
+            
+            <script src="https_apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}&callback=initMapInFrame"><\/script>
           <\/body>
           <\/html>
         `);
                 
-        // 4. '실행!' 명령을 내립니다.
+        // 3. '실행!' 명령을 내립니다.
         showLoader('6/7: <iframe> 로드 시작. Tmap 콜백 대기 중...');
         console.log("6/7: Closing iframe doc. Waiting for Tmap callback...");
         doc.close(); 
@@ -539,18 +530,17 @@
       } catch (e) {
         console.error("지도 iframe 생성 중 치명적 오류 (catch 블록):", e);
         showLoader(`오류: ${e.message}`);
-        // 치명적 오류 발생 시에도 리스너 제거
         window.removeEventListener('message', handleIframeMessage);
       }
     } // <-- openMapOverlay 닫힘
 
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
-      // ✅ [수정] 맵을 닫을 때도 리스너를 정리합니다.
       window.removeEventListener('message', handleIframeMessage);
     }
     
-  </script> </body>
+  </script>
+</body>
 </html>
 
 
