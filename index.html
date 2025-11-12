@@ -1,57 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>T맵 단독 로딩 실험실</title>
+  <title>T맵 IFRAME 단독 로딩 실험</title>
   
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src https://fonts.gstatic.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.openapi.sk.com https://*.tmap.co.kr;
+    connect-src 'self'; 
+    style-src 'self' 'unsafe-inline';
+    font-src 'self';
     img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com https://*.tmap.co.kr;
     frame-src 'self' blob:; 
   ">
   
-  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
-  
   <style>
-    /* 3. 맵이 뜰 공간을 100%로 채움 */
     html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
-    #map_div { width: 100%; height: 100%; }
+    /* 맵이 뜰 공간 (눈에 잘 띄게 빨간 테두리) */
+    #map-container { 
+      width: 80%; 
+      height: 80%; 
+      margin: 50px auto; 
+      border: 2px solid red; 
+    }
+    iframe { width: 100%; height: 100%; border: none; }
   </style>
 </head>
 <body>
 
-  <div id="map_div"></div>
+  <h1>T맵 IFRAME 실험실</h1>
+  <p>아래 빨간 테두리 안에 지도가 떠야 합니다.</p>
+
+  <div id="map-container">
+    <iframe id="map-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
 
   <script>
+    // [3] API 키 (실험용)
+    const TMAP_API_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+
+    // [4] 페이지 로드 완료 후 <iframe>에 주입
     window.onload = function() {
-      try {
-        // T맵 스크립트가 <head>에서 성공적으로 로드되었다면
-        // 'Tmapv2'는 여기서 정의되어 있어야 합니다.
-        new Tmapv2.Map("map_div", {
-          center: new Tmapv2.LatLng(35.2128, 128.9806),
-          width: "100%",
-          height: "100%",
-          zoom: 12
-        });
-        
-        // 성공 시 body에 메시지 추가
-        const successMsg = document.createElement('h1');
-        successMsg.textContent = "🎉 T맵 로딩 성공! 🎉";
-        successMsg.style = "position:absolute; top:10px; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000;";
-        document.body.appendChild(successMsg);
-        
-      } catch (e) {
-        // 실패 시 body를 덮어쓰고 오류 메시지 표시
-        console.error("지도 생성 실패:", e);
-        document.body.innerHTML = `<h1 style="color:red; padding:20px;">
-                                    지도 생성 실패: ${e.message}
-                                    <br><br>
-                                    (콘솔 창에서 'Tmapv2 is not defined' 오류가 떴는지 확인하세요)
-                                  </h1>`;
-      }
+      console.log("페이지 로드 완료. <iframe>에 지도 주입 시작...");
+      
+      const iframe = document.getElementById('map-iframe');
+      const doc = iframe.contentWindow.document;
+
+      doc.open();
+      
+      // [5] 'doc.write'로 격리실 내부에 HTML을 씁니다.
+      // (우리가 찾은 '조용한 멈춤' 해결책: 함수를 HTML 내부에 정의)
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }<\/style>
+          
+          <script>
+            function initMapInFrame() {
+              console.log("IFRAME: initMapInFrame() 호출됨. 지도 생성 시도...");
+              try {
+                new Tmapv2.Map("map_div", {
+                  center: new Tmapv2.LatLng(35.2128, 128.9806),
+                  width: "100%",
+                  height: "100%",
+                  zoom: 12
+                });
+                console.log("IFRAME: 지도 생성 성공!");
+                // 성공하면 iframe 안에 메시지 띄움
+                document.body.innerHTML += '<h2 style="color:green; position:absolute; top:10px; left:10px; background:white; padding:5px; z-index: 1000;">IFRAME 로딩 성공!</h2>';
+              } catch (e) {
+                console.error("IFRAME: 지도 생성 실패!", e);
+                document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
+              }
+            }
+          <\/script>
+        </head>
+        <body>
+          <div id="map_div"><\/div>
+          
+          <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${TMAP_API_KEY}&callback=initMapInFrame"><\/script>
+        <\/body>
+        <\/html>
+      `);
+      doc.close();
+      
+      console.log("<iframe> 주입 완료. Tmap 응답 대기 중...");
     };
   </script>
 </body>
