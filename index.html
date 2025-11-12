@@ -33,21 +33,42 @@
     .sunday-date:hover { background-color: transparent; transform: none; }
     .today-highlight { border: 2px solid #ef4444; }
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+/* 2. ✅ 새로 추가되거나 수정된 스타일 */
     .toggle-button {
       transition: all 0.2s;
       border-radius: 0.5rem;
       border: 1px solid #10b981;
       background-color: #ecfdf5;
+      width: 100%; /* 수직 나열을 위한 100% 너비 */
     }
     .toggle-active {
       background-color: #10b981;
       color: white;
     }
 
-    /* ✅ [핵심 수정] 목록 패널 배경을 투명하게 */
+    /* 목록 패널 스타일 (반투명 및 겹치기) */
     #client-list-panel {
-      background-color: rgba(247, 249, 252, 0.85); /* 85% 불투명한 회색 배경 */
-      backdrop-filter: blur(4px); /* 뒤에 있는 지도를 살짝 흐리게 */
+      position: absolute; 
+      top: 0;
+      left: 0;
+      width: 33.3333%; 
+      max-height: 100%;
+      background-color: rgba(247, 249, 252, 0.85); 
+      backdrop-filter: blur(4px); 
+      z-index: 10; 
+      transition: width 0.3s ease-in-out; 
+      overflow-x: hidden;
+    }
+
+    /* 목록 최소화 스타일 */
+    .client-list-minimized {
+        width: 3rem !important;
+    }
+
+    /* 주소 숨기기 스타일 */
+    .client-address { display: none; }
+    @media (min-width: 768px) {
+        .client-address { display: inline; }
     }
   </style>
 </head>
@@ -145,22 +166,21 @@
   </div>
 
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
-  <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-    <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
-    <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-    </button>
-  </div>
-  
-  <div class="flex-1 flex flex-row overflow-hidden"> 
+  <div class="flex-1 relative"> 
     
-    <div id="client-list-panel" class="w-1/3 p-4 overflow-y-auto border-r border-gray-200">
+    <div id="map_overlay_content" class="w-full h-full">
+      </div>
       
-      <div class="flex space-x-2 mb-3">
-        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="flex-1 py-2 text-sm font-medium toggle-button">
+    <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+      
+      <div class="flex flex-col space-y-2 mb-3"> 
+        <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-2 px-2 text-sm font-medium toggle-button">
+            <span id="toggle-icon">◀️</span> 
+        </button>
+        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-2 text-sm font-medium toggle-button">
           김원대
         </button>
-        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="flex-1 py-2 text-sm font-medium toggle-button">
+        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-2 text-sm font-medium toggle-button">
           정병준
         </button>
       </div>
@@ -170,9 +190,6 @@
       </div>
 
     </div>
-    
-    <div id="map_overlay_content" class="w-2/3 h-full">
-      </div>
     
   </div>
 </div>
@@ -196,6 +213,8 @@
       }
     }
 
+// ... (기존 function showLoader, hideLoader, openModal 등 유지) ...
+
     // ===============================================
     // 1. 전역 변수 및 초기 설정
     // ===============================================
@@ -207,8 +226,10 @@
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
     
-    // ✅ [핵심] T맵 깃발
-    let isMapInitialized = false; 
+    let isMapInitialized = false;     // T맵 깃발
+    let loadedClientData = {};       // ✅ [유지] 거래처 데이터 저장소
+    let activeClientUser = null;     // ✅ [유지] 현재 활성화된 담당자
+    let isPanelMinimized = false;    // ✅ [유지] 패널 축소 상태 깃발
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
@@ -220,8 +241,6 @@
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
       fetchReportsForMonth(currentYear, currentMonth, true);
-      
-      // ✅ [핵심] code.js를 부르는 T맵 로직 제거
     });
 
     // ===============================================
@@ -451,24 +470,37 @@
     
     function openSheetApp(url) {
       const os = getMobileOS();
-      let appUrl = url;
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      
+      let webUrl = url; 
+      let appUrl = url; 
+      
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
-        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        if (os === "iOS" || os === "Android") {
+            appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        }
       }
-      window.open(appUrl, '_blank');
-    }
+      
+      if (os === "iOS" || os === "Android") {
+        window.open(appUrl, '_blank');
+        
+        setTimeout(function() {
+            window.open(webUrl, '_blank');
+        }, 100); 
 
-// ... (기존 function showLoader, hideLoader, openModal 등 유지) ...
+      } else {
+        window.open(webUrl, '_blank');
+      }
+    }
 
     // ===============================================
     // 4. 🗺️ T맵 지도 관련 함수 (목록 토글 및 맵)
     // ===============================================
 
-    let loadedClientData = {}; // ✅ [신규] { '김원대': [...], '정병준': [...] } 형태로 데이터를 저장할 객체
-    let activeClientUser = null; // ✅ [신규] 현재 활성화된 담당자
+    let loadedClientData = {}; 
+    let activeClientUser = null; 
+    let isPanelMinimized = false;
 
     /**
      * '오버레이 열기' 버튼
@@ -492,13 +524,14 @@
           
           isMapInitialized = true; 
           console.log("지도 생성 성공!");
+
         } catch (e) {
           console.error("지도 생성 실패:", e);
           document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
       }
       
-      // ✅ 3. 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없으면)
+      // 3. 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없으면)
       if (Object.keys(loadedClientData).length === 0) {
          // 초기 로딩 시 데이터가 없으면 김원대 님 데이터를 미리 로드합니다.
          loadAndDisplayClientList('김원대');
@@ -513,27 +546,45 @@
     }
     
     /**
-     * ✅ [신규] 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
+     * ✅ [신규] 목록 패널을 축소/확대하는 함수
+     */
+    function togglePanelMinimize() {
+        const panel = document.getElementById('client-list-panel');
+        const icon = document.getElementById('toggle-icon');
+        
+        panel.classList.toggle('client-list-minimized');
+        isPanelMinimized = !isPanelMinimized;
+
+        icon.textContent = isPanelMinimized ? '▶️' : '◀️';
+
+        // 맵의 성능 최적화를 위해 맵 크기가 바뀔 때 resize 호출 (선택 사항)
+        // if (window.Tmapv2 && window.Tmapv2.Map && isMapInitialized) {
+        //     // Tmapv2.Map.resize()를 호출하는 로직 추가 
+        // }
+    }
+    
+    /**
+     * 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
      */
     async function fetchClientList(user) {
-        if (loadedClientData[user]) return; // 이미 데이터가 있으면 재요청 안 함
+        if (loadedClientData[user]) return; 
         
         try {
             const result = await callAppsScript('getClients', { user: user });
             if (result.status === 'success' && result.clients.length > 0) {
-                loadedClientData[user] = result.clients; // 메모리에 저장
+                loadedClientData[user] = result.clients; 
             } else {
-                loadedClientData[user] = []; // 빈 배열 저장
+                loadedClientData[user] = []; 
                 console.warn(`거래처 목록 로드 실패 (${user}): ${result.message || '거래처 없음'}`);
             }
         } catch (e) {
             console.error(`거래처 목록 로드 오류 (${user}):`, e);
-            loadedClientData[user] = []; // 오류 시 빈 배열
+            loadedClientData[user] = []; 
         }
     }
 
     /**
-     * ✅ [신규] 실제 목록을 화면에 뿌리는 함수
+     * 실제 목록을 화면에 뿌리는 함수
      */
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
@@ -549,27 +600,33 @@
         for (const client of clients) {
             const li = document.createElement('li');
             li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
-            li.innerHTML = `<strong>${client.name}</strong><br><span class="text-gray-500 text-xs">${client.address}</span>`;
-            // (나중에 클릭 이벤트로 맵 이동 기능 추가)
+            
+            // ✅ [수정] 모바일에선 주소가 안 보이도록 CSS 클래스 적용
+            li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
+            
             li.onclick = () => {
                 // TODO: 여기에 지도 마커 클릭 이벤트 로직 추가
                 console.log(`[맵 이동] ${client.name} (${client.address})로 이동 요청`);
             }; 
             listUl.appendChild(li);
         }
-        container.innerHTML = ''; // 기존 내용 지우기
+        container.innerHTML = ''; 
         container.appendChild(listUl);
     }
     
     /**
-     * ✅ [신규] 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
+     * 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
      */
     async function toggleClientList(user, buttonElement) {
         const container = document.getElementById('client-list-container');
         const allButtons = document.querySelectorAll('#client-list-panel button');
         
         // 1. 버튼 활성화/비활성화 상태 변경
-        allButtons.forEach(btn => btn.classList.remove('toggle-active'));
+        allButtons.forEach(btn => {
+            if (btn.id !== 'btn-toggle') {
+                 btn.classList.remove('toggle-active');
+            }
+        });
         
         if (activeClientUser === user) {
             // 현재 활성화된 버튼을 다시 누르면 닫기
@@ -585,50 +642,22 @@
         // 3. 데이터 로드 및 화면 표시
         container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
         
-        // 3a. 데이터가 메모리에 없으면 요청
         if (!loadedClientData[user]) {
             await fetchClientList(user);
         }
         
-        // 3b. 데이터 화면 표시
         displayClientList(user, loadedClientData[user]);
-    }
-    function openSheetApp(url) {
-      const os = getMobileOS();
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      let webUrl = url; // 웹페이지 URL (대체 경로)
-      let appUrl = url;  // 앱 실행 URL (기본 경로)
-      
-      // 1. 파일 ID 추출
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        // 앱 실행 프로토콜 설정
-        if (os === "iOS" || os === "Android") {
-            appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        
+        // 4. 목록을 표시한 후, 혹시 미니멀 모드였다면 확장
+        if (isPanelMinimized) {
+            togglePanelMinimize();
         }
-      }
-      
-      // 2. 모바일 환경일 경우, 앱 실행을 시도하고 대기 후 웹으로 대체
-      if (os === "iOS" || os === "Android") {
-        
-        // 2a. 앱 실행 명령
-        window.open(appUrl, '_blank');
-        
-        // 2b. 100ms 대기 (앱이 포그라운드로 넘어갈 시간)
-        setTimeout(function() {
-            // 이 시점에 앱이 실행되지 않았다면, Sheets 웹페이지를 엽니다.
-            window.open(webUrl, '_blank');
-        }, 100); 
-
-      } else {
-        // 3. 데스크톱 환경일 경우, 그냥 웹페이지를 엽니다.
-        window.open(webUrl, '_blank');
-      }
     }
+    
   </script>
 </body>
 </html>
+
 
 
 
