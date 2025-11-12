@@ -422,7 +422,7 @@
     }
 
 // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: <body> 끝으로 스크립트 이동)
+    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: 리스너 우선 실행)
     // ===============================================
 
     async function openMapOverlay() {
@@ -442,20 +442,32 @@
           }
         }
         
+        // ✅ [핵심 수정] 1. '메시지 수신기'를 *먼저* 켭니다.
+        // <iframe>이 메시지를 보내기 전에 미리 대기합니다.
+        window.addEventListener('message', (event) => {
+          if (event.data === 'TmapLoaded') {
+            console.log("iframe으로부터 Tmap 로딩 완료 메시지 수신");
+            isMapInitialized = true;
+            hideLoader();
+          } else if (event.data === 'TmapError') {
+            console.error("iframe으로부터 Tmap 로딩 실패 메시지 수신");
+            hideLoader();
+          }
+        }, { once: true }); // 'once: true' = 메시지를 한 번만 받음
+        
+        // 2. 이제 iframe을 준비시킵니다.
         const iframe = document.getElementById('map-iframe');
         const doc = iframe.contentWindow.document;
 
         doc.open();
         
-        // ✅ [핵심 수정] <script> 태그를 <head>에서 <body> 맨 아래로 이동
         doc.write(`
           <!DOCTYPE html>
           <html>
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }<\/style>
-            
-            </head>
+          </head>
           <body>
             <div id="map_div"><\/div>
             
@@ -466,7 +478,6 @@
         
         iframe.contentWindow.initMapInFrame = function() {
           try {
-            // 이 시점엔 <div id="map_div">가 100% 존재합니다.
             new Tmapv2.Map("map_div", {
               center: new Tmapv2.LatLng(35.2128, 128.9806),
               width: "100%",
@@ -474,7 +485,7 @@
               zoom: 12
             });
             
-            // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
+            // ✅ 말씀하신 대로 거래처 마커 기능은 비활성화 상태입니다.
             // loadClientMarkers(); 
 
             window.parent.postMessage('TmapLoaded', '*');
@@ -484,18 +495,8 @@
           }
         };
         
+        // ✅ 3. 모든 준비가 끝나면, '실행!' 명령을 내립니다.
         doc.close(); 
-
-        window.addEventListener('message', (event) => {
-          if (event.data === 'TmapLoaded') {
-            console.log("iframe으로부터 Tmap 로딩 완료 메시지 수신");
-            isMapInitialized = true;
-            hideLoader();
-          } else if (event.data === 'TmapError') {
-            console.error("iframe으로부터 Tmap 로딩 실패 메시지 수신");
-            hideLoader();
-          }
-        }, { once: true });
 
       } catch (e) {
         console.error("지도 iframe 생성 오류:", e);
@@ -510,6 +511,7 @@
     
   </script> </body>
 </html>
+
 
 
 
