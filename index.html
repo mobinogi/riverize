@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="Content-Security-Policy" content="
+  <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://apis.openapi.sk.com;
-    
     connect-src https://script.google.com https://script.googleusercontent.com;
-    
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
+    img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com;
   ">
+  
   <base target="_top">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
+  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap"></script>
+  
   <style>
+    /* (스타일은 그대로) */
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
     .date-box { width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; }
@@ -35,95 +38,6 @@
 <body class="p-4 md:p-8">
 
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-
-  <div class="flex border-b border-gray-200 mb-6">
-    <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
-      일보 작성
-    </button>
-    <button id="tab-review" onclick="changeTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600">
-      날짜 검색
-    </button>
-  </div>
-
-  <div id="tab-content">
-    
-    <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
-      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
-        <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
-      </div>
-      <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
-        오늘 일보 생성 & 열기
-      </button>
-
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
-      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
-        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
-        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
-      </div>
-      
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
-      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
-        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
-      </div>
-      <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
-        거래처 현황 지도 보기
-      </button>
-
-      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
-    </div>
-
-    <div id="content-review" class="hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
-      
-      <div class="flex justify-between items-center mb-4">
-          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
-          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-          </button>
-      </div>
-
-      <div class="calendar-grid text-center text-sm font-medium">
-          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
-            <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
-            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div> <div class="p-2">토</div>
-          </div>
-          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
-              </div>
-      </div>
-      
-      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
-        <span id="summary-button-text">XX월 매출현황표 생성</span>
-      </button>
-
-      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
-    </div>
-    
-  </div> 
-  
-  <p class="text-center text-xs text-gray-400 mt-8">Powered by GitHub Pages & Google Apps Script</p>
-  
-  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
-      <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
-          <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
-          <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
-          <div class="flex justify-end space-x-3">
-              <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">아니오</button>
-              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
-          </div>
-      </div>
-  </div>
-
-  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
-      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
-          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
-          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
-      </div>
-  </div>
-
   <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
     <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
       <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
@@ -132,7 +46,8 @@
       </button>
     </div>
     <div id="map_overlay_content" class="flex-1 w-full h-full">
-      </div>
+      <p class="p-4 text-center">Tmap API 키 로딩 중...</p>
+    </div>
   </div>
 
   <script>
@@ -158,14 +73,13 @@
     // 1. 전역 변수 및 초기 설정
     // ===============================================
     
-    // ❗️❗️ 1순위 확인: 이 URL이 code.js의 '최신 배포' URL과 100% 일치해야 합니다.
     const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
     
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
-    let tmapApiKey = null; 
+    let tmapApiKey = null; // ✅ [핵심] 처음엔 null
     let isMapInitialized = false;
     let map; 
 
@@ -178,14 +92,16 @@
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
       fetchReportsForMonth(currentYear, currentMonth, true);
-      preloadTmapApiKey(); // ✅ T맵 API 키 로딩 시작
+      preloadTmapApiKey(); // ✅ 3. API 키 가져오기 시작
     });
 
     // ===============================================
-    // 2. 핵심 기능 함수들 (달력 및 보고서)
-    // (이 섹션의 코드는 수정되지 않았습니다)
+    // (2. 핵심 기능 함수들은 그대로)
+    // ... (fetchReportsForMonth, changeMonth, ... , openSheetApp) ...
+    // ... (중간 생략) ...
     // ===============================================
-
+    
+    // (함수들을 여기에 그대로 둡니다. 수정 없음)
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
       const monthKey = year + '-' + month;
       if (reportsMap[monthKey] === 'completed') {
@@ -211,7 +127,6 @@
         preloadAdjacentMonths(year, month);
       }
     }
-
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
         const prevYear = prevDate.getFullYear();
@@ -238,18 +153,15 @@
             });
         }
     }
-    
     async function changeMonth(delta) {
       const date = new Date(currentYear, currentMonth - 1 + delta, 1);
       currentYear = date.getFullYear();
       currentMonth = date.getMonth() + 1;
       fetchReportsForMonth(currentYear, currentMonth);
     }
-    
     function formatDate(date) {
       return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
     }
-    
     async function callAppsScript(action, params = {}) {
       const url = new URL(API_URL);
       url.searchParams.set('action', action);
@@ -272,7 +184,6 @@
         };
       }
     }
-    
     async function generateTodayReport() {
       showLoader('오늘 일보를 생성 중...');
       try {
@@ -292,7 +203,6 @@
         alert('오류 발생: ' + error.message);
       }
     }
-    
     async function createMonthlySummary() {
       showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
       try {
@@ -312,7 +222,6 @@
         alert('월별 통계 생성 오류: ' + error.message);
       }
     }
-    
     function onDateClick(day, isSunday) {
       if (isSunday) return;
       const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
@@ -326,7 +235,6 @@
         openModal();
       }
     }
-    
     function renderCalendar() {
       const display = document.getElementById('current-month-display');
       if (!display) return;
@@ -367,12 +275,10 @@
         container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
       }
     }
-    
     function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
-
     async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
       const dateToGenerate = selectedDateForGeneration;
@@ -394,14 +300,12 @@
         hideLoader();
       }
     }
-    
     function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
       if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
       return "Other";
     }
-    
     function openSheetApp(url) {
       const os = getMobileOS();
       let appUrl = url;
@@ -414,54 +318,34 @@
       window.open(appUrl, '_blank');
     }
 
-// ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (Velog.io 해결책 적용됨)
+    // ===============================================
+    // 4. 🗺️ T맵 지도 관련 함수 (원래 코드로 복귀)
     // ===============================================
 
     /**
-     * ✅ [최종 수정] 1. Tmap API 키를 서버(code.js)에서 가져옵니다.
-     * ✅ [최종 수정] 2. 키를 스크립트 URL에 포함하여 동적으로 로드합니다.
+     * ✅ [수정] Tmap API 키를 비동기적으로 미리 로드하여
+     * 전역 변수 tmapApiKey에 저장합니다.
      */
     async function preloadTmapApiKey() {
       try {
         const keyResult = await callAppsScript('getTmapApiKey');
-        
         if (keyResult && keyResult.apiKey) {
-          tmapApiKey = keyResult.apiKey;
+          tmapApiKey = keyResult.apiKey; // ✅ 4. 키를 전역 변수에 저장
           console.log("Tmap API 키 미리 로딩 완료.");
-          
-          const script = document.createElement('script');
-          
-          // ✅ [핵심 수정] 
-          // 스크립트의 src URL 자체에 appKey를 포함시켜야 합니다.
-          script.src = "https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap&appKey=" + tmapApiKey;
-          
-          script.async = true; 
-          script.onerror = (e) => { // (e)를 추가해서 상세 오류를 볼 수 있게 합니다.
-             console.error("Tmap 스크립트 로드 실패.", e);
-             document.getElementById('map_overlay_content').textContent = "Tmap 스크립트 로드에 실패했습니다. (API키가 잘못되었거나, Tmap 서버 문제일 수 있습니다)";
-             hideLoader();
-          };
-          document.head.appendChild(script);
-          
         } else {
           console.error("Tmap API 키 미리 로딩 실패:", keyResult.message);
-          const errorMsg = "오류: Tmap API 키를 서버에서 불러오지 못했습니다. (서버 메시지: " + (keyResult.message || '없음') + ")";
-          document.getElementById('map_overlay_content').textContent = errorMsg;
-          hideLoader();
+          document.getElementById('map_overlay_content').textContent = "오류: Tmap API 키를 서버에서 불러오지 못했습니다.";
         }
       } catch (e) {
         console.error("Tmap API 키 요청 오류:", e);
         document.getElementById('map_overlay_content').textContent = "Tmap API 키 요청 중 오류가 발생했습니다.";
-        hideLoader();
       }
     }
 
     function openMapOverlay() {
       document.getElementById('map-overlay').classList.remove('hidden');
       if (!isMapInitialized) {
-        // 'initTmap'이 아직 호출되지 않았다면 로더를 보여줍니다.
-        // 'initTmap' 함수가 실행 완료된 후 'finally' 블록에서 로더를 숨깁니다.
+        // 'initTmap' 함수가 지도를 생성할 때까지 로더를 띄웁니다.
         showLoader('거래처 지도를 불러오는 중...');
       }
     }
@@ -471,20 +355,25 @@
     }
 
     /**
-     * ✅ [수정] Tmap 스크립트가 로드를 완료하면 이 함수가 '콜백'으로 자동 호출됩니다.
+     * ✅ [수정] 이 함수는 Tmap 스크립트가 로드된 후 '자동으로' 호출됩니다.
+     * 1. Tmap 스크립트가 먼저 로드됩니다. (callback=initTmap)
+     * 2. 'initTmap'이 호출됩니다.
+     * 3. 'tmapApiKey'가 아직 null이면 (preloadTmapApiKey가 아직 안 끝남), 100ms 대기합니다.
+     * 4. 'tmapApiKey'가 세팅되면, 대기를 멈추고 지도를 생성합니다.
      */
     function initTmap() {
-      console.log("Tmap 스크립트가 로드를 완료하여 initTmap()을 호출했습니다.");
+      console.log("Tmap 스크립트 로드 완료 -> initTmap() 호출됨.");
       
-      // 이 시점에는 'preloadTmapApiKey'가 이미 tmapApiKey를 설정했어야 합니다.
+      // ✅ [핵심] 이것이 바로 '무한 로딩'의 원인이자 해결책입니다.
+      // API 키가 아직 안 왔으면 (null이면) 100ms 후에 다시 시도합니다.
       if (!tmapApiKey) {
-        // 만약의 경우(정말 희박한 타이밍 이슈)를 대비한 안전장치
-        console.log("Tmap API 키 로딩 대기 중... (100ms 후 재시도)");
-        setTimeout(initTmap, 100); 
-        return;
+        console.log("...아직 API 키 로딩 중... 100ms 대기...");
+        setTimeout(initTmap, 100); // 100ms 후에 이 함수를 다시 실행
+        return; // ✅ 중요: 키가 없으면 지도 생성을 시도하지 않고 종료
       }
       
-      console.log("Tmap API 키 확인 완료. 지도를 생성합니다.");
+      // ✅ 이 로그가 찍히면, '무한 로딩'이 멈추고 지도가 생성됩니다.
+      console.log("Tmap API 키 확인 완료! 지도 생성을 시작합니다.");
       
       try {
         map = new Tmapv2.Map("map_overlay_content", {
@@ -492,7 +381,7 @@
           width: "100%",
           height: "100%",
           zoom: 12,
-          appKey: tmapApiKey // ✅ 안전하게 확보된 API 키를 사용
+          appKey: tmapApiKey // ✅ 드디어 받아온 API 키를 사용
         });
         isMapInitialized = true;
         
@@ -503,14 +392,9 @@
          console.error("지도 생성 중 오류 발생:", mapError);
          document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
       } finally {
-        // ✅ [수정] 지도가 성공적으로 생성되든, 오류가 나든,
-        // 'openMapOverlay'에서 켠 로더를 여기서 최종적으로 숨깁니다.
-        hideLoader(); 
+         hideLoader(); // ✅ 지도가 성공하든 실패하든 로더를 숨김
       }
     }
   </script>
 </body>
 </html>
-
-
-
