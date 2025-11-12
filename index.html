@@ -435,9 +435,14 @@
       window.open(appUrl, '_blank');
     }
 
+// ... (기존 function showLoader, hideLoader, openModal 등 유지) ...
+
     // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (목록 + 맵)
+    // 4. 🗺️ T맵 지도 관련 함수 (목록 토글 및 맵)
     // ===============================================
+
+    let loadedClientData = {}; // ✅ [신규] { '김원대': [...], '정병준': [...] } 형태로 데이터를 저장할 객체
+    let activeClientUser = null; // ✅ [신규] 현재 활성화된 담당자
 
     /**
      * '오버레이 열기' 버튼
@@ -457,22 +462,20 @@
             width: "100%",
             height: "100%",
             zoom: 12
-            // appKey는 <head> 스크립트 태그에 하드코딩했으므로 여기서 필요 없음
           });
           
           isMapInitialized = true; 
           console.log("지도 생성 성공!");
-
         } catch (e) {
           console.error("지도 생성 실패:", e);
           document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
       }
       
-      // ✅ [신규] 3. 거래처 목록이 아직 로드 안 됐으면
-      if (!isClientListLoaded) {
-        loadAndDisplayClientList(); // 목록 로드 시작
-        isClientListLoaded = true;  // (두 번 로드 안 하도록 깃발 세움)
+      // ✅ 3. 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없으면)
+      if (Object.keys(loadedClientData).length === 0) {
+         // 초기 로딩 시 데이터가 없으면 김원대 님 데이터를 미리 로드합니다.
+         loadAndDisplayClientList('김원대');
       }
     }
 
@@ -484,39 +487,86 @@
     }
     
     /**
-     * ✅ [신규] 거래처 목록을 code.js에서 불러와서 'client-list-panel'에 채우는 함수
+     * ✅ [신규] 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
      */
-    async function loadAndDisplayClientList() {
-      const listUl = document.getElementById('client-list-ul');
-      listUl.innerHTML = '<li class="p-2 text-gray-500">목록 로딩 중...</li>'; // 로딩 메시지
-      
-      try {
-        // (일단 '김원대' 님으로 테스트)
-        const result = await callAppsScript('getClients', { user: '김원대' });
+    async function fetchClientList(user) {
+        if (loadedClientData[user]) return; // 이미 데이터가 있으면 재요청 안 함
         
-        if (result.status === 'success' && result.clients.length > 0) {
-          listUl.innerHTML = ''; // 목록 비우기
-          
-          for (const client of result.clients) {
-            const li = document.createElement('li');
-            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer';
-            li.textContent = client.name;
-            // (나중에 클릭 이벤트로 맵 이동 기능 추가)
-            // li.onclick = () => { ... }; 
-            listUl.appendChild(li);
-          }
-          console.log(result.clients.length + "개 거래처 목록 로드 성공.");
-        } else {
-          listUl.innerHTML = `<li class="p-2 text-red-600">목록 로드 실패: ${result.message || '거래처 없음'}</li>`;
+        try {
+            const result = await callAppsScript('getClients', { user: user });
+            if (result.status === 'success' && result.clients.length > 0) {
+                loadedClientData[user] = result.clients; // 메모리에 저장
+            } else {
+                loadedClientData[user] = []; // 빈 배열 저장
+                console.warn(`거래처 목록 로드 실패 (${user}): ${result.message || '거래처 없음'}`);
+            }
+        } catch (e) {
+            console.error(`거래처 목록 로드 오류 (${user}):`, e);
+            loadedClientData[user] = []; // 오류 시 빈 배열
         }
-      } catch (e) {
-        console.error("거래처 목록 로드 오류:", e);
-        listUl.innerHTML = `<li class="p-2 text-red-600">목록 로드 오류: ${e.message}</li>`;
-      }
     }
+
     /**
-     * [최종 수정] Sheets 앱을 열거나, 실패 시 웹페이지로 대체합니다.
+     * ✅ [신규] 실제 목록을 화면에 뿌리는 함수
      */
+    function displayClientList(user, clients) {
+        const container = document.getElementById('client-list-container');
+        
+        if (clients.length === 0) {
+            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
+            return;
+        }
+
+        const listUl = document.createElement('ul');
+        listUl.id = `list-${user}`;
+        
+        for (const client of clients) {
+            const li = document.createElement('li');
+            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
+            li.innerHTML = `<strong>${client.name}</strong><br><span class="text-gray-500 text-xs">${client.address}</span>`;
+            // (나중에 클릭 이벤트로 맵 이동 기능 추가)
+            li.onclick = () => {
+                // TODO: 여기에 지도 마커 클릭 이벤트 로직 추가
+                console.log(`[맵 이동] ${client.name} (${client.address})로 이동 요청`);
+            }; 
+            listUl.appendChild(li);
+        }
+        container.innerHTML = ''; // 기존 내용 지우기
+        container.appendChild(listUl);
+    }
+    
+    /**
+     * ✅ [신규] 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
+     */
+    async function toggleClientList(user, buttonElement) {
+        const container = document.getElementById('client-list-container');
+        const allButtons = document.querySelectorAll('#client-list-panel button');
+        
+        // 1. 버튼 활성화/비활성화 상태 변경
+        allButtons.forEach(btn => btn.classList.remove('toggle-active'));
+        
+        if (activeClientUser === user) {
+            // 현재 활성화된 버튼을 다시 누르면 닫기
+            activeClientUser = null;
+            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+            return;
+        }
+        
+        // 2. 새 버튼 활성화
+        buttonElement.classList.add('toggle-active');
+        activeClientUser = user;
+
+        // 3. 데이터 로드 및 화면 표시
+        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
+        
+        // 3a. 데이터가 메모리에 없으면 요청
+        if (!loadedClientData[user]) {
+            await fetchClientList(user);
+        }
+        
+        // 3b. 데이터 화면 표시
+        displayClientList(user, loadedClientData[user]);
+    }
     function openSheetApp(url) {
       const os = getMobileOS();
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
@@ -553,4 +603,5 @@
   </script>
 </body>
 </html>
+
 
