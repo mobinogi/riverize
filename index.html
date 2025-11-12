@@ -417,8 +417,8 @@
       window.open(appUrl, '_blank');
     }
 
-    // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (iframe 격리 + Callback 수정)
+// ===============================================
+    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: </body> 이스케이프)
     // ===============================================
 
     async function openMapOverlay() {
@@ -441,13 +441,9 @@
         const iframe = document.getElementById('map-iframe');
         const doc = iframe.contentWindow.document;
 
-        // ✅ [핵심 수정] 
-        // 1. Tmap 스크립트 URL에 'callback=initMapInFrame'을 추가합니다.
-        // 2. <body>의 'window.onload'를 제거하고,
-        // 3. 'initMapInFrame' 함수가 Tmapv2를 호출하도록 수정합니다.
-        // 4. 'initMapInFrame' 함수를 'iframe.contentWindow'에 직접 등록합니다.
-
         doc.open();
+        
+        // ✅ [핵심 수정] </body>와 </html>을 쪼개서 SyntaxError를 방지합니다.
         doc.write(`
           <!DOCTYPE html>
           <html>
@@ -459,15 +455,12 @@
           </head>
           <body>
             <div id="map_div"></div>
-            </body>
-          </html>
+          ` + '</' + 'body' + '>' + `
+          ` + '</' + 'html' + '>' + `
         `);
         
-        // ✅ [수정] iframe의 'contentWindow'에 콜백 함수를 '직접' 심어줍니다.
-        // Tmap 스크립트가 로드되면 이 함수를 호출할 것입니다.
         iframe.contentWindow.initMapInFrame = function() {
           try {
-            // 이 시점엔 Tmapv2가 반드시 정의되어 있습니다.
             new Tmapv2.Map("map_div", {
               center: new Tmapv2.LatLng(35.2128, 128.9806),
               width: "100%",
@@ -478,18 +471,16 @@
             // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
             // loadClientMarkers(); 
 
-            // 성공 메시지를 부모 창(메인 페이지)으로 보냅니다
             window.parent.postMessage('TmapLoaded', '*');
           } catch (e) {
-            // map_div에 오류 텍스트를 직접 씁니다.
             iframe.contentWindow.document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
             window.parent.postMessage('TmapError', '*');
           }
         };
         
-        doc.close();
+        // ✅ 이 코드가 이제 화면에 인쇄되지 않고 정상 실행됩니다.
+        doc.close(); 
 
-        // 4. <iframe>으로부터 'TmapLoaded' 메시지를 기다립니다
         window.addEventListener('message', (event) => {
           if (event.data === 'TmapLoaded') {
             console.log("iframe으로부터 Tmap 로딩 완료 메시지 수신");
@@ -499,19 +490,20 @@
             console.error("iframe으로부터 Tmap 로딩 실패 메시지 수신");
             hideLoader();
           }
-        }, { once: true }); // 'once: true' = 메시지를 한 번만 받음
+        }, { once: true });
 
       } catch (e) {
         console.error("지도 iframe 생성 오류:", e);
         hideLoader();
         document.getElementById('map_overlay_content').innerHTML = `<p class="p-4 text-center text-red-600">지도 생성 중 오류가 발생했습니다: ${e.message}</p>`;
       }
-    }
+    } // <-- openMapOverlay()의 닫힘
 
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
     
-  </script>
-</body>
+  </script> 
+  </body>
 </html>
+
