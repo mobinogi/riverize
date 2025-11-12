@@ -288,7 +288,7 @@
           }
         } else {
           hideLoader();
-          alert('보고서 생성 실패: 'L' + result.message);
+          alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
@@ -417,8 +417,8 @@
       window.open(appUrl, '_blank');
     }
 
-// ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정: \/ 이스케이프)
+    // ===============================================
+    // 4. 🗺️ T맵 지도 관련 함수 (최종 수정본)
     // ===============================================
 
     async function openMapOverlay() {
@@ -443,7 +443,7 @@
 
         doc.open();
         
-        // ✅ [핵심 수정] </body>와 </html>을 '<\/body>'처럼 이스케이프합니다.
+        // ✅ 템플릿 리터럴(backtick) 안에서 `</`를 `<\`로 이스케이프 처리
         doc.write(`
           <!DOCTYPE html>
           <html>
@@ -478,7 +478,6 @@
           }
         };
         
-        // ✅ 이 코드가 이제 화면에 인쇄되지 않고 정상 실행됩니다.
         doc.close(); 
 
         window.addEventListener('message', (event) => {
@@ -495,17 +494,13 @@
       } catch (e) {
         console.error("지도 iframe 생성 오류:", e);
         hideLoader();
-        // ✅ [수정] 이 부분도 템플릿 리터럴(backtick)을 사용하도록 수정
         document.getElementById('map_overlay_content').innerHTML = `<p class="p-4 text-center text-red-600">지도 생성 중 오류가 발생했습니다: ${e.message}<\/p>`;
       }
-    } // <-- openMapOverlay()의 닫힘
+    } // <-- openMapOverlay 닫힘
 
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
     
-  </script> 
- </body>
+  </script> </body>
 </html>
-
-
