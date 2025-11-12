@@ -231,6 +231,11 @@
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
+
+    let isMapInitialized = false;     // <--- ✅ 이 변수가 필요합니다.
+    let loadedClientData = {};       
+    let activeClientUser = null;     
+    let isPanelMinimized = false;
     
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
@@ -659,4 +664,5 @@
   </script>
 </body>
 </html>
+
 
