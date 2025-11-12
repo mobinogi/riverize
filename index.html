@@ -10,12 +10,11 @@
     style-src 'self' 'unsafe-inline';
     font-src 'self';
     img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com https://*.tmap.co.kr;
-    frame-src 'self' blob:; 
+    frame-src 'self' blob:; D
   ">
   
   <style>
     html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
-    /* 맵이 뜰 공간 (눈에 잘 띄게 빨간 테두리) */
     #map-container { 
       width: 80%; 
       height: 80%; 
@@ -27,10 +26,10 @@
 </head>
 <body>
 
-  <h1>T맵 IFRAME 실험실</h1>
+  <h1>T맵 IFRAME 실험실 (sandbox 없음)</h1>
   <p>아래 빨간 테두리 안에 지도가 떠야 합니다.</p>
 
-<div id="map-container">
+  <div id="map-container">
     <iframe id="map-iframe"></iframe>
   </div>
 
@@ -48,7 +47,6 @@
       doc.open();
       
       // [5] 'doc.write'로 격리실 내부에 HTML을 씁니다.
-      // (우리가 찾은 '조용한 멈춤' 해결책: 함수를 HTML 내부에 정의)
       doc.write(`
         <!DOCTYPE html>
         <html>
@@ -67,7 +65,6 @@
                   zoom: 12
                 });
                 console.log("IFRAME: 지도 생성 성공!");
-                // 성공하면 iframe 안에 메시지 띄움
                 document.body.innerHTML += '<h2 style="color:green; position:absolute; top:10px; left:10px; background:white; padding:5px; z-index: 1000;">IFRAME 로딩 성공!</h2>';
               } catch (e) {
                 console.error("IFRAME: 지도 생성 실패!", e);
@@ -78,7 +75,6 @@
         </head>
         <body>
           <div id="map_div"><\/div>
-          
           <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${TMAP_API_KEY}&callback=initMapInFrame"><\/script>
         <\/body>
         <\/html>
@@ -90,4 +86,3 @@
   </script>
 </body>
 </html>
-
