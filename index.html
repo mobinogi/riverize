@@ -166,6 +166,14 @@
   </div>
 
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+  
+  <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+    <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
+    <button onclick="closeMapOverlay()" class="p-2 text-gray-500 hover:text-gray-800">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+  </div>
+  
   <div class="flex-1 relative"> 
     
     <div id="map_overlay_content" class="w-full h-full">
@@ -657,6 +665,7 @@
   </script>
 </body>
 </html>
+
 
 
 
