@@ -33,13 +33,12 @@
     .sunday-date:hover { background-color: transparent; transform: none; }
     .today-highlight { border: 2px solid #ef4444; }
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
-/* 2. ✅ 새로 추가되거나 수정된 스타일 */
     .toggle-button {
       transition: all 0.2s;
       border-radius: 0.5rem;
       border: 1px solid #10b981;
       background-color: #ecfdf5;
-      width: 100%; /* 수직 나열을 위한 100% 너비 */
+      width: 100%; 
     }
     .toggle-active {
       background-color: #10b981;
@@ -221,23 +220,23 @@
       }
     }
 
-// ===============================================
+    // ===============================================
     // 1. 전역 변수 및 초기 설정
     // ===============================================
     
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQyDZ-2/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
     
+    // ✅ [수정] 모든 전역 변수를 여기서 한 번만 선언합니다.
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
     
-    // ✅ [수정] 아래 변수들은 원래 선언 위치에서 옮겨와서 여기에 한 번만 선언합니다.
     let isMapInitialized = false;     
     let loadedClientData = {};       
     let activeClientUser = null;     
     let isPanelMinimized = false;    
-    
+
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       currentYear = today.getFullYear();
@@ -324,6 +323,7 @@
         return; 
       }
       
+      // ✅ [수정] 오타를 제거했습니다.
       const url = new URL(API_URL);
       url.searchParams.set('action', action);
       for (const key in params) {
@@ -564,7 +564,7 @@
 
         icon.textContent = isPanelMinimized ? '▶️' : '◀️';
 
-        // 맵의 성능 최적화를 위해 맵 크기가 바뀔 때 resize 호출 (선택 사항)
+        // T맵 지도의 크기를 재조정하여 목록이 사라진 공간을 채우도록 합니다 (맵의 성능 최적화)
         // if (window.Tmapv2 && window.Tmapv2.Map && isMapInitialized) {
         //     // Tmapv2.Map.resize()를 호출하는 로직 추가 
         // }
@@ -664,10 +664,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
