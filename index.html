@@ -507,10 +507,6 @@
 // 4. 🗺️ T맵 지도 관련 함수 (선택적 마커 및 UI)
 // ===============================================
 
-let loadedClientData = {}; 
-let activeClientUser = null; 
-let isPanelMinimized = false;
-let isMapInitialized = false;     
 let currentMapInstance = null;
 let currentMarker = null; // ✅ [수정] 현재 지도에 표시된 마커는 하나만 저장
 
@@ -693,6 +689,7 @@ async function toggleClientList(user, buttonElement) {
   </script>
 </body>
 </html>
+
 
 
 
