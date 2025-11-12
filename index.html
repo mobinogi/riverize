@@ -22,7 +22,7 @@
   
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
-    .tab-active { border-color: #10b981; color: #059669; background-color: #ecdfdf5; }
+    .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
     .date-box { width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; }
     .sunday { color: #ef4444; }
     .report-exists { background-color: #10b981; color: white; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1); }
@@ -38,96 +38,9 @@
 <body class="p-4 md:p-8">
 
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-
-  <div class="flex border-b border-gray-200 mb-6">
-    <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
-      일보 작성
-    </button>
-    <button id="tab-review" onclick="changeTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600">
-      날짜 검색
-    </button>
-  </div>
-
-  <div id="tab-content">
-    
-    <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
-      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
-        <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
-      </div>
-      <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
-        오늘 일보 생성 & 열기
-      </button>
-
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
-      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
-        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
-        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
-      </div>
-      
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
-      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
-        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
-      </div>
-      <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
-        거래처 현황 지도 보기
-      </button>
-
-      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
-    </div>
-
-    <div id="content-review" class="hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
-      <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
-      
-      <div class="flex justify-between items-center mb-4">
-          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
-          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-          </button>
-      </div>
-
-      <div class="calendar-grid text-center text-sm font-medium">
-          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
-            <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
-            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
-            <div class="p-2">토</div>
-          </div>
-          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
-              </div>
-      </div>
-      
-      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
-        <span id="summary-button-text">XX월 매출현황표 생성</span>
-      </button>
-
-      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
-    </div>
-    
-  </div> 
-  
-  <p class="text-center text-xs text-gray-400 mt-8">Powered by GitHub Pages & Google Apps Script</p>
-  
-  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
-      <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
-          <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
-          <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
-          <div class="flex justify-end space-x-3">
-              <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">아니오</button>
-              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
-          </div>
-      </div>
-  </div>
-
-  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
-      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
-          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
-          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
-      </div>
-  </div>
-
+  <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+    거래처 현황 지도 보기
+  </button>
   <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
     <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
       <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
@@ -136,7 +49,25 @@
       </button>
     </div>
     
-    <div id="map_overlay_content" class="flex-1 w-full h-full">
+    <div class="flex-1 flex flex-row overflow-hidden"> 
+      
+      <div id="client-list-panel" class="w-1/3 p-4 bg-gray-100 overflow-y-auto border-r border-gray-200">
+        <h4 class="text-lg font-bold mb-2">거래처 목록 (김원대)</h4>
+        <ul id="client-list-ul">
+          <li>로딩 중...</li>
+        </ul>
+      </div>
+      
+      <div id="map_overlay_content" class="w-2/3 h-full">
+        </div>
+      
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
+      <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
+          <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
+          <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
       </div>
   </div>
 
@@ -170,8 +101,8 @@
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
     
-    // ✅ [핵심] T맵 깃발
-    let isMapInitialized = false; 
+    let isMapInitialized = false;     // T맵 깃발
+    let isClientListLoaded = false; // ✅ 거래처 목록 깃발
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
@@ -183,8 +114,6 @@
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
       fetchReportsForMonth(currentYear, currentMonth, true);
-      
-      // ✅ [핵심] code.js를 부르는 'preloadTmapApiKey()' 함수 호출 *삭제*
     });
 
     // ===============================================
@@ -256,6 +185,11 @@
     }
     
     async function callAppsScript(action, params = {}) {
+      if (action === 'getTmapApiKey') {
+        console.warn("getTmapApiKey is deprecated. Key is now hardcoded.");
+        return; 
+      }
+      
       const url = new URL(API_URL);
       url.searchParams.set('action', action);
       for (const key in params) {
@@ -420,16 +354,11 @@
     }
 
     // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (하드코딩, 로더 제거, iframe 제거)
+    // 4. 🗺️ T맵 지도 관련 함수 (목록 + 맵)
     // ===============================================
-
-    // ✅ 'preloadTmapApiKey' 함수 전체 삭제
-    // ✅ 'initTmap' 함수 전체 삭제
 
     /**
      * '오버레이 열기' 버튼
-     * ✅ 로딩 화면 제거
-     * ✅ '실험용'에서 성공한 '맵 생성' 로직을 이 함수로 이동
      */
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
@@ -437,36 +366,70 @@
       // 1. 오버레이를 화면에 표시
       document.getElementById('map-overlay').classList.remove('hidden');
       
-      // 2. 맵이 아직 안 만들어졌으면 (isMapInitialized == false 이면)
+      // 2. 맵이 아직 안 만들어졌으면
       if (!isMapInitialized) {
         console.log("맵이 없으므로, 지금부터 생성합니다...");
         try {
-          // <head>에서 로드한 Tmapv2를 사용해 'map_overlay_content' div에 지도를 그림
           new Tmapv2.Map("map_overlay_content", {
             center: new Tmapv2.LatLng(35.2128, 128.9806),
             width: "100%",
             height: "100%",
             zoom: 12
-            // appKey는 <head> 스크립트 태그에 하드코딩했으므로 여기서 필요 없음
           });
           
-          isMapInitialized = true; // 3. '깃발'을 세움
+          isMapInitialized = true; 
           console.log("지도 생성 성공!");
-          
-          // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
-          // loadClientMarkers(); 
 
         } catch (e) {
           console.error("지도 생성 실패:", e);
           document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
-      } else {
-        console.log("이미 맵이 있으므로, 그냥 보여주기만 합니다.");
+      }
+      
+      // ✅ [신규] 3. 거래처 목록이 아직 로드 안 됐으면
+      if (!isClientListLoaded) {
+        loadAndDisplayClientList(); // 목록 로드 시작
+        isClientListLoaded = true;  // (두 번 로드 안 하도록 깃발 세움)
       }
     }
 
+    /**
+     * '닫기' 버튼
+     */
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
+    }
+    
+    /**
+     * ✅ [신규] 거래처 목록을 code.js에서 불러와서 'client-list-panel'에 채우는 함수
+     */
+    async function loadAndDisplayClientList() {
+      const listUl = document.getElementById('client-list-ul');
+      listUl.innerHTML = '<li class="p-2 text-gray-500">목록 로딩 중...</li>'; // 로딩 메시지
+      
+      try {
+        // (일단 '김원대' 님으로 테스트)
+        const result = await callAppsScript('getClients', { user: '김원대' });
+        
+        if (result.status === 'success' && result.clients.length > 0) {
+          listUl.innerHTML = ''; // 목록 비우기
+          
+          for (const client of result.clients) {
+            const li = document.createElement('li');
+            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer';
+            li.textContent = client.name;
+            // (나중에 클릭 이벤트로 맵 이동 기능 추가)
+            // li.onclick = () => { ... }; 
+            listUl.appendChild(li);
+          }
+          console.log(result.clients.length + "개 거래처 목록 로드 성공.");
+        } else {
+          listUl.innerHTML = `<li class="p-2 text-red-600">목록 로드 실패: ${result.message || '거래처 없음'}</li>`;
+        }
+      } catch (e) {
+        console.error("거래처 목록 로드 오류:", e);
+        listUl.innerHTML = `<li class="p-2 text-red-600">목록 로드 오류: ${e.message}</li>`;
+      }
     }
     
   </script>
