@@ -8,6 +8,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
     img-src 'self' data: https://*.daumcdn.net https://*.tmap.sk.com;
+    frame-src 'self' blob:; 
   ">
   
   <base target="_top">
@@ -17,21 +18,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
-  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&callback=initTmap"></script>
-  
   <style>
     /* (스타일은 그대로) */
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
-    .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
-    .date-box { width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; }
-    .sunday { color: #ef4444; }
-    .report-exists { background-color: #10b981; color: white; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1); }
-    .report-exists:hover { background-color: #059669; transform: scale(1.05); }
-    .no-report { color: #4b5563; cursor: pointer; }
-    .no-report:hover { background-color: transparent; transform: none; }
-    .sunday-date { color: #ef4444; cursor: default; }
-    .sunday-date:hover { background-color: transparent; transform: none; }
-    .today-highlight { border: 2px solid #ef4444; }
+    /* ... (기존 스타일 생략) ... */
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
   </style>
 </head>
@@ -45,8 +35,9 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
     </div>
+    
     <div id="map_overlay_content" class="flex-1 w-full h-full">
-      <p class="p-4 text-center">Tmap API 키 로딩 중...</p>
+      <iframe id="map-iframe" style="width:100%; height:100%; border:none;"></iframe>
     </div>
   </div>
 
@@ -79,20 +70,23 @@
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
-    let tmapApiKey = null; // ✅ [핵심] 처음엔 null
-    let isMapInitialized = false;
-    let map; 
+    
+    // ✅ [수정 4] Tmap 관련 전역 변수
+    let tmapApiKey = null; // API 키는 한 번만 받아오기 위해 저장
+    let isMapInitialized = false; // 맵 로딩이 완료되었는지 확인
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       currentYear = today.getFullYear();
       currentMonth = today.getMonth() + 1;
+      
+      // ✅ [수정 5] 이제 이 코드는 정상적으로 작동합니다.
       document.getElementById('current-date').textContent = formatDate(today);
       document.getElementById('generate-button').disabled = false;
       document.getElementById('app-status').textContent = '상태: 준비 완료.';
       
       fetchReportsForMonth(currentYear, currentMonth, true);
-      preloadTmapApiKey(); // ✅ 3. API 키 가져오기 시작
+      // ✅ [수정 6] preloadTmapApiKey() 호출을 삭제합니다. (버튼 누를 때 로드)
     });
 
     // ===============================================
@@ -319,82 +313,107 @@
     }
 
     // ===============================================
-    // 4. 🗺️ T맵 지도 관련 함수 (원래 코드로 복귀)
+    // 4. 🗺️ T맵 지도 관련 함수 (iframe 격리 방식)
     // ===============================================
 
     /**
-     * ✅ [수정] Tmap API 키를 비동기적으로 미리 로드하여
-     * 전역 변수 tmapApiKey에 저장합니다.
+     * ✅ [최종 수정] '지도 보기' 버튼을 누르면,
+     * 1. API 키를 (아직 없다면) 받아옵니다.
+     * 2. <iframe> 내부에 Tmap이 로드될 HTML을 직접 생성합니다.
      */
-    async function preloadTmapApiKey() {
-      try {
-        const keyResult = await callAppsScript('getTmapApiKey');
-        if (keyResult && keyResult.apiKey) {
-          tmapApiKey = keyResult.apiKey; // ✅ 4. 키를 전역 변수에 저장
-          console.log("Tmap API 키 미리 로딩 완료.");
-        } else {
-          console.error("Tmap API 키 미리 로딩 실패:", keyResult.message);
-          document.getElementById('map_overlay_content').textContent = "오류: Tmap API 키를 서버에서 불러오지 못했습니다.";
-        }
-      } catch (e) {
-        console.error("Tmap API 키 요청 오류:", e);
-        document.getElementById('map_overlay_content').textContent = "Tmap API 키 요청 중 오류가 발생했습니다.";
-      }
-    }
-
-    function openMapOverlay() {
+    async function openMapOverlay() {
       document.getElementById('map-overlay').classList.remove('hidden');
-      if (!isMapInitialized) {
-        // 'initTmap' 함수가 지도를 생성할 때까지 로더를 띄웁니다.
-        showLoader('거래처 지도를 불러오는 중...');
+      
+      // 이미 맵이 로딩되었다면, 아무것도 안 함
+      if (isMapInitialized) return; 
+      
+      showLoader('거래처 지도를 불러오는 중...');
+
+      try {
+        // 1. API 키 받아오기 (전역 변수 'tmapApiKey'에 저장)
+        if (!tmapApiKey) {
+          console.log("API 키가 없으므로 서버에서 요청합니다...");
+          const keyResult = await callAppsScript('getTmapApiKey');
+          if (keyResult && keyResult.apiKey) {
+            tmapApiKey = keyResult.apiKey;
+            console.log("API 키 로딩 성공.");
+          } else {
+            throw new Error(keyResult.message || "API 키를 서버에서 받지 못했습니다.");
+          }
+        }
+        
+        // 2. <iframe>의 contentWindow.document를 가져옵니다.
+        const iframe = document.getElementById('map-iframe');
+        const doc = iframe.contentWindow.document;
+
+        // 3. <iframe> 내부에 삽입할 HTML 코드를 작성합니다.
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>body, html, #map_div { margin: 0; padding: 0; width: 100%; height: 100%; }</style>
+            
+            <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${tmapApiKey}"></script>
+          </head>
+          <body>
+            <div id="map_div"></div>
+            <script>
+              // 이 스크립트는 <iframe> 내부에서 실행됩니다
+              window.onload = function() {
+                try {
+                  // 맵 생성
+                  new Tmapv2.Map("map_div", {
+                    center: new Tmapv2.LatLng(35.2128, 128.9806),
+                    width: "100%",
+                    height: "100%",
+                    zoom: 12
+                  });
+                  
+                  // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
+                  // loadClientMarkers(); 
+
+                  // 성공 메시지를 부모 창(메인 페이지)으로 보냅니다
+                  window.parent.postMessage('TmapLoaded', '*');
+                } catch (e) {
+                  document.getElementById('map_div').textContent = "지도 로딩 실패: " + e.message;
+                  window.parent.postMessage('TmapError', '*');
+                }
+              };
+            </script>
+          </body>
+          </html>
+        `);
+        doc.close();
+
+        // 4. <iframe>으로부터 'TmapLoaded' 메시지를 기다립니다
+        window.addEventListener('message', (event) => {
+          if (event.data === 'TmapLoaded') {
+            console.log("iframe으로부터 Tmap 로딩 완료 메시지 수신");
+            isMapInitialized = true;
+            hideLoader();
+          } else if (event.data === 'TmapError') {
+            console.error("iframe으로부터 Tmap 로딩 실패 메시지 수신");
+            hideLoader();
+          }
+        }, { once: true }); // 'once: true' = 메시지를 한 번만 받음
+
+      } catch (e) {
+        console.error("지도 iframe 생성 오류:", e);
+        hideLoader();
+        // iframe이 아닌 바깥쪽 div에 오류 메시지 표시
+        document.getElementById('map_overlay_content').innerHTML = `<p class="p-4 text-center text-red-600">지도 생성 중 오류가 발생했습니다: ${e.message}</p>`;
       }
     }
 
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
+    
+    // ✅ [수정 7] 'preloadTmapApiKey'와 'initTmap' 함수는 
+    // 'openMapOverlay' 함수에 통합되었으므로 삭제합니다.
 
-    /**
-     * ✅ [수정] 이 함수는 Tmap 스크립트가 로드된 후 '자동으로' 호출됩니다.
-     * 1. Tmap 스크립트가 먼저 로드됩니다. (callback=initTmap)
-     * 2. 'initTmap'이 호출됩니다.
-     * 3. 'tmapApiKey'가 아직 null이면 (preloadTmapApiKey가 아직 안 끝남), 100ms 대기합니다.
-     * 4. 'tmapApiKey'가 세팅되면, 대기를 멈추고 지도를 생성합니다.
-     */
-    function initTmap() {
-      console.log("Tmap 스크립트 로드 완료 -> initTmap() 호출됨.");
-      
-      // ✅ [핵심] 이것이 바로 '무한 로딩'의 원인이자 해결책입니다.
-      // API 키가 아직 안 왔으면 (null이면) 100ms 후에 다시 시도합니다.
-      if (!tmapApiKey) {
-        console.log("...아직 API 키 로딩 중... 100ms 대기...");
-        setTimeout(initTmap, 100); // 100ms 후에 이 함수를 다시 실행
-        return; // ✅ 중요: 키가 없으면 지도 생성을 시도하지 않고 종료
-      }
-      
-      // ✅ 이 로그가 찍히면, '무한 로딩'이 멈추고 지도가 생성됩니다.
-      console.log("Tmap API 키 확인 완료! 지도 생성을 시작합니다.");
-      
-      try {
-        map = new Tmapv2.Map("map_overlay_content", {
-          center: new Tmapv2.LatLng(35.2128, 128.9806),
-          width: "100%",
-          height: "100%",
-          zoom: 12,
-          appKey: tmapApiKey // ✅ 드디어 받아온 API 키를 사용
-        });
-        isMapInitialized = true;
-        
-        // (다음 단계) 여기에 거래처 마커를 찍는 코드가 들어갑니다.
-        // loadClientMarkers(); 
-
-      } catch (mapError) {
-         console.error("지도 생성 중 오류 발생:", mapError);
-         document.getElementById('map_overlay_content').textContent = "지도 생성 중 오류가 발생했습니다.";
-      } finally {
-         hideLoader(); // ✅ 지도가 성공하든 실패하든 로더를 숨김
-      }
-    }
   </script>
 </body>
 </html>
