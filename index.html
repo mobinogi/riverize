@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Security-Policy" content="
+<meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://apis.openapi.sk.com;
-    connect-src https://script.google.com;
+    
+    connect-src https://script.google.com https://script.googleusercontent.com;
+    
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
   ">
@@ -509,5 +511,6 @@
   </script>
 </body>
 </html>
+
 
 
