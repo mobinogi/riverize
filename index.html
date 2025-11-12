@@ -521,7 +521,7 @@
     /**
      * '오버레이 열기' 버튼
      */
-    function openMapOverlay() {
+function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       
       document.getElementById('map-overlay').classList.remove('hidden');
@@ -529,7 +529,6 @@
       if (!isMapInitialized) {
         console.log("맵이 없으므로, 지금부터 생성합니다...");
         try {
-          // ✅ [수정] 지도 객체를 전역 변수에 저장
           currentMapInstance = new Tmapv2.Map("map_overlay_content", {
             center: new Tmapv2.LatLng(35.2128, 128.9806),
             width: "100%",
@@ -546,18 +545,14 @@
         }
       }
       
-      // 3. 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없으면)
-      if (Object.keys(loadedClientData).length === 0) {
-         loadAndDisplayClientList('김원대');
-      }
-      // 4. 지도와 목록이 이미 있다면, 현재 활성화된 담당자의 마커를 다시 표시합니다.
-      if (isMapInitialized && activeClientUser) {
-           updateMarkers(activeClientUser, loadedClientData[activeClientUser]);
+      // ✅ [핵심] 3. 맵이 열릴 때 김원대 목록을 자동으로 토글합니다.
+      if (!activeClientUser) {
+         const kimButton = document.getElementById('btn-kim');
+         if (kimButton) {
+             toggleClientList('김원대', kimButton);
+         }
       }
     }
-
-    // ... (closeMapOverlay, togglePanelMinimize 함수 유지) ...
-
     /**
      * ✅ [신규] T맵 API를 사용하여 주소를 좌표로 변환하는 함수 (지오코딩)
      * [출처: https://tmapapi.tmapmobility.com/main.html#webservice/sample/WebSampleFullAddrGeo]
@@ -678,13 +673,14 @@
         container.appendChild(listUl);
     }
     
-    /**
-     * ✅ [수정] 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
+/**
+     * ✅ [최종 수정] 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
      */
     async function toggleClientList(user, buttonElement) {
         const container = document.getElementById('client-list-container');
         const allButtons = document.querySelectorAll('#client-list-panel button');
         
+        // 1. 버튼 상태 및 토글
         allButtons.forEach(btn => {
             if (btn.id !== 'btn-toggle') {
                  btn.classList.remove('toggle-active');
@@ -694,7 +690,6 @@
         if (activeClientUser === user) {
             activeClientUser = null;
             container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
-            // ✅ [수정] 목록을 닫을 때 지도 마커 제거
             Object.values(clientMarkers).forEach(marker => marker.setMap(null));
             clientMarkers = {};
             return;
@@ -703,18 +698,57 @@
         buttonElement.classList.add('toggle-active');
         activeClientUser = user;
 
+        // 2. 데이터 로드 (fetchClientList의 로직을 여기에 통합)
         container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
         
         if (!loadedClientData[user]) {
-            await fetchClientList(user);
+            try {
+                const result = await callAppsScript('getClients', { user: user });
+                if (result.status === 'success' && result.clients.length > 0) {
+                    loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
+                } else {
+                    loadedClientData[user] = []; 
+                }
+            } catch (e) {
+                loadedClientData[user] = []; 
+            }
         }
         
-        displayClientList(user, loadedClientData[user]);
+        // 3. 목록 표시 (displayClientList의 로직을 여기에 통합)
+        const clients = loadedClientData[user];
+        if (clients.length > 0) {
+            const listUl = document.createElement('ul');
+            listUl.id = `list-${user}`;
+            
+            for (const client of clients) {
+                const li = document.createElement('li');
+                li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
+                li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
+                
+                // 마커 클릭 이동 로직
+                li.onclick = () => {
+                    const marker = clientMarkers[client.name];
+                    if (marker && marker.getPosition()) {
+                        currentMapInstance.setCenter(marker.getPosition());
+                        currentMapInstance.setZoom(15);
+                    } else if (client.coords) {
+                        currentMapInstance.setCenter(client.coords);
+                        currentMapInstance.setZoom(15);
+                    } else {
+                        alert('좌표를 찾는 중입니다. 잠시 후 다시 시도해주세요.');
+                    }
+                }; 
+                listUl.appendChild(li);
+            }
+            container.innerHTML = ''; 
+            container.appendChild(listUl);
+        } else {
+            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
+        }
         
-        // ✅ [핵심] 마커 업데이트 (지오코딩 및 지도 표시)
+        // 4. 마커 업데이트 (지오코딩 및 지도 표시)
         if (isMapInitialized) {
-             // 이 함수가 마커를 새로 생성하고 지도 시점을 조정합니다.
-             updateMarkers(user, loadedClientData[user]); 
+             updateMarkers(user, clients); 
         }
         
         if (isPanelMinimized) {
@@ -725,6 +759,7 @@
   </script>
 </body>
 </html>
+
 
 
 
