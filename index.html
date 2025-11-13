@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://code.jquery.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
@@ -18,14 +18,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script> 
-  
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   
   <style>
+    /* (스타일은 그대로 유지) */
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; font-size: 15px; }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
-    .date-box { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; flex-shrink: 0; /* ✅ [추가] 이 한 줄이 찌그러짐을 막아줍니다 */}
+    .date-box { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; flex-shrink: 0; }
     .sunday { color: #ef4444; }
     .report-exists { background-color: #10b981; color: white; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.1); }
     .report-exists:hover { background-color: #059669; transform: scale(1.05); }
@@ -35,8 +34,6 @@
     .sunday-date:hover { background-color: transparent; transform: none; }
     .today-highlight { border: 2px solid #ef4444; }
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
-
-    /* 목록 패널 스타일 (반투명 및 겹치기) */
     .toggle-button {
       transition: all 0.2s;
       border-radius: 0.5rem;
@@ -48,14 +45,13 @@
       background-color: #10b981;
       color: white;
     }
-
     #client-list-panel {
       position: absolute; 
       top: 0;
       left: 0;
-      width: 20.3333%; 
+      width: 33.3333%; 
       max-height: 100%;
-      background-color: rgba(247, 249, 252, 0.6); /* 70% 투명도 */
+      background-color: rgba(247, 249, 252, 0.7); 
       backdrop-filter: blur(4px); 
       z-index: 10; 
       transition: width 0.3s ease-in-out; 
@@ -63,31 +59,20 @@
     }
     #client-list-panel::-webkit-scrollbar { display: none; }
     #client-list-panel { scrollbar-width: none; }
-
     .client-list-minimized {
         width: 3rem !important;
     }
-
     .client-address { display: none; }
-/* (기존 스타일 코드들) */
     @media (min-width: 768px) {
         .client-address { display: inline; }
     }
-    
-.map-header-bar {
-      /* Flexbox (flex justify-between items-center) */
+    .map-header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      
-      /* Padding (p-2) */
-      padding: 0.5rem; /* 8px */
-      
-      /* Border (border-b border-gray-200) */
+      padding: 0.5rem;
       border-bottom-width: 1px;
-      border-bottom-color: #e5e7eb; /* gray-200 */
-      
-      /* ✅ [수정] 반투명 + !important (최종) */
+      border-bottom-color: #e5e7eb;
       background-color: rgba(255, 255, 255, 0.7) !important;
       -webkit-backdrop-filter: blur(4px) !important;
       backdrop-filter: blur(4px) !important;
@@ -97,7 +82,7 @@
 <body class="p-4 md:p-8">
 
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-
+  
   <div class="flex border-b border-gray-200 mb-6">
     <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
       일보 작성
@@ -118,7 +103,11 @@
         오늘 일보 생성 & 열기
       </button>
 
-
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
+      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
+        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
+      </div>
       
       <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 현황 지도</h2>
       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
@@ -200,13 +189,13 @@
     <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
       
       <div class="flex flex-col space-y-2 mb-3"> 
-        <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-2 px-2 text-sm font-medium toggle-button">
+        <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-1 px-1 text-sm font-medium toggle-button">
             <span id="toggle-icon">◀️</span> 
         </button>
-        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-2 text-sm font-medium toggle-button">
+        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-1 text-sm font-medium toggle-button">
           김원대
         </button>
-        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-2 text-sm font-medium toggle-button">
+        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-1 text-sm font-medium toggle-button">
           정병준
         </button>
       </div>
@@ -276,97 +265,107 @@
     function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
 
-/**
-     * ✅ [수정] PC를 모바일로 잘못 감지하는 MacIntel 로직 제거
-     */
     function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
-      
-      // 'navigator.platform' 체크 로직을 제거하여
-      // 데스크톱(Mac)을 iPad로 오인하는 문제를 해결합니다.
       if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
-      
       return "Other";
     }
     
+    function openSheetApp(url) {
+      const os = getMobileOS();
+      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      
+      let webUrl = url; 
+      let appUrl = url; 
+      
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        if (os === "iOS" || os === "Android") {
+            appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        }
+      }
+      
+      if (os === "iOS" || os === "Android") {
+        window.open(appUrl, '_blank');
+        
+        setTimeout(function() {
+            window.open(webUrl, '_blank');
+        }, 100); 
 
+      } else {
+        window.open(webUrl, '_blank');
+      }
+    }
     
     // ===============================================
-    // 3. T맵 통신 및 데이터 처리 함수 (공식 예제 $.ajax 통합)
+    // 3. T맵 통신 및 데이터 처리 함수 (Fetch API 사용)
     // ===============================================
 
     /**
-     * T맵 공식 예제 $.ajax 코드를 기반으로 주소를 좌표로 변환하고 마커를 찍는 함수
+     * ✅ [수정] T맵 지오코딩 함수 (jQuery/$.ajax 제거, Fetch API 사용)
      */
     async function geocodeAndSetMarker(address, user) {
         if (!currentMapInstance) return;
 
-        // 1. 기존 마커 제거
         if (currentMarker) {
             currentMarker.setMap(null);
             currentMarker = null;
         }
 
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
-        const markerImageUrl = markerColors[user] === 'red' ? 
-            'pin_r_m_s.png' : 'pin_b_m_s.png';
-        const headers = { "appKey": appKey };
+        const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+        
+        // TMAP API URL (Fetch용)
+        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
 
-        // 2. TMAP API 사용 요청 (jQuery $.ajax 사용)
-        return new Promise((resolve, reject) => {
-            $.ajax({
-                method: "GET",
-                headers: headers,
-                url: "https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json",
-                data: {
-                    "coordType": "WGS84GEO",
-                    "fullAddr": address
-                },
-                success: function(response) {
-                    var resultInfo = response.coordinateInfo;
-                    
-                    if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
-                        reject({ message: "요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다." });
-                        return;
-                    } 
-                    
-                    var lon, lat;
-                    var resultCoordinate = resultInfo.coordinate[0];
-                    
-                    if (resultCoordinate.lon && resultCoordinate.lon.length > 0) { 
-                        lon = resultCoordinate.lon;
-                        lat = resultCoordinate.lat;
-                    } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) { 
-                        lon = resultCoordinate.newLon;
-                        lat = resultCoordinate.newLat
-                    } else {
-                        reject({ message: "좌표를 찾을 수 없습니다." });
-                        return;
-                    }
+        try {
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                 throw new Error(`API 호출 실패 (${response.status})`);
+            }
+            
+            const data = await response.json();
+            
+            const resultInfo = data.coordinateInfo;
+            if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
+                throw new Error("요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다.");
+            }
+            
+            let lon, lat;
+            const resultCoordinate = resultInfo.coordinate[0];
+            
+            if (resultCoordinate.lon && resultCoordinate.lon.length > 0) {
+                lon = resultCoordinate.lon;
+                lat = resultCoordinate.lat;
+            } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) {
+                lon = resultCoordinate.newLon;
+                lat = resultCoordinate.newLat;
+            } else {
+                throw new Error("좌표를 찾을 수 없습니다.");
+            }
 
-                    var markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
-                    
-                    currentMarker = new Tmapv2.Marker({
-                        position: markerPosition,
-                        icon: markerImageUrl, 
-                        iconSize: new Tmapv2.Size(24, 38),
-                        map: currentMapInstance,
-                        title: address
-                    });
-                    
-                    currentMapInstance.setCenter(markerPosition);
-                    currentMapInstance.setZoom(15);
-                    
-                    console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
-                    resolve(markerPosition);
-                },
-                error: function(request, status, error) {
-                    console.error("Geocoding API 오류:", { request, status, error });
-                    reject({ message: `API 호출 실패 (${status}: ${error})` });
-                }
+            const markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
+            
+            currentMarker = new Tmapv2.Marker({
+                position: markerPosition,
+                icon: markerImageUrl,
+                iconSize: new Tmapv2.Size(24, 38),
+                map: currentMapInstance,
+                title: address
             });
-        });
+            
+            currentMapInstance.setCenter(markerPosition);
+            currentMapInstance.setZoom(15);
+            
+            console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
+            return markerPosition; // Promise<LatLng> 반환
+
+        } catch (error) {
+            console.error("Geocoding API 오류:", error);
+            throw new Error(`API 호출 실패 (${error.message})`);
+        }
     }
 
     /**
@@ -535,15 +534,14 @@
       }
     }
     
-function onDateClick(day, isSunday) {
+    function onDateClick(day, isSunday) {
       if (isSunday) return;
       const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
       selectedDateForGeneration = formattedDate;
       const report = reportsMap[formattedDate];
       if (report && report.url) {
-        openSheetApp(report.url); // 이미 있으면 바로 열기
+        openSheetApp(report.url);
       } else {
-        // 없으면 팝업(모달) 띄우기
         const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
         document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
         openModal();
@@ -591,9 +589,6 @@ function onDateClick(day, isSunday) {
       }
     }
 
-    /**
-     * ✅ [복구] 달력 팝업에서 '예'를 눌렀을 때 실행되는 함수
-     */
     async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
       const dateToGenerate = selectedDateForGeneration;
@@ -648,7 +643,6 @@ function onDateClick(day, isSunday) {
         }
       }
       
-      // 지도 생성과 별개로 목록 로드 시작 (단, 데이터가 없거나 활성화된 담당자가 없으면)
       if (Object.keys(loadedClientData).length === 0 || !activeClientUser) {
          const targetUser = activeClientUser || '김원대';
          const targetButton = document.getElementById(`btn-${targetUser === '김원대' ? 'kim' : 'jung'}`);
@@ -785,52 +779,7 @@ function onDateClick(day, isSunday) {
       
       fetchReportsForMonth(currentYear, currentMonth, true);
     });
-
-    function openSheetApp(url) {
-      const os = getMobileOS();
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      let webUrl = url; 
-      let appUrl = url; 
-      
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS" || os === "Android") {
-            appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        }
-      }
-      
-      if (os === "iOS" || os === "Android") {
-        window.open(appUrl, '_blank');
-        
-        setTimeout(function() {
-            window.open(webUrl, '_blank');
-        }, 100); 
-
-      } else {
-        window.open(webUrl, '_blank');
-      }
-    }
+    
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
