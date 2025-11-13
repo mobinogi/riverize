@@ -69,8 +69,16 @@
     }
 
     .client-address { display: none; }
+/* (기존 스타일 코드들) */
     @media (min-width: 768px) {
         .client-address { display: inline; }
+    }
+    
+    /* ✅ [추가] 맵 오버레이 상단바 반투명 스타일 (수동 정의) */
+    .map-header-bar {
+      background-color: rgba(255, 255, 255, 0.7); /* bg-white/70 */
+      -webkit-backdrop-filter: blur(4px); /* backdrop-blur-sm */
+      backdrop-filter: blur(4px);
     }
   </style>
 </head>
@@ -794,6 +802,7 @@ function onDateClick(day, isSunday) {
   </script>
 </body>
 </html>
+
 
 
 
