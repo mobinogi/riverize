@@ -74,11 +74,23 @@
         .client-address { display: inline; }
     }
     
-    /* ✅ [추가] 맵 오버레이 상단바 반투명 스타일 (수동 정의) */
 .map-header-bar {
-      background-color: rgba(255, 255, 255, 0.7) !important; /* ✅ !important 추가 */
-      -webkit-backdrop-filter: blur(4px) !important; /* ✅ !important 추가 */
-      backdrop-filter: blur(4px) !important; /* ✅ !important 추가 */
+      /* Flexbox (flex justify-between items-center) */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      /* Padding (p-2) */
+      padding: 0.5rem; /* 8px */
+      
+      /* Border (border-b border-gray-200) */
+      border-bottom-width: 1px;
+      border-bottom-color: #e5e7eb; /* gray-200 */
+      
+      /* Transparency (bg-white/70 + blur) */
+      background-color: rgba(255, 255, 255, 0.7);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
     }
   </style>
 </head>
@@ -173,7 +185,7 @@
 
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
   
-  <div class="flex justify-between items-center p-1 border-b border-gray-200 map-header-bar">
+  <div class="map-header-bar">
     <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
     <button onclick="closeMapOverlay()" class="p-1 text-gray-500 hover:text-gray-800">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -802,6 +814,7 @@ function onDateClick(day, isSunday) {
   </script>
 </body>
 </html>
+
 
 
 
