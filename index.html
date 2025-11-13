@@ -66,14 +66,20 @@
     @media (min-width: 768px) {
         .client-address { display: inline; }
     }
-    .map-header-bar {
+.map-header-bar {
+      /* Flexbox, Padding, Border (그대로 유지) */
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 0.5rem;
       border-bottom-width: 1px;
       border-bottom-color: #e5e7eb;
-      background-color: rgba(255, 255, 255, 0.7) !important;
+      
+      /* ✅ [수정] rgba 대신 'opacity'로 강제 반투명 적용 */
+      background-color: #ffffff !important; /* 1. 일단 불투명 흰색으로 칠하고 */
+      opacity: 0.7 !important; /* 2. 그 상자 전체를 70% 반투명하게 만듦 */
+      
+      /* (흐림 효과는 그대로 유지) */
       -webkit-backdrop-filter: blur(4px) !important;
       backdrop-filter: blur(4px) !important;
     }
@@ -783,3 +789,4 @@
   </script>
 </body>
 </html>
+
