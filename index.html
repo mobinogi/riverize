@@ -885,8 +885,23 @@
             togglePanelMinimize();
         }
     }
-    
+
+    // ===============================================
+    // 6. 🚀 앱 시작 (시동)
+    // ===============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth() + 1;
+      
+      document.getElementById('current-date').textContent = formatDate(today);
+      document.getElementById('generate-button').disabled = false;
+      document.getElementById('app-status').textContent = '상태: 준비 완료.';
+      
+      fetchReportsForMonth(currentYear, currentMonth, true);
+    });
   </script>
 </body>
 </html>
+
 
