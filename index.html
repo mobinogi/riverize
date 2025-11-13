@@ -536,14 +536,15 @@
       }
     }
     
-    function onDateClick(day, isSunday) {
+function onDateClick(day, isSunday) {
       if (isSunday) return;
       const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
       selectedDateForGeneration = formattedDate;
       const report = reportsMap[formattedDate];
       if (report && report.url) {
-        openSheetApp(report.url);
+        openSheetApp(report.url); // 이미 있으면 바로 열기
       } else {
+        // 없으면 팝업(모달) 띄우기
         const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
         document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
         openModal();
@@ -785,7 +786,33 @@
       
       fetchReportsForMonth(currentYear, currentMonth, true);
     });
-    
+
+    function openSheetApp(url) {
+      const os = getMobileOS();
+      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      
+      let webUrl = url; 
+      let appUrl = url; 
+      
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        if (os === "iOS" || os === "Android") {
+            appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        }
+      }
+      
+      if (os === "iOS" || os === "Android") {
+        window.open(appUrl, '_blank');
+        
+        setTimeout(function() {
+            window.open(webUrl, '_blank');
+        }, 100); 
+
+      } else {
+        window.open(webUrl, '_blank');
+      }
+    }
   </script>
 </body>
 </html>
+
