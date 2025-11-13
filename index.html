@@ -66,24 +66,24 @@
     @media (min-width: 768px) {
         .client-address { display: inline; }
     }
-.map-header-bar {
-      /* Flexbox, Padding, Border (그대로 유지) */
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem;
-      border-bottom-width: 1px;
-      border-bottom-color: #e5e7eb;
+/* ✅ [추가] 새 '뒤로 가기' 버튼 스타일 (배경 없음) */
+    .map-close-button-new {
+      position: absolute;
+      top: 0.75rem;  /* 12px */
+      left: 0.75rem; /* 12px */
+      z-index: 20;  /* 목록(z-10)보다 위에 */
       
-      /* ✅ [수정] rgba 대신 'opacity'로 강제 반투명 적용 */
-      background-color: #ffffff !important; /* 1. 일단 불투명 흰색으로 칠하고 */
-      opacity: 0.7 !important; /* 2. 그 상자 전체를 70% 반투명하게 만듦 */
+      background-color: transparent; /* 배경 없음 */
+      color: #1f2937; /* 진한 회색 아이콘 */
+      border-radius: 9999px; /* 원형 */
+      padding: 0.5rem; /* 8px */
       
-      /* (흐림 효과는 그대로 유지) */
-      -webkit-backdrop-filter: blur(4px) !important;
-      backdrop-filter: blur(4px) !important;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-  </style>
+    .map-close-button-new:hover {
+      background-color: rgba(0, 0, 0, 0.1); /* 마우스 올리면 살짝 어두운 원 */
+    }
 </head>
 <body class="p-4 md:p-8">
 
@@ -174,12 +174,22 @@
 
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
   
-  <div class="map-header-bar">
-    <h3 class="text-xl font-bold text-gray-800">거래처 현황 지도</h3>
-    <button onclick="closeMapOverlay()" class="p-1 text-gray-500 hover:text-gray-800">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+  <div class="flex-1 relative"> 
+    
+    <button onclick="closeMapOverlay()" class="map-close-button-new">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
     </button>
+    
+    <div id="map_overlay_content" class="w-full h-full">
+    </div>
+      
+    <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+      </div>
+    
   </div>
+</div>
   
   <div class="flex-1 relative"> 
     
@@ -783,5 +793,6 @@
   </script>
 </body>
 </html>
+
 
 
