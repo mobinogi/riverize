@@ -296,9 +296,6 @@
     // 3. T맵 통신 및 데이터 처리 함수 (공식 예제 $.ajax 통합)
     // ===============================================
 
-    // ⛔ [삭제] handleGeocodingResponse 함수 삭제됨
-    // ⛔ [삭제] getCoordsFromAddress 함수 삭제됨
-
     /**
      * T맵 공식 예제 $.ajax 코드를 기반으로 주소를 좌표로 변환하고 마커를 찍는 함수
      * Promise로 감싸서 외부에서 await로 결과를 기다릴 수 있도록 합니다.
@@ -332,7 +329,7 @@
                     // ✅ T맵 공식 예제의 성공 처리 로직이 여기에 직접 들어갑니다.
                     var resultInfo = response.coordinateInfo;
                     
-                    if (resultInfo.coordinate.length === 0) {
+                    if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
                         reject({ message: "요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다." });
                         return;
                     } 
@@ -340,11 +337,13 @@
                     var lon, lat;
                     var resultCoordinate = resultInfo.coordinate[0];
                     
-                    // 구주소(lon) 또는 신주소(newLon)에서 좌표 추출
-                    if (resultCoordinate.lon && resultCoordinate.lon.length > 0) {
+                    // 공식 예제 로직: 구주소(lon) 또는 신주소(newLon)에서 좌표 추출
+                    if (resultCoordinate.lon && resultCoordinate.lon.length > 0) { 
+                        // 구주소
                         lon = resultCoordinate.lon;
                         lat = resultCoordinate.lat;
                     } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) { 
+                        // 신주소
                         lon = resultCoordinate.newLon;
                         lat = resultCoordinate.newLat
                     } else {
@@ -377,7 +376,49 @@
             });
         });
     }
+
+    /**
+     * 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수 (클라이언트 클릭 시 호출됨)
+     */
+    async function setSingleMarkerAndCenter(client, user) {
+        if (!currentMapInstance) return;
+
+        // 1. 이미 좌표가 있으면 마커만 재생성 및 지도 이동
+        if (client.coords) {
+             const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+            
+            if (currentMarker) { currentMarker.setMap(null); }
+            
+            currentMarker = new Tmapv2.Marker({
+                position: client.coords,
+                map: currentMapInstance,
+                title: client.name,
+                icon: markerImageUrl
+            });
+            currentMapInstance.setCenter(client.coords);
+            currentMapInstance.setZoom(15);
+            return;
+        }
+
+        // 2. 좌표가 없으면 geocodeAndSetMarker 호출
+        try {
+            // geocodeAndSetMarker 함수가 T맵 $.ajax 통신을 수행하고 마커 생성을 완료합니다.
+            const coords = await geocodeAndSetMarker(client.address, user);
+
+            // 3. 획득한 좌표를 clients 데이터에 바로 저장 (다음 클릭 시 재요청 방지)
+            const userData = loadedClientData[user].find(c => c.name === client.name);
+            if (userData) {
+                // TMAPv2 LatLng 객체를 저장
+                userData.coords = coords; 
+            }
+
+        } catch(e) {
+            alert(`[마커 생성 실패] 주소: ${client.address}. 오류: ${e.message}`);
+            console.error("마커 생성 최종 실패", e);
+        }
+    }
     
+    // ... (나머지 함수들은 유지) ...
     // ===============================================
     // 4. UI 및 이벤트 처리 함수 (메인 로직)
     // ===============================================
@@ -628,38 +669,95 @@
     }
 
     /**
+     * T맵 공식 예제 $.ajax 코드를 기반으로 주소를 좌표로 변환하고 마커를 찍는 함수
+     * Promise로 감싸서 외부에서 await로 결과를 기다릴 수 있도록 합니다.
+     */
+    async function geocodeAndSetMarker(address, user) {
+        if (!currentMapInstance) return;
+
+        // 1. 기존 마커 제거
+        if (currentMarker) {
+            currentMarker.setMap(null);
+            currentMarker = null;
+        }
+
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+        // 로컬 마커 이미지 경로 사용
+        const markerImageUrl = markerColors[user] === 'red' ? 
+            'pin_r_m_s.png' : 'pin_b_m_s.png';
+        const headers = { "appKey": appKey };
+
+        // 2. TMAP API 사용 요청 (jQuery $.ajax 사용, T맵 예제 로직)
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                method: "GET",
+                headers: headers,
+                url: "https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json",
+                data: {
+                    "coordType": "WGS84GEO",
+                    "fullAddr": address
+                },
+                success: function(response) {
+                    // ✅ T맵 공식 예제의 성공 처리 로직이 여기에 직접 들어갑니다.
+                    var resultInfo = response.coordinateInfo;
+                    
+                    if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
+                        reject({ message: "요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다." });
+                        return;
+                    } 
+                    
+                    var lon, lat;
+                    var resultCoordinate = resultInfo.coordinate[0];
+                    
+                    // 공식 예제 로직: 구주소(lon) 또는 신주소(newLon)에서 좌표 추출
+                    if (resultCoordinate.lon && resultCoordinate.lon.length > 0) { 
+                        // 구주소
+                        lon = resultCoordinate.lon;
+                        lat = resultCoordinate.lat;
+                    } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) { 
+                        // 신주소
+                        lon = resultCoordinate.newLon;
+                        lat = resultCoordinate.newLat
+                    } else {
+                        reject({ message: "좌표를 찾을 수 없습니다." });
+                        return;
+                    }
+
+                    var markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
+                    
+                    // 3. 마커 올리기 (로컬 마커 이미지 사용)
+                    currentMarker = new Tmapv2.Marker({
+                        position: markerPosition,
+                        icon: markerImageUrl, 
+                        iconSize: new Tmapv2.Size(24, 38),
+                        map: currentMapInstance,
+                        title: address
+                    });
+                    
+                    // 4. 지도 이동
+                    currentMapInstance.setCenter(markerPosition);
+                    currentMapInstance.setZoom(15);
+                    
+                    console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
+                    resolve(markerPosition);
+                },
+                error: function(request, status, error) {
+                    console.error("Geocoding API 오류:", { request, status, error });
+                    reject({ message: `API 호출 실패 (${status}: ${error})` });
+                }
+            });
+        });
+    }
+
+    /**
      * 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수 (클라이언트 클릭 시 호출됨)
      */
     async function setSingleMarkerAndCenter(client, user) {
         if (!currentMapInstance) return;
 
-        // 1. 기존 마커 제거 (geocodeAndSetMarker에서 처리됨)
-        
-        // 2. 좌표가 없으면 지오코딩 시도 (트래픽 발생 지점)
-        if (!client.coords) {
-            console.log(`[지오코딩] ${client.name} 주소 변환 시작...`);
-            try {
-                // geocodeAndSetMarker 함수가 T맵 $.ajax 통신을 수행하고 마커를 생성합니다.
-                client.coords = await geocodeAndSetMarker(client.address, user);
-            } catch(e) {
-                console.error(e.message);
-                alert(`[지오코딩 실패] 주소: ${client.address}. 오류: ${e.message}`);
-                return;
-            }
-
-            // 지오코딩 실패 시 중단
-            if (!client.coords) {
-                alert(`[오류] ${client.name}의 주소를 찾을 수 없습니다. (주소: ${client.address})`);
-                return;
-            }
-            // 획득한 좌표를 clients 데이터에 바로 저장 (다음 클릭 시 지오코딩 방지)
-            const userData = loadedClientData[user].find(c => c.name === client.name);
-            if (userData) {
-                userData.coords = client.coords;
-            }
-        } else {
-             // 3. 이미 좌표가 있으면 마커만 재생성 및 지도 이동
-            const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+        // 1. 이미 좌표가 있으면 마커만 재생성 및 지도 이동
+        if (client.coords) {
+             const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
             
             if (currentMarker) { currentMarker.setMap(null); }
             
@@ -671,9 +769,25 @@
             });
             currentMapInstance.setCenter(client.coords);
             currentMapInstance.setZoom(15);
+            return;
         }
 
-        console.log(`[맵 이동] ${client.name} 마커로 이동 및 확대.`);
+        // 2. 좌표가 없으면 geocodeAndSetMarker 호출
+        try {
+            // geocodeAndSetMarker 함수가 T맵 $.ajax 통신을 수행하고 마커 생성을 완료합니다.
+            const coords = await geocodeAndSetMarker(client.address, user);
+
+            // 3. 획득한 좌표를 clients 데이터에 바로 저장 (다음 클릭 시 재요청 방지)
+            const userData = loadedClientData[user].find(c => c.name === client.name);
+            if (userData) {
+                // TMAPv2 LatLng 객체를 저장
+                userData.coords = coords; 
+            }
+
+        } catch(e) {
+            alert(`[마커 생성 실패] 주소: ${client.address}. 오류: ${e.message}`);
+            console.error("마커 생성 최종 실패", e);
+        }
     }
 
     /**
