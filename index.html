@@ -55,7 +55,7 @@
       left: 0;
       width: 33.3333%; 
       max-height: 100%;
-      background-color: rgba(247, 249, 252, 0.85); 
+      background-color: rgba(247, 249, 252, 0.6); 
       backdrop-filter: blur(4px); 
       z-index: 10; 
       transition: width 0.3s ease-in-out; 
@@ -70,6 +70,9 @@
     @media (min-width: 768px) {
         .client-address { display: inline; }
     }
+    /* ✅ [신규] 스크롤바 숨기기 (기능은 유지) */
+    #client-list-panel::-webkit-scrollbar { display: none; } /* Chrome, Safari, 모바일 */
+    #client-list-panel { scrollbar-width: none; } /* Firefox */
   </style>
 </head>
 <body class="p-4 md:p-8">
@@ -886,3 +889,4 @@
   </script>
 </body>
 </html>
+
