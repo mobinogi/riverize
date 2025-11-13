@@ -260,38 +260,21 @@
     function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
 
+/**
+     * ✅ [수정] PC를 모바일로 잘못 감지하는 MacIntel 로직 제거
+     */
     function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      
+      // 'navigator.platform' 체크 로직을 제거하여
+      // 데스크톱(Mac)을 iPad로 오인하는 문제를 해결합니다.
+      if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
+      
       return "Other";
     }
     
-    function openSheetApp(url) {
-      const os = getMobileOS();
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      let webUrl = url; 
-      let appUrl = url; 
-      
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS" || os === "Android") {
-            appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        }
-      }
-      
-      if (os === "iOS" || os === "Android") {
-        window.open(appUrl, '_blank');
-        
-        setTimeout(function() {
-            window.open(webUrl, '_blank');
-        }, 100); 
 
-      } else {
-        window.open(webUrl, '_blank');
-      }
-    }
     
     // ===============================================
     // 3. T맵 통신 및 데이터 처리 함수 (공식 예제 $.ajax 통합)
@@ -815,4 +798,5 @@ function onDateClick(day, isSunday) {
   </script>
 </body>
 </html>
+
 
