@@ -276,24 +276,14 @@
      */
     function openSheetApp(url) {
       const os = getMobileOS();
-      
-      // 1. 기본은 웹 URL
-      let finalUrl = url; 
-      
-      // 2. 파일 ID 추출
+      let appUrl = url;
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      // 3. 모바일 환경(Android/iOS)이면 -> 무조건 '앱 실행 주소'로 변경
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
-        if (os === "iOS" || os === "Android") {
-            finalUrl = "googlesheets://spreadsheet?id=" + fileId;
-        }
+        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
       }
-      
-      // 4. 변경된 주소(앱 or 웹)로 바로 열기
-      // (모바일에서는 앱이, PC에서는 웹페이지가 열립니다)
-      window.open(finalUrl, '_blank');
+      window.open(appUrl, '_blank');
     }
     
     // ===============================================
@@ -762,6 +752,13 @@
             togglePanelMinimize();
         }
     }
+
+        function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      return "Other";
+    }
     
     // ===============================================
     // 6. 🚀 앱 시작 (시동)
@@ -781,6 +778,7 @@
   </script>
 </body>
 </html>
+
 
 
 
