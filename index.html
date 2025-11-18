@@ -88,7 +88,7 @@
 <body class="p-4 md:p-8">
 
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-  
+
   <div class="flex border-b border-gray-200 mb-6">
     <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
       일보 작성
@@ -108,8 +108,14 @@
       <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
         오늘 일보 생성 & 열기
       </button>
+
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">2. 주류판매 계산서 첨부</h2>
+      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+        <p class="font-semibold">사진/갤러리 열기 (파일 선택)</p>
+        <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
+      </div>
       
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 현황 지도</h2>
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
         <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
       </div>
@@ -172,41 +178,41 @@
       </div>
   </div>
 
-<div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
-  
-  <div class="flex-1 relative"> 
+  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
     
-<button onclick="closeMapOverlay()" class="map-close-button-new">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-    
-    <div id="map_overlay_content" class="w-full h-full">
-    </div>
+    <div class="flex-1 relative"> 
       
-    <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+      <button onclick="closeMapOverlay()" class="map-close-button-new">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
       
-      <div class="flex flex-col space-y-2 mb-3"> 
-        <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-1 px-1 text-sm font-medium toggle-button">
-            <span id="toggle-icon">◀️</span> 
-        </button>
-        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-1 text-sm font-medium toggle-button">
-          김원대
-        </button>
-        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-1 text-sm font-medium toggle-button">
-          정병준
-        </button>
+      <div id="map_overlay_content" class="w-full h-full">
       </div>
+        
+      <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+        
+        <div class="flex flex-col space-y-2 mb-3"> 
+          <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-1 px-1 text-sm font-medium toggle-button">
+              <span id="toggle-icon">◀️</span> 
+          </button>
+          <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-1 text-sm font-medium toggle-button">
+            김원대
+          </button>
+          <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-1 text-sm font-medium toggle-button">
+            정병준
+          </button>
+        </div>
 
-      <div id="client-list-container">
-        <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
+        <div id="client-list-container">
+          <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
+        </div>
+
       </div>
-
+      
     </div>
-    
   </div>
-</div>
   <script>
     // 1. 탭 제어 함수 (2개 탭용)
     function changeTab(tabName) {
@@ -781,7 +787,7 @@
         }
     }
 
-        function getMobileOS() {
+    function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
       if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
@@ -806,6 +812,7 @@
   </script>
 </body>
 </html>
+
 
 
 
