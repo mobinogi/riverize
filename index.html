@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://code.jquery.com;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
@@ -18,10 +18,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script> 
+  
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   
   <style>
-    /* (스타일은 그대로 유지) */
     body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; font-size: 15px; }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
     .date-box { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; flex-shrink: 0; }
@@ -68,27 +69,32 @@
     }
     .map-close-button-new {
       position: absolute;
-      top: 0.75rem;  /* 12px */
-      right: 0.75rem; /* 12px */
-      z-index: 20;  /* 목록(z-10)보다 위에 */
-      
-      background-color: transparent; /* 배경 없음 */
-      color: #1f2937; /* 진한 회색 아이콘 */
-      border-radius: 9999px; /* 원형 */
-      padding: 0.5rem; /* 8px */
-      
+      top: 0.75rem; 
+      right: 0.75rem;
+      z-index: 20;  
+      background-color: transparent; 
+      color: #1f2937; 
+      border-radius: 9999px; 
+      padding: 0.5rem; 
       cursor: pointer;
       transition: all 0.2s;
     }
     .map-close-button-new:hover {
-      background-color: rgba(0, 0, 0, 0.1); /* 마우스 올리면 살짝 어두운 원 */
+      background-color: rgba(0, 0, 0, 0.1);
     }
-    </style>
+    /* 뉴모피즘 스타일 박스 */
+    #content-write {
+      background-color: #ffffff;
+      box-shadow: 10px 10px 20px #dce1e6, -10px -10px 20px #ffffff;
+      border-radius: 1rem; 
+      border: none; 
+    }
+  </style>
 </head>
 <body class="p-4 md:p-8">
 
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">강서 도매소 통합 대시보드</h1>
-
+  
   <div class="flex border-b border-gray-200 mb-6">
     <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
       일보 작성
@@ -100,7 +106,7 @@
 
   <div id="tab-content">
     
-    <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
+    <div id="content-write" class="space-y-6 p-6 rounded-xl">
       <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
       <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
         <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
@@ -115,7 +121,7 @@
         <p class="text-xs mt-2">**중요:** 사진을 선택한 후, **새 창에 열린 Google Sheets 보고서**로 돌아가서 메뉴의 "+" 버튼을 눌러 사진을 직접 삽입해야 합니다.</p>
       </div>
       
-      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 지도 현황</h2>
+      <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 현황 지도</h2>
       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
         <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인합니다.</p>
       </div>
@@ -171,66 +177,52 @@
       </div>
   </div>
 
-  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
+  <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm" aria-modal="true">
       <div class="bg-white p-6 rounded-xl shadow-2xl flex items-center space-x-4">
           <div class="w-8 h-8 border-4 border-t-transparent border-green-500 rounded-full animate-spin"></div>
           <p id="loading-message" class="text-lg font-semibold text-gray-700">처리 중...</p>
       </div>
   </div>
 
-  <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+<div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
+  
+  <div class="flex-1 relative"> 
     
-    <div class="flex-1 relative"> 
-      
-      <button onclick="closeMapOverlay()" class="map-close-button-new">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      
-      <div id="map_overlay_content" class="w-full h-full">
-      </div>
-        
-      <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
-        
-        <div class="flex flex-col space-y-2 mb-3"> 
-          <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-1 px-1 text-sm font-medium toggle-button">
-              <span id="toggle-icon">◀️</span> 
-          </button>
-          <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-1 text-sm font-medium toggle-button">
-            김원대
-          </button>
-          <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-1 text-sm font-medium toggle-button">
-            정병준
-          </button>
-        </div>
-
-        <div id="client-list-container">
-          <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
-        </div>
-
-      </div>
-      
+    <button onclick="closeMapOverlay()" class="map-close-button-new">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    
+    <div id="map_overlay_content" class="w-full h-full">
     </div>
-  </div>
-  <script>
-    // 1. 탭 제어 함수 (2개 탭용)
-    function changeTab(tabName) {
-      document.getElementById('tab-write').classList.remove('tab-active');
-      document.getElementById('tab-review').classList.remove('tab-active');
-      document.getElementById('content-write').classList.add('hidden');
-      document.getElementById('content-review').classList.add('hidden');
+      
+    <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+      
+      <div class="flex flex-col space-y-2 mb-3"> 
+        <button id="btn-toggle" onclick="togglePanelMinimize()" class="py-1 px-1 text-sm font-medium toggle-button">
+            <span id="toggle-icon">◀️</span> 
+        </button>
+        <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="py-1 text-sm font-medium toggle-button">
+          김원대
+        </button>
+        <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="py-1 text-sm font-medium toggle-button">
+          정병준
+        </button>
+      </div>
 
-      if (tabName === 'write') {
-        document.getElementById('tab-write').classList.add('tab-active');
-        document.getElementById('content-write').classList.remove('hidden');
-      } else if (tabName === 'review') {
-        document.getElementById('tab-review').classList.add('tab-active');
-        document.getElementById('content-review').classList.remove('hidden');
-        if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
-        else renderCalendar();
-      }
-    }
+      <div id="client-list-container">
+        <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
+      </div>
+
+    </div>
+    
+  </div>
+</div>
+
+  <script>
+    // ✅ jQuery 충돌 방지
+    jQuery.noConflict();
 
     // ===============================================
     // 1. 전역 변수 및 초기 설정
@@ -238,6 +230,7 @@
     
     const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
     
+    // 전역 변수 통합 선언
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
@@ -257,8 +250,25 @@
     };
 
     // ===============================================
-    // 2. 유틸리티 함수
+    // 2. 유틸리티 및 UI 함수
     // ===============================================
+    
+    function changeTab(tabName) {
+      document.getElementById('tab-write').classList.remove('tab-active');
+      document.getElementById('tab-review').classList.remove('tab-active');
+      document.getElementById('content-write').classList.add('hidden');
+      document.getElementById('content-review').classList.add('hidden');
+
+      if (tabName === 'write') {
+        document.getElementById('tab-write').classList.add('tab-active');
+        document.getElementById('content-write').classList.remove('hidden');
+      } else if (tabName === 'review') {
+        document.getElementById('tab-review').classList.add('tab-active');
+        document.getElementById('content-review').classList.remove('hidden');
+        if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
+        else renderCalendar();
+      }
+    }
 
     function formatDate(date) {
       return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
@@ -272,25 +282,41 @@
     function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
+      // MacIntel은 아이패드일 수도 있으므로 터치 포인트 확인
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS"; 
       return "Other";
     }
     
-/**
-     * [수정] 미리 열린 창(targetWindow)을 받아서 이동시키는 함수
+    /**
+     * ✅ [최종 수정] iframe을 이용한 조용한 앱 실행 (새 창 안 띄움)
      */
-    function openSheetApp(url, targetWindow) {
-      // ✅ 모바일에서도 https 주소를 그대로 사용합니다.
-      // (googlesheets:// 스키마는 실패 시 빈 화면이 뜨기 쉽습니다.
-      //  대신 일반 웹 주소를 쓰면 OS가 알아서 앱 연결을 처리합니다.)
+    function openSheetApp(url) {
+      const os = getMobileOS();
+      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
       
-      // 1. 미리 열린 창이 있으면 -> 그 창의 주소를 변경
-      if (targetWindow) {
-          targetWindow.location.href = url;
-      } else {
-          // 2. 미리 열린 창이 없으면 (혹시 모를 상황 대비) -> 그냥 새 창 열기
-          window.open(url, '_blank');
+      // 1. PC거나 파일 ID가 없으면 -> 그냥 새 탭으로 엽니다.
+      if (!fileIdMatch || !fileIdMatch[1] || (os !== "iOS" && os !== "Android")) {
+         window.open(url, '_blank');
+         return;
       }
+
+      // 2. 모바일이면 -> 앱 실행 주소 생성
+      const fileId = fileIdMatch[1];
+      const appUrl = "googlesheets://spreadsheet?id=" + fileId;
+
+      // 3. 보이지 않는 iframe을 만들어서 앱 실행 시도
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appUrl;
+      document.body.appendChild(iframe);
+      
+      // 4. 1.5초 뒤에 앱이 안 열렸으면(아직 이 페이지에 있다면) 웹페이지로 이동
+      setTimeout(function() {
+        document.body.removeChild(iframe); 
+        if (!document.hidden && !document.webkitHidden) {
+            window.location.href = url; 
+        }
+      }, 1500);
     }
     
     // ===============================================
@@ -298,7 +324,7 @@
     // ===============================================
 
     /**
-     * ✅ [수정] T맵 지오코딩 함수 (jQuery/$.ajax 제거, Fetch API 사용)
+     * T맵 지오코딩 함수 (Fetch API 사용)
      */
     async function geocodeAndSetMarker(address, user) {
         if (!currentMapInstance) return;
@@ -311,7 +337,6 @@
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
         const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
         
-        // TMAP API URL (Fetch용)
         const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
 
         try {
@@ -354,8 +379,7 @@
             currentMapInstance.setCenter(markerPosition);
             currentMapInstance.setZoom(15);
             
-            console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
-            return markerPosition; // Promise<LatLng> 반환
+            return markerPosition; 
 
         } catch (error) {
             console.error("Geocoding API 오류:", error);
@@ -364,7 +388,7 @@
     }
 
     /**
-     * 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수 (클라이언트 클릭 시 호출됨)
+     * 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수
      */
     async function setSingleMarkerAndCenter(client, user) {
         if (!currentMapInstance) return;
@@ -398,8 +422,35 @@
     }
     
     // ===============================================
-    // 4. UI 및 이벤트 처리 함수 (메인 로직)
+    // 4. 비동기 통신 및 메인 로직
     // ===============================================
+
+    async function callAppsScript(action, params = {}) {
+      if (action === 'getTmapApiKey') {
+        return; 
+      }
+      
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      for (const key in params) {
+        url.searchParams.set(key, params[key]);
+      }
+      try {
+        const response = await fetch(url.toString(), {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error('HTTP 오류: ' + response.status);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API 호출 오류:', error);
+        return {
+          status: 'error',
+          message: error.message
+        };
+      }
+    }
 
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
       const monthKey = year + '-' + month;
@@ -461,64 +512,22 @@
       fetchReportsForMonth(currentYear, currentMonth);
     }
     
-    async function callAppsScript(action, params = {}) {
-      if (action === 'getTmapApiKey') {
-        console.warn("getTmapApiKey is deprecated. Key is now hardcoded.");
-        return; 
-      }
-      
-      const url = new URL(API_URL);
-      url.searchParams.set('action', action);
-      for (const key in params) {
-        url.searchParams.set(key, params[key]);
-      }
-      try {
-        const response = await fetch(url.toString(), {
-          method: 'GET'
-        });
-        if (!response.ok) {
-          throw new Error('HTTP 오류: ' + response.status);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        return {
-          status: 'error',
-          message: error.message
-        };
-      }
-    }
-    
-/**
-     * [수정] '미리 열기' 전략 적용
-     */
     async function generateTodayReport() {
-      // ✅ 1. 버튼 클릭 직후, '미리' 빈 창을 엽니다. (팝업 차단 회피)
-      //    (서버 응답을 기다리지 않고 바로 여는 것이 핵심입니다!)
-      let newWindow = window.open('', '_blank'); 
-      
       showLoader('오늘 일보를 생성 중...');
-      
       try {
         const result = await callAppsScript('generate');
-        
         if (result.status === 'success' && result.url) {
           hideLoader();
-          
-          // ✅ 2. 비동기 작업이 끝난 후, 아까 열어둔 창(newWindow)을 넘깁니다.
-          openSheetApp(result.url, newWindow); 
-          
+          openSheetApp(result.url);
           if (new Date().getMonth() + 1 === currentMonth) {
             fetchReportsForMonth(currentYear, currentMonth, true);
           }
         } else {
           hideLoader();
-          if (newWindow) newWindow.close(); // 실패하면 빈 창 닫기
           alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
-        if (newWindow) newWindow.close(); // 오류나면 빈 창 닫기
         alert('오류 발생: ' + error.message);
       }
     }
@@ -557,56 +566,9 @@
       }
     }
     
-    function renderCalendar() {
-      const display = document.getElementById('current-month-display');
-      if (!display) return;
-      display.textContent = currentYear + '년 ' + currentMonth + '월';
-      document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
-      const container = document.getElementById('calendar-days');
-      if (!container) return;
-      container.innerHTML = '';
-      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
-      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-      const startDayOfWeek = firstDayOfMonth.getDay();
-      const today = new Date();
-      const todayYear = today.getFullYear();
-      const todayMonth = today.getMonth() + 1;
-      const todayDay = today.getDate();
-
-      for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
-        const isToday = todayYear === currentYear && todayMonth === currentMonth && todayDay === day;
-        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        const isReportExists = reportsMap[dateKey];
-        
-        let boxClasses = ['date-box'];
-        if (isSunday) {
-          boxClasses.push('sunday-date');
-        } else if (isReportExists) {
-          boxClasses.push('report-exists');
-        } else {
-          boxClasses.push('no-report');
-        }
-        
-        if (isToday && !isSunday) {
-          boxClasses.push('today-highlight');
-        }
-        
-        container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
-      }
-    }
-
-/**
-     * [수정] '미리 열기' 전략 적용
-     */
     async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
       
-      // ✅ 1. '예' 버튼 클릭 직후 미리 열기
-      let newWindow = window.open('', '_blank');
-
       const dateToGenerate = selectedDateForGeneration;
       closeModal();
       const [year, month, day] = dateToGenerate.split('-').map(Number);
@@ -617,29 +579,21 @@
         if (result.status === 'success' && result.url) {
           if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
           renderCalendar();
-          
-          // ✅ 2. 아까 열어둔 창 사용
-          openSheetApp(result.url, newWindow); 
-          
+          openSheetApp(result.url);
         } else {
-          if (newWindow) newWindow.close();
           alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
         }
       } catch (error) {
-        if (newWindow) newWindow.close();
         alert('보고서 생성 중 오류 발생: ' + error.message);
       } finally {
         hideLoader();
       }
     }
-    
+
     // ===============================================
     // 5. T맵/목록 UI 함수
     // ===============================================
 
-    /**
-     * '오버레이 열기' 버튼
-     */
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       
@@ -674,16 +628,10 @@
       }
     }
 
-    /**
-     * '닫기' 버튼
-     */
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
     
-    /**
-     * 목록 패널을 축소/확대하는 함수
-     */
     function togglePanelMinimize() {
         const panel = document.getElementById('client-list-panel');
         const icon = document.getElementById('toggle-icon');
@@ -694,9 +642,6 @@
         icon.textContent = isPanelMinimized ? '▶️' : '◀️';
     }
 
-    /**
-     * 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
-     */
     async function fetchClientList(user) {
         if (loadedClientData[user]) return; 
         
@@ -714,9 +659,6 @@
         }
     }
 
-    /**
-     * 실제 목록을 화면에 뿌리는 함수
-     */
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
@@ -734,7 +676,6 @@
             
             li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
             
-            // 목록 클릭 시 지도 중앙 이동 이벤트
             li.onclick = () => {
                 setSingleMarkerAndCenter(client, user); 
             }; 
@@ -744,14 +685,10 @@
         container.appendChild(listUl);
     }
     
-    /**
-     * 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
-     */
     async function toggleClientList(user, buttonElement) {
         const container = document.getElementById('client-list-container');
         const allButtons = document.querySelectorAll('#client-list-panel button');
         
-        // 1. 버튼 활성화/비활성화 상태 변경
         allButtons.forEach(btn => {
             if (btn.id !== 'btn-toggle') {
                  btn.classList.remove('toggle-active');
@@ -771,31 +708,34 @@
         buttonElement.classList.add('toggle-active');
         activeClientUser = user;
 
-        // 2. 데이터 로드 및 화면 표시
         container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
         
         if (!loadedClientData[user]) {
             await fetchClientList(user);
         }
         
-        // 3. 목록 표시
         displayClientList(user, loadedClientData[user]);
         
-        // 4. 목록을 표시한 후, 혹시 미니멀 모드였다면 확장
         if (isPanelMinimized) {
             togglePanelMinimize();
         }
     }
 
+    /**
+     * ✅ [추가] 모바일 OS 감지 함수 (이게 빠져서 오류가 났습니다)
+     */
     function getMobileOS() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return "iOS";
+      // iOS 감지 (iPad, iPhone, iPod)
+      if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        return "iOS";
+      }
       return "Other";
     }
     
     // ===============================================
-    // 6. 🚀 앱 시작 (시동)
+    // 6. 앱 시작 (시동)
     // ===============================================
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
@@ -812,16 +752,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
