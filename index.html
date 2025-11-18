@@ -274,24 +274,16 @@
      * [수정] 미리 열린 창(targetWindow)을 받아서 이동시키는 함수
      */
     function openSheetApp(url, targetWindow) {
-      const os = getMobileOS();
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      // ✅ 모바일에서도 https 주소를 그대로 사용합니다.
+      // (googlesheets:// 스키마는 실패 시 빈 화면이 뜨기 쉽습니다.
+      //  대신 일반 웹 주소를 쓰면 OS가 알아서 앱 연결을 처리합니다.)
       
-      let finalUrl = url; 
-      
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS" || os === "Android") {
-            finalUrl = "googlesheets://spreadsheet?id=" + fileId;
-        }
-      }
-      
-      // 1. 미리 열린 창이 있으면 -> 그 창의 주소를 변경 (모바일/PC 공통)
+      // 1. 미리 열린 창이 있으면 -> 그 창의 주소를 변경
       if (targetWindow) {
-          targetWindow.location.href = finalUrl;
+          targetWindow.location.href = url;
       } else {
-          // 2. 미리 열린 창이 없으면 (예: 달력에서 이미 생성된 날짜 클릭 시) -> 그냥 새 창 열기
-          window.open(finalUrl, '_blank');
+          // 2. 미리 열린 창이 없으면 (혹시 모를 상황 대비) -> 그냥 새 창 열기
+          window.open(url, '_blank');
       }
     }
     
@@ -495,7 +487,8 @@
      * [수정] '미리 열기' 전략 적용
      */
     async function generateTodayReport() {
-      // 1. 버튼 클릭 직후, '미리' 빈 창을 엽니다. (팝업 차단 회피)
+      // ✅ 1. 버튼 클릭 직후, '미리' 빈 창을 엽니다. (팝업 차단 회피)
+      //    (서버 응답을 기다리지 않고 바로 여는 것이 핵심입니다!)
       let newWindow = window.open('', '_blank'); 
       
       showLoader('오늘 일보를 생성 중...');
@@ -506,7 +499,7 @@
         if (result.status === 'success' && result.url) {
           hideLoader();
           
-          // 2. 비동기 작업이 끝난 후, 아까 열어둔 창에 주소를 넣습니다.
+          // ✅ 2. 비동기 작업이 끝난 후, 아까 열어둔 창(newWindow)을 넘깁니다.
           openSheetApp(result.url, newWindow); 
           
           if (new Date().getMonth() + 1 === currentMonth) {
@@ -605,7 +598,7 @@
     async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
       
-      // 1. '예' 버튼 클릭 직후 미리 열기
+      // ✅ 1. '예' 버튼 클릭 직후 미리 열기
       let newWindow = window.open('', '_blank');
 
       const dateToGenerate = selectedDateForGeneration;
@@ -619,7 +612,7 @@
           if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
           renderCalendar();
           
-          // 2. 아까 열어둔 창 사용
+          // ✅ 2. 아까 열어둔 창 사용
           openSheetApp(result.url, newWindow); 
           
         } else {
@@ -813,6 +806,7 @@
   </script>
 </body>
 </html>
+
 
 
 
