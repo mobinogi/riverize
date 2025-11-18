@@ -271,19 +271,28 @@
     }
     
 /**
-     * [최종 수정] Apps Script 버전과 동일한 '단순 앱 실행' 로직
-     * 불필요한 웹페이지(새 탭)를 띄우지 않고 바로 앱 실행을 시도합니다.
+     * [수정] 미리 열린 창(targetWindow)을 받아서 이동시키는 함수
      */
-    function openSheetApp(url) {
+    function openSheetApp(url, targetWindow) {
       const os = getMobileOS();
-      let appUrl = url;
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      
+      let finalUrl = url; 
+      
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
-        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        if (os === "iOS" || os === "Android") {
+            finalUrl = "googlesheets://spreadsheet?id=" + fileId;
+        }
       }
-      window.open(appUrl, '_blank');
+      
+      // 1. 미리 열린 창이 있으면 -> 그 창의 주소를 변경 (모바일/PC 공통)
+      if (targetWindow) {
+          targetWindow.location.href = finalUrl;
+      } else {
+          // 2. 미리 열린 창이 없으면 (예: 달력에서 이미 생성된 날짜 클릭 시) -> 그냥 새 창 열기
+          window.open(finalUrl, '_blank');
+      }
     }
     
     // ===============================================
@@ -590,22 +599,35 @@
       }
     }
 
+/**
+     * [수정] '미리 열기' 전략 적용
+     */
     async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
+      
+      // 1. '예' 버튼 클릭 직후 미리 열기
+      let newWindow = window.open('', '_blank');
+
       const dateToGenerate = selectedDateForGeneration;
       closeModal();
       const [year, month, day] = dateToGenerate.split('-').map(Number);
       showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
+      
       try {
         const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
         if (result.status === 'success' && result.url) {
           if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
           renderCalendar();
-          openSheetApp(result.url);
+          
+          // 2. 아까 열어둔 창 사용
+          openSheetApp(result.url, newWindow); 
+          
         } else {
+          if (newWindow) newWindow.close();
           alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
         }
       } catch (error) {
+        if (newWindow) newWindow.close();
         alert('보고서 생성 중 오류 발생: ' + error.message);
       } finally {
         hideLoader();
@@ -791,6 +813,7 @@
   </script>
 </body>
 </html>
+
 
 
 
