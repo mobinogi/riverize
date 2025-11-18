@@ -482,22 +482,35 @@
       }
     }
     
+/**
+     * [수정] '미리 열기' 전략 적용
+     */
     async function generateTodayReport() {
+      // 1. 버튼 클릭 직후, '미리' 빈 창을 엽니다. (팝업 차단 회피)
+      let newWindow = window.open('', '_blank'); 
+      
       showLoader('오늘 일보를 생성 중...');
+      
       try {
         const result = await callAppsScript('generate');
+        
         if (result.status === 'success' && result.url) {
           hideLoader();
-          openSheetApp(result.url);
+          
+          // 2. 비동기 작업이 끝난 후, 아까 열어둔 창에 주소를 넣습니다.
+          openSheetApp(result.url, newWindow); 
+          
           if (new Date().getMonth() + 1 === currentMonth) {
             fetchReportsForMonth(currentYear, currentMonth, true);
           }
         } else {
           hideLoader();
+          if (newWindow) newWindow.close(); // 실패하면 빈 창 닫기
           alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
+        if (newWindow) newWindow.close(); // 오류나면 빈 창 닫기
         alert('오류 발생: ' + error.message);
       }
     }
@@ -778,6 +791,7 @@
   </script>
 </body>
 </html>
+
 
 
 
