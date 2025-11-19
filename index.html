@@ -287,19 +287,30 @@
     }
     
 /**
-     * [강제 실행 모드] 모바일에서는 무조건 앱(googlesheets://)으로 쏩니다.
-     * 앱이 있다고 가정하므로, 빈 창(targetWindow)은 즉시 닫아버리고 앱을 띄웁니다.
+     * [깃헙 전용] 모바일 앱 실행 최적화 함수
+     * 앱스 버전 코드랑 섞지 마세요! 이게 모바일에서 훨씬 잘 작동합니다.
      */
-    function openSheetApp(url) {
+    function openSheetApp(url, targetWindow) {
       const os = getMobileOS();
-      let appUrl = url;
-      const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
-        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
-        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+      
+      // 1. 모바일(iOS/Android)인 경우: 현재 창에서 이동 (앱 실행됨)
+      if (os === "iOS" || os === "Android") {
+          // 혹시 열려있는 빈 창이 있다면 닫아버림 (깔끔하게)
+          if (targetWindow) {
+              targetWindow.close();
+          }
+          // 현재 페이지를 시트 주소로 넘겨버림 -> 폰이 알아서 앱을 띄워줌
+          window.location.href = url;
+      } 
+      
+      // 2. PC인 경우: 새 탭이나 미리 연 창에서 열기
+      else {
+          if (targetWindow) {
+              targetWindow.location.href = url;
+          } else {
+              window.open(url, '_blank');
+          }
       }
-      window.open(appUrl, '_blank');
     }
     
     // ===============================================
@@ -502,8 +513,7 @@ async function generateTodayReport() {
       const os = getMobileOS(); // 기기 확인
       let newWindow = null;
 
-      // [핵심 수정] PC일 때만 '빈 창'을 미리 엽니다.
-      // 모바일은 빈 창을 열면 오히려 앱 실행에 방해가 되므로 열지 않습니다.
+      // 1. PC일 때만 '빈 창'을 미리 엽니다. (모바일은 금지!)
       if (os === "Other") {
           newWindow = window.open('', '_blank');
       }
@@ -511,18 +521,13 @@ async function generateTodayReport() {
       showLoader('오늘 일보를 생성 중...');
       
       try {
-        // 서버 통신 (Apps Script 호출)
-        const result = await new Promise((resolve, reject) => {
-            google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            .generateTodayReport_wrapper(); 
-        });
+        // [수정] google.script.run 대신 callAppsScript를 사용해야 합니다!
+        const result = await callAppsScript('generate'); 
         
         if (result.status === 'success' && result.url) {
           hideLoader();
           
-          // 모바일이면 newWindow가 null이지만, openSheetApp이 알아서 처리합니다.
+          // 성공하면 앱 열기 (모바일은 여기서 앱 실행됨)
           openSheetApp(result.url, newWindow); 
           
           if (new Date().getMonth() + 1 === currentMonth) {
@@ -530,12 +535,12 @@ async function generateTodayReport() {
           }
         } else {
           hideLoader();
-          if (newWindow) newWindow.close(); // 실패 시 PC 빈 창 닫기
+          if (newWindow) newWindow.close(); 
           alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
-        if (newWindow) newWindow.close(); // 에러 시 PC 빈 창 닫기
+        if (newWindow) newWindow.close(); 
         alert('오류 발생: ' + error.message);
       }
     }
@@ -618,10 +623,10 @@ async function generateTodayReport() {
 async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
       
-      const os = getMobileOS(); // 기기 확인
+      const os = getMobileOS(); 
       let newWindow = null;
 
-      // [핵심 수정] 여기서도 PC일 때만 '빈 창'을 미리 엽니다.
+      // 1. PC일 때만 '빈 창' 미리 열기
       if (os === "Other") {
           newWindow = window.open('', '_blank');
       }
@@ -632,11 +637,12 @@ async function confirmGenerateReport() {
       showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
       
       try {
-        const result = await new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            .generateReport(new Date(year, month - 1, day), true);
+        // [수정] 여기도 callAppsScript로 변경!
+        const result = await callAppsScript('generateByDate', { 
+            year: year, 
+            month: month, 
+            day: day, 
+            shouldPropagate: true 
         });
         
         if (result.status === 'success' && result.url) {
@@ -828,6 +834,7 @@ async function confirmGenerateReport() {
   </script>
 </body>
 </html>
+
 
 
 
