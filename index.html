@@ -826,9 +826,7 @@ function openMapOverlay() {
         }
     }
 
-/**
-     * [수정] 주소를 제거하고 이름만 심플하게 표시하는 버전
-     */
+// [최종 수정] 스크롤 오작동 방지 + 롱프레스 삭제 + 숏터치 길안내
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
@@ -842,25 +840,69 @@ function openMapOverlay() {
         
         for (const client of clients) {
             const li = document.createElement('li');
-            // 패딩을 p-3 -> p-2.5로 살짝 줄여서 더 많이 보이게 함
-            li.className = 'p-2.5 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex justify-between items-center';
+            // 터치 반응 속도 향상을 위해 touch-manipulation 추가
+            li.className = 'p-3 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex justify-between items-center select-none touch-manipulation';
             
             li.innerHTML = `
-                <div class="flex-1">
+                <div class="flex-1 pointer-events-none">
                     <div class="text-base font-bold text-gray-800 leading-tight">${client.name}</div>
                 </div>
-                <div class="text-blue-500 pl-2">
+                <div class="text-blue-500 pl-4 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
                     </svg>
                 </div>
             `; 
             
-            li.onclick = () => {
-                setSingleMarkerAndCenter(client, user);
-                openNavPrompt(client, user);
-            }; 
+            // === [터치 로직 개선] ===
+            let pressTimer;
+            let isLongPress = false;
+            let isScrolling = false; // 스크롤 중인지 확인하는 변수
+
+            // 1. 손가락 닿음
+            li.addEventListener('touchstart', (e) => {
+                isLongPress = false;
+                isScrolling = false; // 닿을 땐 스크롤 아님
+                
+                // 0.8초 뒤 롱프레스(삭제) 예약
+                pressTimer = setTimeout(() => {
+                    if (!isScrolling) { // 스크롤 중이 아닐 때만
+                        isLongPress = true;
+                        navigator.vibrate(50); 
+                        closeNavPrompt(); 
+                        openDeletePrompt(client, user); 
+                    }
+                }, 800); 
+            }, { passive: true });
+
+            // 2. 손가락 움직임 (스크롤)
+            li.addEventListener('touchmove', () => {
+                isScrolling = true; // "나 지금 스크롤 중이야!" 표시
+                clearTimeout(pressTimer); // 움직이면 롱프레스 취소
+            }, { passive: true });
+
+            // 3. 손가락 뗌
+            li.addEventListener('touchend', (e) => {
+                clearTimeout(pressTimer);
+                
+                // 스크롤 중이었다면? -> 아무것도 안 하고 끝냄 (팝업 안 뜸)
+                if (isScrolling) return;
+
+                // 롱프레스가 아니었다면 -> 길안내 실행
+                if (!isLongPress) {
+                    closeDeletePrompt();
+                    setSingleMarkerAndCenter(client, user);
+                    openNavPrompt(client, user);
+                }
+            }, { passive: true });
             
+            // PC 마우스 우클릭 대응
+            li.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                closeNavPrompt();
+                openDeletePrompt(client, user);
+            });
+
             listUl.appendChild(li);
         }
         container.innerHTML = ''; 
@@ -1340,6 +1382,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
