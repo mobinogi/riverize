@@ -23,6 +23,19 @@
   <style>
     /* (스타일은 그대로 유지) */
     html, body { background-color: #f7f9fc; height: 100%; margin: 0; padding: 0; overscroll-behavior-y: none; font-family: 'Inter', sans-serif; font-size: 15px; }
+    * {
+        -webkit-touch-callout: none; /* 꾹 눌렀을 때 시스템 메뉴(복사/공유) 차단 */
+        -webkit-user-select: none;   /* 텍스트 선택 차단 */
+        user-select: none;
+        -webkit-tap-highlight-color: transparent; /* 터치 시 파란색 깜빡임 제거 */
+    }
+
+    /* 입력창은 글씨를 써야 하니까 예외로 둠 */
+    input, textarea {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-touch-callout: default !important;
+    }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
     .date-box { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; flex-shrink: 0; }
     .sunday { color: #ef4444; }
@@ -1346,6 +1359,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
