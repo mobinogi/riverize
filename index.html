@@ -791,14 +791,20 @@ async function confirmGenerateReport() {
         container.appendChild(listUl);
     }
     
-    /**
-     * 버튼 클릭 시 목록을 토글하고 데이터를 불러오는 메인 함수
+/**
+     * [수정] 담당자 버튼 클릭 시 실행되는 함수
+     * - 기능 추가: 탭을 변경하면 기존에 열려있던 길안내 팝업을 즉시 닫습니다.
      */
     async function toggleClientList(user, buttonElement) {
+        // 1. [핵심] 담당자가 바뀌거나 탭을 누르면, 열려있던 팝업부터 무조건 닫습니다.
+        if (typeof closeNavPrompt === 'function') {
+            closeNavPrompt();
+        }
+
         const container = document.getElementById('client-list-container');
         const allButtons = document.querySelectorAll('#client-list-panel button');
         
-        // 1. 버튼 활성화/비활성화 상태 변경
+        // 2. 버튼 활성화/비활성화 상태 변경
         allButtons.forEach(btn => {
             if (btn.id !== 'btn-toggle') {
                  btn.classList.remove('toggle-active');
@@ -808,6 +814,8 @@ async function confirmGenerateReport() {
         if (activeClientUser === user) {
             activeClientUser = null;
             container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+            
+            // 마커도 지우기
             if (currentMarker) {
                 currentMarker.setMap(null);
                 currentMarker = null;
@@ -818,17 +826,17 @@ async function confirmGenerateReport() {
         buttonElement.classList.add('toggle-active');
         activeClientUser = user;
 
-        // 2. 데이터 로드 및 화면 표시
+        // 3. 데이터 로드 및 화면 표시
         container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
         
         if (!loadedClientData[user]) {
             await fetchClientList(user);
         }
         
-        // 3. 목록 표시
+        // 4. 목록 표시
         displayClientList(user, loadedClientData[user]);
         
-        // 4. 목록을 표시한 후, 혹시 미니멀 모드였다면 확장
+        // 5. 목록 패널이 최소화되어 있다면 펼치기
         if (isPanelMinimized) {
             togglePanelMinimize();
         }
@@ -1060,6 +1068,7 @@ async function confirmGenerateReport() {
   </script>
 </body>
 </html>
+
 
 
 
