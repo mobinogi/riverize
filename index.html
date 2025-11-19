@@ -114,7 +114,7 @@
 }
 
 #client-list-container li {
-    padding-left: 16px !important; /* 왼쪽 벽에서 16px 떨어짐 */
+    padding-left: 4px !important; /* 왼쪽 벽에서 16px 떨어짐 */
     padding-right: 16px !important;
     text-align: left !important;   /* 무조건 왼쪽 정렬 */
 }
@@ -861,7 +861,7 @@ function openMapOverlay() {
         for (const client of clients) {
             const li = document.createElement('li');
             // 터치 반응 속도 향상을 위해 touch-manipulation 추가
-            li.className = 'px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex justify-between items-center select-none touch-manipulation transition-colors';
+            li.className = 'px-2 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex justify-between items-center select-none touch-manipulation transition-colors';
             
             li.innerHTML = `
                 <div class="flex-1 text-left pointer-events-none pr-4">
@@ -1451,6 +1451,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
