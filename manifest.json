@@ -3,8 +3,8 @@
   "short_name": "강서도매소",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f7f9fc",
+  "theme_color": "#f7f9fc",
   "description": "일일 보고서 및 거래처 관리 앱",
   "icons": [
     {
@@ -25,6 +25,7 @@
   ]
 
 }
+
 
 
 
