@@ -216,6 +216,28 @@
     
   </div>
 </div>
+  <div id="add-client-modal" class="fixed inset-0 z-[60] flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+    
+    <h3 class="text-xl font-bold text-gray-800 text-center">📍 신규 거래처 등록</h3>
+    
+    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <p class="text-xs text-gray-500 mb-1">위치 (자동 감지됨)</p>
+      <p id="new-client-address" class="text-sm font-medium text-gray-800 break-words">주소를 가져오는 중...</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-gray-700 mb-1">상호명 (거래처 이름)</label>
+      <input type="text" id="new-client-name" placeholder="예: 대박식당" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+    </div>
+
+    <div class="flex space-x-3 pt-2">
+      <button onclick="closeAddClientModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">취소</button>
+      <button onclick="saveNewClient()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 shadow-md">등록하기</button>
+    </div>
+
+  </div>
+</div>
 <div id="nav-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] transform translate-y-full transition-transform duration-300 z-50 pb-10 touch-none">
   
   <div id="drag-handle" class="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing">
@@ -241,6 +263,7 @@
 </div>
 
 </div>
+  
   <script>
     // 1. 탭 제어 함수 (2개 탭용)
     function changeTab(tabName) {
@@ -1075,9 +1098,107 @@ async function confirmGenerateReport() {
         modal.style.transform = ''; // 혹시 남아있을지 모를 인라인 스타일 제거
         currentNavClient = null;
     }
+    // ===============================================
+    // [신규] 지도 클릭해서 거래처 등록하기 로직
+    // ===============================================
+
+    let tempMarker = null; // 등록용 임시 마커
+
+    // 1. 지도 클릭 이벤트 리스너 (openMapOverlay 함수 안에서 연결할 것임)
+    function onMapClick(e) {
+        if (!activeClientUser) {
+            alert("먼저 담당자(김원대/정병준)를 선택해주세요.");
+            return;
+        }
+
+        const lat = e.latLng.lat();
+        const lon = e.latLng.lng();
+
+        // 임시 마커 찍기
+        if (tempMarker) tempMarker.setMap(null);
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_a.png", // 빨간 핀
+            map: currentMapInstance
+        });
+
+        // 주소 찾기 (Reverse Geocoding)
+        findAddressFromCoords(lat, lon);
+    }
+
+    // 2. 좌표로 주소 따오기 (T맵 API)
+    async function findAddressFromCoords(lat, lon) {
+        // 로딩 표시와 함께 모달 열기
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').textContent = '주소를 불러오는 중...';
+        document.getElementById('add-client-modal').classList.remove('hidden');
+
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님의 키
+        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.addressInfo && data.addressInfo.fullAddress) {
+                document.getElementById('new-client-address').textContent = data.addressInfo.fullAddress;
+            } else {
+                document.getElementById('new-client-address').textContent = "주소를 찾을 수 없는 위치입니다.";
+            }
+        } catch (e) {
+            console.error(e);
+            document.getElementById('new-client-address').textContent = "주소 변환 오류";
+        }
+    }
+
+    // 3. 저장 버튼 눌렀을 때
+    async function saveNewClient() {
+        const name = document.getElementById('new-client-name').value.trim();
+        const address = document.getElementById('new-client-address').textContent;
+        const user = activeClientUser;
+
+        if (!name) { alert("상호명을 입력해주세요."); return; }
+        if (address.includes("오류") || address.includes("중...")) { alert("올바른 주소가 아닙니다."); return; }
+
+        if(!confirm(`[${user}] 담당으로\n"${name}"\n이 거래처를 등록하시겠습니까?`)) return;
+
+        showLoader("거래처 등록 중...");
+        closeAddClientModal();
+
+        try {
+            // 백엔드 호출 (addNewClientToSheet) - action 이름 주의!
+            // ⚠️ 중요: code.js의 doGet 함수에 'addNewClient' 케이스를 추가해야 함!
+            // 일단 callAppsScript로 보냅니다.
+             const result = await callAppsScript('addNewClient', { 
+                user: user, 
+                name: name, 
+                address: address 
+            });
+
+            if (result.status === 'success') {
+                alert("성공적으로 등록되었습니다! 목록을 갱신합니다.");
+                // 목록 새로고침
+                loadedClientData[user] = null; // 캐시 삭제
+                toggleClientList(user, document.getElementById(user === '김원대' ? 'btn-kim' : 'btn-jung'));
+                if(tempMarker) tempMarker.setMap(null); // 임시 마커 삭제
+            } else {
+                alert("등록 실패: " + result.message);
+            }
+        } catch(e) {
+            alert("오류 발생: " + e.message);
+        } finally {
+            hideLoader();
+        }
+    }
+
+    function closeAddClientModal() {
+        document.getElementById('add-client-modal').classList.add('hidden');
+        if (tempMarker) tempMarker.setMap(null); // 취소하면 마커도 삭제
+    }
   </script>
 </body>
 </html>
+
 
 
 
