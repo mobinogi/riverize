@@ -498,22 +498,44 @@
       }
     }
     
-    async function generateTodayReport() {
+async function generateTodayReport() {
+      const os = getMobileOS(); // 기기 확인
+      let newWindow = null;
+
+      // [핵심 수정] PC일 때만 '빈 창'을 미리 엽니다.
+      // 모바일은 빈 창을 열면 오히려 앱 실행에 방해가 되므로 열지 않습니다.
+      if (os === "Other") {
+          newWindow = window.open('', '_blank');
+      }
+      
       showLoader('오늘 일보를 생성 중...');
+      
       try {
-        const result = await callAppsScript('generate');
+        // 서버 통신 (Apps Script 호출)
+        const result = await new Promise((resolve, reject) => {
+            google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .generateTodayReport_wrapper(); 
+        });
+        
         if (result.status === 'success' && result.url) {
           hideLoader();
-          openSheetApp(result.url);
+          
+          // 모바일이면 newWindow가 null이지만, openSheetApp이 알아서 처리합니다.
+          openSheetApp(result.url, newWindow); 
+          
           if (new Date().getMonth() + 1 === currentMonth) {
             fetchReportsForMonth(currentYear, currentMonth, true);
           }
         } else {
           hideLoader();
+          if (newWindow) newWindow.close(); // 실패 시 PC 빈 창 닫기
           alert('보고서 생성 실패: ' + result.message);
         }
       } catch (error) {
         hideLoader();
+        if (newWindow) newWindow.close(); // 에러 시 PC 빈 창 닫기
         alert('오류 발생: ' + error.message);
       }
     }
@@ -593,22 +615,41 @@
       }
     }
 
-    async function confirmGenerateReport() {
+async function confirmGenerateReport() {
       if (!selectedDateForGeneration) { closeModal(); return; }
+      
+      const os = getMobileOS(); // 기기 확인
+      let newWindow = null;
+
+      // [핵심 수정] 여기서도 PC일 때만 '빈 창'을 미리 엽니다.
+      if (os === "Other") {
+          newWindow = window.open('', '_blank');
+      }
+
       const dateToGenerate = selectedDateForGeneration;
       closeModal();
       const [year, month, day] = dateToGenerate.split('-').map(Number);
       showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
+      
       try {
-        const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
+        const result = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .generateReport(new Date(year, month - 1, day), true);
+        });
+        
         if (result.status === 'success' && result.url) {
           if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
           renderCalendar();
-          openSheetApp(result.url);
+          
+          openSheetApp(result.url, newWindow);
         } else {
+          if (newWindow) newWindow.close();
           alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
         }
       } catch (error) {
+        if (newWindow) newWindow.close();
         alert('보고서 생성 중 오류 발생: ' + error.message);
       } finally {
         hideLoader();
@@ -787,6 +828,7 @@
   </script>
 </body>
 </html>
+
 
 
 
