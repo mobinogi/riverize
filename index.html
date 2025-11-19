@@ -761,8 +761,8 @@ async function confirmGenerateReport() {
         }
     }
 
-    /**
-     * 실제 목록을 화면에 뿌리는 함수
+/**
+     * [수정] 주소를 제거하고 이름만 심플하게 표시하는 버전
      */
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
@@ -777,14 +777,25 @@ async function confirmGenerateReport() {
         
         for (const client of clients) {
             const li = document.createElement('li');
-            li.className = 'p-2 border-b border-gray-300 hover:bg-gray-200 cursor-pointer text-sm';
+            // 패딩을 p-3 -> p-2.5로 살짝 줄여서 더 많이 보이게 함
+            li.className = 'p-2.5 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex justify-between items-center';
             
-            li.innerHTML = `<strong>${client.name}</strong><span class="text-gray-500 text-xs client-address"> (${client.address})</span>`; 
+            li.innerHTML = `
+                <div class="flex-1">
+                    <div class="text-base font-bold text-gray-800 leading-tight">${client.name}</div>
+                </div>
+                <div class="text-blue-500 pl-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
+                    </svg>
+                </div>
+            `; 
             
-            // 목록 클릭 시 지도 중앙 이동 이벤트
             li.onclick = () => {
-                setSingleMarkerAndCenter(client, user); 
+                setSingleMarkerAndCenter(client, user);
+                openNavPrompt(client, user);
             }; 
+            
             listUl.appendChild(li);
         }
         container.innerHTML = ''; 
@@ -1068,6 +1079,7 @@ async function confirmGenerateReport() {
   </script>
 </body>
 </html>
+
 
 
 
