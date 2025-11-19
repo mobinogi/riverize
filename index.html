@@ -118,6 +118,12 @@
     padding-right: 16px !important;
     text-align: left !important;   /* 무조건 왼쪽 정렬 */
 }
+    /* [지도 전용 설정] 지도는 터치와 선택이 자유로워야 함 */
+    #map_overlay_content, #map_overlay_content * {
+        -webkit-touch-callout: default !important;
+        -webkit-user-select: none !important; /* 지도는 텍스트 선택 안 되는 게 맞음 */
+        touch-action: pan-x pan-y !important; /* 상하좌우 드래그 허용 */
+    }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1451,6 +1457,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
