@@ -105,6 +105,19 @@
         right: 60px; /* [PC] 스크롤바(검은 막대) 피해서 왼쪽으로 밈 */
       }
     }
+
+    /* 사이드바 목록 강제 교정 (들여쓰기 제거 + 왼쪽 정렬) */
+#client-list-container ul {
+    padding-left: 0 !important;  /* 들여쓰기 강제 제거 */
+    margin-left: 0 !important;
+    list-style: none !important;
+}
+
+#client-list-container li {
+    padding-left: 16px !important; /* 왼쪽 벽에서 16px 떨어짐 */
+    padding-right: 16px !important;
+    text-align: left !important;   /* 무조건 왼쪽 정렬 */
+}
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1438,6 +1451,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
