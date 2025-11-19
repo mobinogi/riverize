@@ -81,6 +81,14 @@
       transition: all 0.2s;
     }
     .map-close-button-new:hover {
+      position: absolute;
+      top: 10px;
+  
+      /* 기존 10px -> 60px 정도로 변경 */
+      /* 우측 끝에서 60px 만큼 떨어진 곳에 배치하라는 의미입니다 */
+      right: 60px; 
+  
+      z-index: 1000; /* 지도의 다른 요소보다 위에 오도록 유지 */
       background-color: rgba(0, 0, 0, 0.1); /* 마우스 올리면 살짝 어두운 원 */
     }
     </style>
@@ -177,7 +185,7 @@
   <div class="flex-1 relative"> 
     
 <button onclick="closeMapOverlay()" class="map-close-button-new">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
@@ -781,4 +789,5 @@
   </script>
 </body>
 </html>
+
 
