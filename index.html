@@ -22,7 +22,7 @@
   
   <style>
     /* (스타일은 그대로 유지) */
-    body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; font-size: 15px; }
+    html, body { background-color: #f7f9fc; height: 100%; margin: 0; padding: 0; overscroll-behavior-y: none; font-family: 'Inter', sans-serif; font-size: 15px; }
     .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
     .date-box { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 9999px; cursor: pointer; transition: all 0.2s; background-color: transparent; border: none; box-shadow: none; flex-shrink: 0; }
     .sunday { color: #ef4444; }
@@ -834,6 +834,7 @@ async function confirmGenerateReport() {
   </script>
 </body>
 </html>
+
 
 
 
