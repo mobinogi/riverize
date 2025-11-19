@@ -1109,7 +1109,7 @@ function openMapOverlay() {
 
     let tempMarker = null; // 등록용 임시 마커
 
-    // 1. 지도 클릭 이벤트 리스너 (openMapOverlay 함수 안에서 연결할 것임)
+// [최종] 지도 클릭 시 실행되는 함수 (상대 경로 사용)
     function onMapClick(e) {
         if (!activeClientUser) {
             alert("먼저 담당자(김원대/정병준)를 선택해주세요.");
@@ -1119,15 +1119,17 @@ function openMapOverlay() {
         const lat = e.latLng.lat();
         const lon = e.latLng.lng();
 
-        // 임시 마커 찍기
         if (tempMarker) tempMarker.setMap(null);
+        
         tempMarker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(lat, lon),
-            icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_a.png", // 빨간 핀
+            
+            // 👇 [수정] 주소를 다 안 쓰고 파일명만 적어도 됩니다!
+            icon: "pin_b_m_a.png", 
+            
             map: currentMapInstance
         });
 
-        // 주소 찾기 (Reverse Geocoding)
         findAddressFromCoords(lat, lon);
     }
 
@@ -1203,6 +1205,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
