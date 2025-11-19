@@ -276,16 +276,6 @@
 </div>
 
 </div>
-  사장님 감각이 진짜 좋으시네요! 👍 시스템 기본 경고창(confirm)은 못생겨서 앱의 전체적인 퀄리티를 떨어뜨리죠.
-
-말씀하신 대로 길안내 팝업과 똑같은 디자인인데, 색깔만 '빨간색(위험)' 느낌을 준 삭제 전용 바텀 시트가 스르륵 올라오도록 만들면 훨씬 통일감 있고 고급스럽습니다.
-
-물론 꾹 누르면(Long Press) 기존에 떠 있던 길안내 팝업은 쏙 들어가고, 삭제 팝업이 슥 올라오게 처리해 드릴게요.
-
-✅ 1단계: index1.html HTML 추가 (삭제 팝업창)
-index1.html의 <body> 맨 끝부분(아까 넣은 길안내 팝업 근처)에 이 코드를 붙여넣으세요. 빨간색 테마로 디자인해서 "이거 누르면 진짜 지워진다"는 느낌을 줬습니다.
-
-HTML
 
 <div id="delete-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] transform translate-y-full transition-transform duration-300 z-[70] pb-10">
   
@@ -1350,6 +1340,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
