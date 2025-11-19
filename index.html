@@ -710,15 +710,16 @@ async function confirmGenerateReport() {
     /**
      * '오버레이 열기' 버튼
      */
-    function openMapOverlay() {
+function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       
       document.getElementById('map-overlay').classList.remove('hidden');
       
+      // 지도가 아직 없을 때만 새로 생성 (초기화)
       if (!isMapInitialized) {
         console.log("맵이 없으므로, 지금부터 생성합니다...");
         try {
-          // 지도 객체를 전역 변수에 저장
+          // 1. 지도 생성
           currentMapInstance = new Tmapv2.Map("map_overlay_content", {
             center: new Tmapv2.LatLng(35.2128, 128.9806),
             width: "100%",
@@ -726,8 +727,11 @@ async function confirmGenerateReport() {
             zoom: 12
           });
           
+          // 👇 [여기입니다!] 지도 생성 직후에 클릭 이벤트를 연결합니다.
+          currentMapInstance.addListener("click", onMapClick);
+          
           isMapInitialized = true; 
-          console.log("지도 생성 성공!");
+          console.log("지도 생성 및 클릭 이벤트 연결 성공!");
 
         } catch (e) {
           console.error("지도 생성 실패:", e);
@@ -735,6 +739,7 @@ async function confirmGenerateReport() {
         }
       }
       
+      // (나머지 기존 코드: 담당자 목록 자동 열기 등)
       if (Object.keys(loadedClientData).length === 0 || !activeClientUser) {
          const targetUser = activeClientUser || '김원대';
          const targetButton = document.getElementById(`btn-${targetUser === '김원대' ? 'kim' : 'jung'}`);
@@ -1198,6 +1203,7 @@ async function confirmGenerateReport() {
   </script>
 </body>
 </html>
+
 
 
 
