@@ -290,40 +290,16 @@
      * [강제 실행 모드] 모바일에서는 무조건 앱(googlesheets://)으로 쏩니다.
      * 앱이 있다고 가정하므로, 빈 창(targetWindow)은 즉시 닫아버리고 앱을 띄웁니다.
      */
-    function openSheetApp(url, targetWindow) {
+    function openSheetApp(url) {
       const os = getMobileOS();
+      let appUrl = url;
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      
-      // 1. 파일 ID 추출
-      let fileId = "";
       if (fileIdMatch && fileIdMatch[1]) {
-        fileId = fileIdMatch[1];
+        const fileId = fileIdMatch[1];
+        if (os === "iOS") appUrl = "googlesheets://spreadsheet?id=" + fileId;
+        else if (os === "Android") appUrl = "googlesheets://spreadsheet?id=" + fileId;
       }
-
-      // 2. 모바일(iOS/Android)인 경우 -> 무조건 앱 스키마 강제 실행
-      if ((os === "iOS" || os === "Android") && fileId) {
-          
-          // 딥링크 주소 생성
-          const deepLink = "googlesheets://spreadsheet?id=" + fileId;
-          
-          // (1) 아까 버튼 누를 때 띄운 '빈 창'이 있다면? -> 필요 없으니 닫아버림 (깔끔하게)
-          if (targetWindow) {
-              targetWindow.close();
-          }
-
-          // (2) 현재 화면에서 앱을 강제로 실행시킴
-          // (앱이 있으면 화면 전환 없이 앱이 툭 튀어나옵니다)
-          window.location.href = deepLink;
-      } 
-      
-      // 3. PC인 경우 -> 그냥 웹으로 열기 (PC엔 앱이 없으니까요)
-      else {
-          if (targetWindow) {
-              targetWindow.location.href = url;
-          } else {
-              window.open(url, '_blank');
-          }
-      }
+      window.open(appUrl, '_blank');
     }
     
     // ===============================================
@@ -811,6 +787,7 @@
   </script>
 </body>
 </html>
+
 
 
 
