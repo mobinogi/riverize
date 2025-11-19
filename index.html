@@ -286,29 +286,48 @@
       return "Other";
     }
     
-    function openSheetApp(url) {
+/**
+     * [수정완료] 모바일 앱(Deep Link) 실행 최적화 함수
+     * - PC: 새 탭으로 열림
+     * - 모바일: 스프레드시트 앱이 바로 실행됨 (빈 창 안 뜸)
+     */
+    function openSheetApp(url, targetWindow) {
       const os = getMobileOS();
       const fileIdMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
       
-      let webUrl = url; 
-      let appUrl = url; 
+      let finalUrl = url; 
+      let isDeepLink = false;
       
+      // 1. 모바일(iOS/Android)이고 파일 ID가 있다면 '앱 실행 주소'로 변환
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1];
         if (os === "iOS" || os === "Android") {
-            appUrl = "googlesheets://spreadsheet?id=" + fileId;
+            finalUrl = "googlesheets://spreadsheet?id=" + fileId;
+            isDeepLink = true;
         }
       }
       
-      if (os === "iOS" || os === "Android") {
-        window.open(appUrl, '_blank');
-        
-        setTimeout(function() {
-            window.open(webUrl, '_blank');
-        }, 100); 
-
-      } else {
-        window.open(webUrl, '_blank');
+      // 2. 모바일 앱 실행(Deep Link)인 경우
+      if (isDeepLink) {
+          // 미리 열어둔 빈 창(targetWindow)이 있다면 닫아버립니다. 
+          // (앱을 실행할 때는 빈 브라우저 창이 필요 없습니다.)
+          if (targetWindow) {
+              targetWindow.close();
+          }
+          
+          // 현재 페이지에서 앱 실행을 시도합니다.
+          // 앱이 설치되어 있다면 앱이 뜨고, 브라우저는 현재 화면 그대로 유지됩니다.
+          window.location.href = finalUrl;
+      } 
+      // 3. PC 또는 일반 웹 링크인 경우
+      else {
+          // 미리 열어둔 창이 있으면 그곳에서 엽니다.
+          if (targetWindow) {
+              targetWindow.location.href = finalUrl;
+          } else {
+              // 없다면 새 창을 띄웁니다.
+              window.open(finalUrl, '_blank');
+          }
       }
     }
     
@@ -797,6 +816,7 @@
   </script>
 </body>
 </html>
+
 
 
 
