@@ -310,6 +310,11 @@
     </div>
   </div>
 </div>
+  <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] flex items-center bg-white/95 backdrop-blur shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-5 py-3 rounded-full border border-gray-100 transition-all duration-500 opacity-0 -translate-y-10 pointer-events-none">
+  <div id="toast-icon" class="mr-3 flex items-center justify-center">
+    </div>
+  <span id="toast-message" class="text-sm font-bold text-gray-800 whitespace-nowrap">알림 메시지</span>
+</div>
   <script>
     // 1. 탭 제어 함수 (2개 탭용)
     function changeTab(tabName) {
@@ -1396,9 +1401,41 @@ function openMapOverlay() {
         document.getElementById('add-client-modal').classList.add('hidden');
         if (tempMarker) tempMarker.setMap(null); // 취소하면 마커도 삭제
     }
+  // ===============================================
+    // [신규] 예쁜 토스트 알림 함수 (Alert 대체)
+    // ===============================================
+    let toastTimer;
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const iconEl = document.getElementById('toast-icon');
+        const msgEl = document.getElementById('toast-message');
+
+        // 1. 메시지 설정
+        msgEl.textContent = message;
+
+        // 2. 아이콘 설정 (성공: 초록 체크 / 실패: 빨간 느낌표)
+        if (type === 'success') {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+        } else {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+        }
+
+        // 3. 애니메이션: 위에서 아래로 톡! 등장
+        container.classList.remove('opacity-0', '-translate-y-10'); 
+        
+        // 4. 기존 타이머 취소 (연타 방지)
+        if (toastTimer) clearTimeout(toastTimer);
+
+        // 5. 2.5초 뒤에 스르륵 사라짐
+        toastTimer = setTimeout(() => {
+            container.classList.add('opacity-0', '-translate-y-10');
+        }, 2500);
+    }
   </script>
 </body>
 </html>
+
 
 
 
