@@ -794,16 +794,7 @@ function openMapOverlay() {
           document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
       }
-      
-      // (나머지 기존 코드: 담당자 목록 자동 열기 등)
-      if (Object.keys(loadedClientData).length === 0 || !activeClientUser) {
-         const targetUser = activeClientUser || '김원대';
-         const targetButton = document.getElementById(`btn-${targetUser === '김원대' ? 'kim' : 'jung'}`);
-         if (targetButton) {
-             toggleClientList(targetUser, targetButton);
-         }
-      }
-    }
+     }
 
     /**
      * '닫기' 버튼
@@ -1359,6 +1350,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
