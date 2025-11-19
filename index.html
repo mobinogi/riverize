@@ -216,6 +216,31 @@
     
   </div>
 </div>
+<div id="nav-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] transform translate-y-full transition-transform duration-300 z-50 pb-10 touch-none">
+  
+  <div id="drag-handle" class="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing">
+      <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
+  </div>
+  
+  <div class="px-6 pb-6 flex flex-col items-center space-y-4">
+    <h3 class="text-lg font-bold text-gray-800 text-center">
+      <span id="nav-target-name" class="text-blue-600">거래처명</span>(으)로<br>
+      길안내를 시작할까요?
+    </h3>
+    
+    <div class="flex w-full space-x-3 mt-2">
+      <button onclick="closeNavPrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+        취소
+      </button>
+      <button onclick="executeNavigation()" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+        T맵 실행
+      </button>
+    </div>
+  </div>
+
+</div>
+
+</div>
   <script>
     // 1. 탭 제어 함수 (2개 탭용)
     function changeTab(tabName) {
@@ -823,10 +848,219 @@ async function confirmGenerateReport() {
       
       fetchReportsForMonth(currentYear, currentMonth, true);
     });
+
+    // ===============================================
+    // [최종 수정] 거래처 목록 및 길안내 팝업 관련 함수들
+    // (스크립트 맨 아래쪽에 이 덩어리를 붙여넣으세요)
+    // ===============================================
+
+    /**
+     * 1. 거래처 목록 표시 함수
+     * - 클릭 시: 지도 이동 + 하단 팝업 스르륵 올리기
+     */
+    function displayClientList(user, clients) {
+        const container = document.getElementById('client-list-container');
+        
+        if (clients.length === 0) {
+            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
+            return;
+        }
+
+        const listUl = document.createElement('ul');
+        listUl.id = `list-${user}`;
+        
+        for (const client of clients) {
+            const li = document.createElement('li');
+            // 디자인: 넉넉한 터치 영역
+            li.className = 'p-3 border-b border-gray-300 hover:bg-gray-200 cursor-pointer flex justify-between items-center';
+            
+            li.innerHTML = `
+                <div>
+                    <div class="text-sm font-bold text-gray-800">${client.name}</div>
+                    <div class="text-xs text-gray-500">${client.address}</div>
+                </div>
+                <div class="text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
+                    </svg>
+                </div>
+            `; 
+            
+            // 클릭 이벤트
+            li.onclick = () => {
+                // 1. 지도 이동 (위치 확인)
+                setSingleMarkerAndCenter(client, user);
+                // 2. 길안내 팝업 스르륵 올리기
+                openNavPrompt(client, user);
+            }; 
+            
+            listUl.appendChild(li);
+        }
+        container.innerHTML = ''; 
+        container.appendChild(listUl);
+    }
+
+    // ---------------------------------------------------
+    // 하단 팝업(Bottom Sheet) 제어 변수 및 함수
+    // ---------------------------------------------------
     
+    let currentNavClient = null;
+    let currentNavUser = null;
+
+    // 2. 팝업 열기 (애니메이션 작동)
+    function openNavPrompt(client, user) {
+        currentNavClient = client;
+        currentNavUser = user;
+        
+        document.getElementById('nav-target-name').textContent = client.name;
+        
+        const modal = document.getElementById('nav-confirm-modal');
+        // 'translate-y-full'(화면 아래 숨김) 클래스를 제거하면 -> 스르륵 올라옴
+        modal.classList.remove('translate-y-full');
+    }
+
+    // 3. 팝업 닫기 (애니메이션 작동)
+    function closeNavPrompt() {
+        const modal = document.getElementById('nav-confirm-modal');
+        // 'translate-y-full' 클래스를 추가하면 -> 스르륵 내려감
+        modal.classList.add('translate-y-full');
+        
+        currentNavClient = null;
+    }
+
+    // 4. '예' 버튼 클릭 시 실행
+    function executeNavigation() {
+        if (currentNavClient && currentNavUser) {
+            launchTMapApp(currentNavClient, currentNavUser);
+            closeNavPrompt();
+        }
+    }
+
+    // ---------------------------------------------------
+    // T맵 앱 실행 로직
+    // ---------------------------------------------------
+
+    /**
+     * 5. T맵 앱 실행 함수
+     */
+    async function launchTMapApp(client, user) {
+        let lat, lon;
+
+        if (client.coords) {
+            lat = client.coords.lat();
+            lon = client.coords.lng();
+        } else {
+            try {
+                // 좌표가 없으면 찾아서 가져옴
+                const markerPos = await geocodeAndSetMarker(client.address, user);
+                lat = markerPos.lat();
+                lon = markerPos.lng();
+                
+                const userData = loadedClientData[user].find(c => c.name === client.name);
+                if (userData) userData.coords = markerPos;
+
+            } catch (e) {
+                alert(`[오류] 주소를 찾을 수 없어 길안내를 시작할 수 없습니다.\n주소: ${client.address}`);
+                return;
+            }
+        }
+
+        // T맵 실행 URL (안드로이드/아이폰 공통 스키마)
+        const tmapUrl = `tmap://route?goalname=${encodeURIComponent(client.name)}&goalx=${lon}&goaly=${lat}`;
+        
+        // 앱 실행
+        window.location.href = tmapUrl;
+    }
+
+    // ===============================================
+    // [신규] 바텀 시트 드래그(Swipe Down) 제스처 처리
+    // ===============================================
+    
+    const modal = document.getElementById('nav-confirm-modal');
+    const handle = document.getElementById('drag-handle');
+    
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    // 1. 터치 시작 (손가락 댔을 때)
+    modal.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+        
+        // 드래그 중에는 애니메이션(딜레이)을 잠시 끕니다. (손가락에 딱 붙어 다니게)
+        modal.style.transition = 'none';
+    }, { passive: true });
+
+    // 2. 터치 이동 (손가락 움직일 때)
+    modal.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        
+        currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        // 아래로 내릴 때만(diff > 0) 팝업을 이동시킵니다.
+        if (diff > 0) {
+            modal.style.transform = `translateY(${diff}px)`;
+        }
+    }, { passive: true });
+
+    // 3. 터치 끝 (손가락 뗐을 때)
+    modal.addEventListener('touchend', (e) => {
+        isDragging = false;
+        modal.style.transition = 'transform 0.3s ease-out'; // 애니메이션 다시 켜기
+        
+        const diff = currentY - startY;
+        
+        // [판단] 100px 이상 내렸으면 -> "닫기"로 간주
+        if (diff > 100) {
+            closeNavPrompt();
+        } else {
+            // 조금만 내렸으면 -> 다시 원래 위치로 "팅~" 하고 복귀
+            // (단, 팝업이 열려있는 상태일 때만 복귀)
+            if (!modal.classList.contains('translate-y-full')) {
+                modal.style.transform = 'translateY(0)';
+            }
+        }
+        
+        // 변수 초기화
+        startY = 0;
+        currentY = 0;
+    });
+
+    // [기존 함수 수정] 팝업 열 때 transform 스타일 초기화가 필요함
+    const originalOpenNavPrompt = openNavPrompt; // 기존 함수 백업 (혹시 몰라서)
+    
+    // 덮어쓰기
+    openNavPrompt = function(client, user) {
+        currentNavClient = client;
+        currentNavUser = user;
+        
+        document.getElementById('nav-target-name').textContent = client.name;
+        
+        const modal = document.getElementById('nav-confirm-modal');
+        
+        // 드래그로 인해 변경된 인라인 스타일을 제거하고 클래스로 제어
+        modal.style.transform = ''; 
+        modal.style.transition = ''; // CSS에 정의된 transition 사용
+        
+        // 스르륵 올라오게 함
+        requestAnimationFrame(() => {
+            modal.classList.remove('translate-y-full');
+        });
+    }
+    
+    // [기존 함수 수정] 닫을 때도 확실하게
+    closeNavPrompt = function() {
+        const modal = document.getElementById('nav-confirm-modal');
+        modal.classList.add('translate-y-full');
+        modal.style.transform = ''; // 혹시 남아있을지 모를 인라인 스타일 제거
+        currentNavClient = null;
+    }
   </script>
 </body>
 </html>
+
 
 
 
