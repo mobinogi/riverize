@@ -842,7 +842,9 @@ function openMapOverlay() {
 
         const listUl = document.createElement('ul');
         listUl.id = `list-${user}`;
-        
+
+        listUl.className = "w-full p-0 m-0 list-none";
+      
         for (const client of clients) {
             const li = document.createElement('li');
             // 터치 반응 속도 향상을 위해 touch-manipulation 추가
@@ -1436,6 +1438,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
