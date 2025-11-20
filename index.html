@@ -1482,98 +1482,76 @@ function openMapOverlay() {
     // [오류 수정] 지도 롱프레스 (screenToMap 사용)
     // ==================================================
     
-    function enableMapLongPress() {
-        const mapDiv = document.getElementById("map_overlay_content");
+function enableMapLongPress() {
+        // 설정
+        const LONG_PRESS_DURATION = 500; // 0.5초
+        const MOVE_THRESHOLD = 20; // 20px (손떨림 허용 범위)
         
         let pressTimer;
-        let startX, startY;
-        let isDragging = false;
-        
-        const LONG_PRESS_DURATION = 500; 
-        const MOVE_THRESHOLD = 20; 
+        let startPixel = null;
+        let startLatLng = null;
 
-        // 1. 모바일 터치
-        mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; 
-            
-            isDragging = false;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            
-            clearTimeout(pressTimer);
+        // 타이머 취소 함수
+        const stopTimer = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
 
+        // [1] 터치/클릭 시작
+        const onStart = (e) => {
+            // TMap 이벤트(e)에는 이미 좌표가 들어있습니다! (변환 불필요)
+            if (!e.pixel || !e.latLng) return;
+
+            // 초기화
+            stopTimer();
+            startPixel = e.pixel;     // 시작 화면 좌표 (손떨림 계산용)
+            startLatLng = e.latLng;   // 시작 지도 좌표 (등록용)
+            
+            // 타이머 시작
             pressTimer = setTimeout(() => {
-                if (!isDragging) {
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    
-                    const rect = mapDiv.getBoundingClientRect();
-                    const x = startX - rect.left;
-                    const y = startY - rect.top;
-                    
-                    const pixel = new Tmapv2.Point(x, y);
-                    
-                    // 👇👇 [수정된 부분] fromPixelToLatLng -> screenToMap
-                    const latLng = currentMapInstance.screenToMap(pixel);
-                    
-                    onMapLongPressTrigger(latLng.lat(), latLng.lng());
-                }
-            }, LONG_PRESS_DURATION);
-            
-        }, { capture: true, passive: false }); 
-
-        mapDiv.addEventListener('touchmove', (e) => {
-            if (isDragging) return;
-
-            const currentX = e.touches[0].clientX;
-            const currentY = e.touches[0].clientY;
-            
-            if (Math.abs(currentX - startX) > MOVE_THRESHOLD || 
-                Math.abs(currentY - startY) > MOVE_THRESHOLD) {
+                // 진동 피드백
+                if (navigator.vibrate) navigator.vibrate(50);
                 
-                isDragging = true; 
-                clearTimeout(pressTimer);
-            } else {
-                if (e.cancelable) e.preventDefault();
-            }
-        }, { capture: true, passive: false }); 
-
-        const cancelHandler = () => clearTimeout(pressTimer);
-        mapDiv.addEventListener('touchend', cancelHandler, { capture: true });
-        mapDiv.addEventListener('touchcancel', cancelHandler, { capture: true });
-
-        // 2. PC 마우스
-        mapDiv.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; 
-            isDragging = false;
-            startX = e.clientX;
-            startY = e.clientY;
-            
-            clearTimeout(pressTimer);
-            pressTimer = setTimeout(() => {
-                if (!isDragging) {
-                    const rect = mapDiv.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    const pixel = new Tmapv2.Point(x, y);
-                    
-                    // 👇👇 [수정된 부분] 여기도 screenToMap 으로 변경!
-                    const latLng = currentMapInstance.screenToMap(pixel);
-                    
-                    onMapLongPressTrigger(latLng.lat(), latLng.lng());
-                }
+                // ★ 저장해둔 좌표로 바로 실행! (함수 호출 안 함) ★
+                onMapLongPressTrigger(startLatLng.lat(), startLatLng.lng());
+                
             }, LONG_PRESS_DURATION);
-        }, { capture: true }); 
+        };
 
-        mapDiv.addEventListener('mousemove', (e) => {
-            if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-                isDragging = true;
-                clearTimeout(pressTimer);
+        // [2] 움직임 (손떨림 계산)
+        const onMove = (e) => {
+            if (!pressTimer || !startPixel || !e.pixel) return;
+
+            // 시작점과 현재점의 거리 계산
+            if (Math.abs(e.pixel.x - startPixel.x) > MOVE_THRESHOLD || 
+                Math.abs(e.pixel.y - startPixel.y) > MOVE_THRESHOLD) {
+                stopTimer(); // 20px 이상 움직이면 취소
             }
-        }, { capture: true });
+        };
 
-        mapDiv.addEventListener('mouseup', cancelHandler, { capture: true });
-        mapDiv.addEventListener('mouseleave', cancelHandler, { capture: true });
+        // [3] 끝남 (손 뗌)
+        const onEnd = () => {
+            stopTimer();
+        };
+
+        // -------------------------------------------------
+        // TMap 자체 리스너 연결 (좌표를 받기 위함)
+        // -------------------------------------------------
+        
+        // 모바일 터치
+        currentMapInstance.addListener("touchstart", onStart);
+        currentMapInstance.addListener("touchmove", onMove);
+        currentMapInstance.addListener("touchend", onEnd);
+        
+        // PC 마우스
+        currentMapInstance.addListener("mousedown", onStart);
+        currentMapInstance.addListener("mousemove", onMove);
+        currentMapInstance.addListener("mouseup", onEnd);
+        
+        // 지도가 드래그되면 즉시 취소 (안전장치)
+        currentMapInstance.addListener("dragstart", onEnd);
     }
     // [실행 로직]
     function triggerLongPressAction(clientX, clientY, mapElement) {
@@ -1811,6 +1789,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
