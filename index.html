@@ -1467,8 +1467,8 @@ function openMapOverlay() {
     // (하지만 map div가 생성된 뒤에 걸어야 하므로, openMapOverlay 안에 넣는 게 좋습니다.)
     
     // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
-// ==================================================
-    // [지도 고정] 꾹 누르는 동안 지도 이동(드래그) 차단!
+    // ==================================================
+    // [최종] 지도 롱프레스 (손떨림 20px 무시 + 지도 고정)
     // ==================================================
     
     function enableMapLongPress() {
@@ -1476,27 +1476,30 @@ function openMapOverlay() {
         
         let pressTimer;
         let startX, startY;
-        let isDragging = false;
-        const LONG_PRESS_DURATION = 300; // 1초
+        let isDragging = false; // "이건 드래그다!" 라고 판명되었는지 여부
         
-        // 30px 정도는 손떨림으로 간주하고 지도를 꽉 잡고 있음 (이동 안 됨)
-        const LOCK_THRESHOLD = 30; 
+        const LONG_PRESS_DURATION = 500; // 0.5초 (한국인 속도에 맞춤)
+        const MOVE_THRESHOLD = 20; // ★핵심★ 20px 까지는 떨려도 봐줌!
 
         // --- [1. 모바일 터치 핸들러] ---
         mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; // 두 손가락은 줌인해야 하니까 패스
+            // 손가락 2개면(줌인) 무조건 취소 (이건 줌인 하라는 거니까)
+            if (e.touches.length > 1) return;
             
             isDragging = false;
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
             
-            // 타이머 시작
+            // 기존 타이머 정리
             clearTimeout(pressTimer);
+
+            // 타이머 시작
             pressTimer = setTimeout(() => {
+                // 타이머 끝났을 때, "드래그" 판정이 안 났으면 실행!
                 if (!isDragging) {
-                    if (navigator.vibrate) navigator.vibrate(50);
+                    if (navigator.vibrate) navigator.vibrate(50); // 징~
                     
-                    // 좌표 변환 및 등록 실행
+                    // 좌표 변환 및 실행
                     const rect = mapDiv.getBoundingClientRect();
                     const x = startX - rect.left;
                     const y = startY - rect.top;
@@ -1507,31 +1510,37 @@ function openMapOverlay() {
                 }
             }, LONG_PRESS_DURATION);
             
-        }, { passive: false }); // 🚨 중요: false로 해야 지도 이동을 막을 수 있음
+        }, { passive: false }); // 🚨 중요: false로 설정해야 지도 움직임을 막을 수 있음
 
         mapDiv.addEventListener('touchmove', (e) => {
+            // 이미 드래그로 판명났으면 계산 안 함 (지도 움직이게 둠)
+            if (isDragging) return;
+
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
             
-            // 이동 거리가 짧으면(30px 이내) -> "지도야 움직이지 마!" (고정)
-            if (Math.abs(currentX - startX) < LOCK_THRESHOLD && 
-                Math.abs(currentY - startY) < LOCK_THRESHOLD) {
+            // ★ 여기가 핵심 기술입니다 ★
+            // 시작점과 현재점의 거리가 20px(MOVE_THRESHOLD)을 넘었는지 검사
+            if (Math.abs(currentX - startX) > MOVE_THRESHOLD || 
+                Math.abs(currentY - startY) > MOVE_THRESHOLD) {
                 
-                // ★핵심 기술★ 여기서 지도가 따라오는 걸 강제로 막음
-                if (e.cancelable) e.preventDefault(); 
-            } 
-            // 이동 거리가 길면(30px 이상) -> "아, 이건 스크롤이구나" 하고 놔줌
-            else {
+                // 20px 이상 움직였다! -> "아, 이건 꾹 누르는 게 아니라 이동이구나"
                 isDragging = true;
-                clearTimeout(pressTimer);
+                clearTimeout(pressTimer); // 롱프레스 취소
+            } 
+            else {
+                // 20px 이내로 움직였다 -> "손떨림이구나. 지도야 움직이지 마!"
+                // (지도가 꿈틀거리는 걸 막아서 터치 유지를 도와줍니다)
+                if (e.cancelable) e.preventDefault(); 
             }
         }, { passive: false }); // 🚨 중요: false 필수
 
+        // 손 떼면 무조건 취소
         mapDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
         mapDiv.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
 
-        // --- [2. PC 마우스 핸들러] ---
+        // --- [2. PC 마우스 핸들러 (테스트용)] ---
         mapDiv.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             isDragging = false;
@@ -1557,7 +1566,7 @@ function openMapOverlay() {
                 clearTimeout(pressTimer);
             }
         });
-        
+
         mapDiv.addEventListener('mouseup', () => clearTimeout(pressTimer));
         mapDiv.addEventListener('mouseleave', () => clearTimeout(pressTimer));
     }
@@ -1701,6 +1710,4 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
-
-
 
