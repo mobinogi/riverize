@@ -124,6 +124,29 @@
         -webkit-user-select: none !important; /* 지도는 텍스트 선택 안 되는 게 맞음 */
         touch-action: pan-x pan-y !important; /* 상하좌우 드래그 허용 */
     }
+    /* 흐르는 텍스트(마키) 애니메이션 */
+@keyframes flow-left {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } /* 텍스트가 2개라서 50%만 이동하면 무한루프처럼 보임 */
+}
+
+.marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); /* 양끝 부드럽게 */
+}
+
+.marquee-content {
+    display: inline-block;
+    white-space: nowrap;
+    /* 기본적으로 애니메이션 없음 */
+}
+
+.do-scroll {
+    animation: flow-left 10s linear infinite; /* 10초 동안 천천히 흐름 */
+    padding-right: 30px; /* 반복 텍스트 사이 간격 */
+}
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -873,80 +896,118 @@ async function confirmGenerateReport() {
         }
     }
 
-// [최종 수정] 스크롤 오작동 방지 + 롱프레스 삭제 + 숏터치 길안내
+// [통합 완성] 마키 디자인 + 스크롤 방지 + 롱프레스 삭제 + 기능 분리
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
         if (clients.length === 0) {
-            container.innerHTML = `<p class="text-red-600 text-sm p-2">거래처 목록이 없습니다 (${user}).</p>`;
+            container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
             return;
         }
 
         const listUl = document.createElement('ul');
         listUl.id = `list-${user}`;
-
-        listUl.className = "w-full p-0 m-0 list-none";
-      
+        listUl.className = "w-full p-0 m-0 list-none"; 
+        
         for (const client of clients) {
             const li = document.createElement('li');
-            // 터치 반응 속도 향상을 위해 touch-manipulation 추가
-            li.className = 'px-1 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex justify-between items-center select-none touch-manipulation transition-colors';
+            li.className = 'w-full px-3 py-3 border-b border-gray-100 flex items-center bg-white hover:bg-gray-50 transition-colors select-none touch-manipulation';
             
+            // -----------------------------------------------------------
+            // 1. HTML 구성 (마키 + 아이콘)
+            // -----------------------------------------------------------
+            const isLongText = client.name.length > 7;
+            let nameHtml = '';
+            
+            if (isLongText) {
+                nameHtml = `
+                    <div class="marquee-container pointer-events-none">
+                        <div class="marquee-content do-scroll">
+                            <span class="text-[15px] font-semibold text-gray-800">${client.name}</span>
+                            <span class="inline-block w-8"></span>
+                            <span class="text-[15px] font-semibold text-gray-800">${client.name}</span>
+                        </div>
+                    </div>`;
+            } else {
+                nameHtml = `<div class="text-[15px] font-semibold text-gray-800 leading-snug truncate pointer-events-none">${client.name}</div>`;
+            }
+
             li.innerHTML = `
-                <div class="flex-1 text-left pointer-events-none pr-4">
-                    <div class="text-[15px] font-semibold text-gray-800 leading-snug truncate">${client.name}</div>
+                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
+                    ${nameHtml}
                 </div>
-                
-                <div class="text-gray-400 pl-2 pointer-events-none flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+
+                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-500 bg-blue-50 rounded-full active:scale-90 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
                     </svg>
                 </div>
             `;
             
-            // === [터치 로직 개선] ===
+            // -----------------------------------------------------------
+            // 2. 터치 로직 (스크롤 방지 + 롱프레스 + 클릭 분기)
+            // -----------------------------------------------------------
             let pressTimer;
             let isLongPress = false;
-            let isScrolling = false; // 스크롤 중인지 확인하는 변수
+            let startX = 0;
+            let startY = 0;
+            let isMoved = false; 
 
-            // 1. 손가락 닿음
+            // (1) 터치 시작
             li.addEventListener('touchstart', (e) => {
                 isLongPress = false;
-                isScrolling = false; // 닿을 땐 스크롤 아님
+                isMoved = false; 
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
                 
-                // 0.8초 뒤 롱프레스(삭제) 예약
+                li.classList.add('bg-gray-100'); // 터치 효과
+
+                // 롱프레스 타이머 (삭제)
                 pressTimer = setTimeout(() => {
-                    if (!isScrolling) { // 스크롤 중이 아닐 때만
+                    if (!isMoved) { 
                         isLongPress = true;
                         navigator.vibrate(50); 
                         closeNavPrompt(); 
                         openDeletePrompt(client, user); 
+                        li.classList.remove('bg-gray-100');
                     }
                 }, 800); 
             }, { passive: true });
 
-            // 2. 손가락 움직임 (스크롤)
-            li.addEventListener('touchmove', () => {
-                isScrolling = true; // "나 지금 스크롤 중이야!" 표시
-                clearTimeout(pressTimer); // 움직이면 롱프레스 취소
-            }, { passive: true });
-
-            // 3. 손가락 뗌
-            li.addEventListener('touchend', (e) => {
-                clearTimeout(pressTimer);
+            // (2) 터치 이동 (스크롤 감지)
+            li.addEventListener('touchmove', (e) => {
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
                 
-                // 스크롤 중이었다면? -> 아무것도 안 하고 끝냄 (팝업 안 뜸)
-                if (isScrolling) return;
-
-                // 롱프레스가 아니었다면 -> 길안내 실행
-                if (!isLongPress) {
-                    closeDeletePrompt();
-                    setSingleMarkerAndCenter(client, user);
-                    openNavPrompt(client, user);
+                // 10px 이상 움직이면 스크롤로 간주
+                if (Math.abs(currentX - startX) > 10 || Math.abs(currentY - startY) > 10) {
+                    isMoved = true;        
+                    clearTimeout(pressTimer); 
+                    li.classList.remove('bg-gray-100');
                 }
             }, { passive: true });
+
+            // (3) 터치 끝 (실행)
+            li.addEventListener('touchend', (e) => {
+                clearTimeout(pressTimer);
+                li.classList.remove('bg-gray-100');
+                
+                // 스크롤이나 롱프레스였으면 클릭 실행 안 함
+                if (isMoved || isLongPress) return;
+
+                // ★ 클릭 분기점 (어디를 눌렀나?) ★
+                // e.target이 아이콘 영역(.nav-icon-target) 안에 있으면 -> 길안내
+                if (e.target.closest('.nav-icon-target')) {
+                    openNavPrompt(client, user);
+                } 
+                // 아니면(이름 영역이면) -> 지도 이동
+                else {
+                    showClientOnMapWithBubble(client, user);
+                }
+
+            }, { passive: true });
             
-            // PC 마우스 우클릭 대응
+            // PC 마우스 우클릭 (삭제)
             li.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 closeNavPrompt();
@@ -1857,6 +1918,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
