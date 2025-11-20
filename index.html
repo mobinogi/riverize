@@ -1507,8 +1507,8 @@ function openMapOverlay() {
     // (하지만 map div가 생성된 뒤에 걸어야 하므로, openMapOverlay 안에 넣는 게 좋습니다.)
     
     // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
-    // ==================================================
-    // [최종_진짜_완성] 지도 롱프레스 (이벤트 캡처링 적용)
+// ==================================================
+    // [손떨림 방지] 지도 롱프레스 (20px 오차 허용)
     // ==================================================
     
     function enableMapLongPress() {
@@ -1516,64 +1516,107 @@ function openMapOverlay() {
         
         let pressTimer;
         let startX, startY;
-        let isMoved = false;
-        const LONG_PRESS_DURATION = 1000; // 1초 (너무 길면 800으로 줄이세요)
+        let isMovedTooMuch = false; 
+        const LONG_PRESS_DURATION = 1000; // 1초 (원하면 조절)
+        const MOVE_THRESHOLD = 20; // ★핵심★ 20픽셀까지는 움직여도 봐줌!
 
-        // --- 공통 핸들러 ---
-        const handleStart = (x, y) => {
-            isMoved = false;
-            startX = x;
-            startY = y;
+        // --- [1. 모바일 터치 핸들러] ---
+        mapDiv.addEventListener('touchstart', (e) => {
+            // 두 손가락 터치 등은 무시
+            if (e.touches.length > 1) return;
             
+            isMovedTooMuch = false;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            
+            // 타이머 시작
             clearTimeout(pressTimer);
-
             pressTimer = setTimeout(() => {
-                if (!isMoved) {
+                if (!isMovedTooMuch) {
                     if (navigator.vibrate) navigator.vibrate(50);
-                    triggerLongPressAction(x, y, mapDiv);
+                    
+                    // 좌표 변환 로직 (화면 터치 위치 -> T맵 위도경도)
+                    const rect = mapDiv.getBoundingClientRect();
+                    const x = startX - rect.left;
+                    const y = startY - rect.top;
+                    
+                    const pixel = new Tmapv2.Point(x, y);
+                    const latLng = currentMapInstance.fromPixelToLatLng(pixel);
+                    
+                    // 등록 실행
+                    onMapLongPressTrigger(latLng.lat(), latLng.lng());
                 }
             }, LONG_PRESS_DURATION);
-        };
-
-        const handleMove = (x, y) => {
-            // 15px 이상 움직이면 취소
-            if (Math.abs(x - startX) > 15 || Math.abs(y - startY) > 15) {
-                isMoved = true;
-                clearTimeout(pressTimer);
-            }
-        };
-
-        const handleEnd = () => {
-            clearTimeout(pressTimer);
-        };
-
-        // --- [1. 모바일 터치] --- 
-        // ★ 중요: 마지막에 'true'를 넣어서 이벤트를 가장 먼저 낚아챕니다 (Capture)
-        mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; 
-            handleStart(e.touches[0].clientX, e.touches[0].clientY);
-        }, true); // 👈 true 필수!
+            
+        }, { passive: true }); // passive: true로 해야 스크롤 성능 저하 없음
 
         mapDiv.addEventListener('touchmove', (e) => {
-            handleMove(e.touches[0].clientX, e.touches[0].clientY);
-        }, true); // 👈 true 필수!
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            
+            // 이동 거리가 20px을 넘었는지 검사 (피타고라스 안 써도 대충 차이로 계산)
+            if (Math.abs(currentX - startX) > MOVE_THRESHOLD || 
+                Math.abs(currentY - startY) > MOVE_THRESHOLD) {
+                isMovedTooMuch = true; // "이건 너무 많이 움직였다! 드래그다!"
+                clearTimeout(pressTimer); // 취소
+            }
+        }, { passive: true });
 
-        mapDiv.addEventListener('touchend', handleEnd, true);
-        mapDiv.addEventListener('touchcancel', handleEnd, true);
+        mapDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
+        mapDiv.addEventListener('touchcancel', () => clearTimeout(pressTimer));
 
-        // --- [2. PC 마우스] ---
+        // --- [2. PC 마우스 핸들러 (보너스)] ---
         mapDiv.addEventListener('mousedown', (e) => {
-            if (e.button === 0) handleStart(e.clientX, e.clientY);
-        }, true); // 👈 true 필수!
+            if (e.button !== 0) return; // 좌클릭만
+            
+            isMovedTooMuch = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            clearTimeout(pressTimer);
+            pressTimer = setTimeout(() => {
+                if (!isMovedTooMuch) {
+                    const rect = mapDiv.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const pixel = new Tmapv2.Point(x, y);
+                    const latLng = currentMapInstance.fromPixelToLatLng(pixel);
+                    
+                    onMapLongPressTrigger(latLng.lat(), latLng.lng());
+                }
+            }, LONG_PRESS_DURATION);
+        });
 
         mapDiv.addEventListener('mousemove', (e) => {
-            handleMove(e.clientX, e.clientY);
-        }, true);
+            if (Math.abs(e.clientX - startX) > MOVE_THRESHOLD || 
+                Math.abs(e.clientY - startY) > MOVE_THRESHOLD) {
+                isMovedTooMuch = true;
+                clearTimeout(pressTimer);
+            }
+        });
 
-        mapDiv.addEventListener('mouseup', handleEnd, true);
-        mapDiv.addEventListener('mouseleave', handleEnd, true);
+        mapDiv.addEventListener('mouseup', () => clearTimeout(pressTimer));
+        mapDiv.addEventListener('mouseleave', () => clearTimeout(pressTimer));
     }
+    
+    // [트리거 함수]
+    function onMapLongPressTrigger(lat, lon) {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
 
+        // 파란 핀 찍기
+        if (tempMarker) tempMarker.setMap(null);
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
+
+        // 팝업 띄우기
+        findAddressFromCoords(lat, lon);
+    }
     // [실행 로직]
     function triggerLongPressAction(clientX, clientY, mapElement) {
         if (!activeClientUser) {
@@ -1601,3 +1644,4 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
