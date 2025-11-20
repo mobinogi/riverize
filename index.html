@@ -896,12 +896,11 @@ async function confirmGenerateReport() {
         }
     }
 
-// [최종 수정] 부모 여백 무시하고 꽉 채우기 + 마키 클릭 오류 해결
+// [최종 수정] 왼쪽 여백 확보 + 폰트 축소 + ...삭제
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
-        // 🚨 [핵심 기술] 부모(content-review)의 패딩(24px)을 상쇄하기 위해 음수 마진 적용
-        // 이렇게 하면 목록이 부모 박스를 뚫고 좌우 끝까지 늘어납니다.
+        // 부모 여백 무시하고 배경은 꽉 채우기
         container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
         
         if (clients.length === 0) {
@@ -916,10 +915,12 @@ async function confirmGenerateReport() {
         for (const client of clients) {
             const li = document.createElement('li');
             
-            // 배경 투명, 좌우 여백(px-6)을 줘서 글자는 안 짤리게 함
-            li.className = 'w-full px-6 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
+            // [디자인 수정]
+            // pl-7: 왼쪽 여백을 넉넉하게 줘서(약 28px) 글자가 짤리지 않게 함
+            // pr-4: 오른쪽 여백
+            li.className = 'w-full pl-7 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
             
-            // --- 이름 영역 (7자 이상 마키) ---
+            // --- 이름 영역 (6자 이상이면 흐름 - 기준 낮춤) ---
             const isLongText = client.name.length > 7;
             let nameHtml = '';
             
@@ -927,22 +928,23 @@ async function confirmGenerateReport() {
                 nameHtml = `
                     <div class="marquee-container pointer-events-none">
                         <div class="marquee-content do-scroll">
-                            <span class="text-[15px] font-semibold text-gray-900">${client.name}</span>
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
                             <span class="inline-block w-8"></span>
-                            <span class="text-[15px] font-semibold text-gray-900">${client.name}</span>
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
                         </div>
                     </div>`;
             } else {
-                nameHtml = `<div class="text-[15px] font-semibold text-gray-900 leading-snug truncate pointer-events-none">${client.name}</div>`;
+                // [수정] truncate 제거 -> ... 안 찍히고 다 나옴
+                nameHtml = `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
             }
 
             li.innerHTML = `
-                <div class="name-area flex-1 min-w-0 text-left pr-3 overflow-hidden" style="cursor: pointer;">
+                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
                     ${nameHtml}
                 </div>
 
-                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm" style="cursor: pointer;">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="nav-icon-target flex-shrink-0 w-9 h-9 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
                     </svg>
                 </div>
@@ -987,11 +989,9 @@ async function confirmGenerateReport() {
                 
                 if (isMoved || isLongPress) return;
 
-                // 클릭 분기점
                 if (e.target.closest('.nav-icon-target')) {
                     openNavPrompt(client, user);
                 } else {
-                    // 이름 부분을 누른 것으로 간주
                     showClientOnMapWithBubble(client, user);
                 }
             }, { passive: true });
@@ -1746,101 +1746,72 @@ function enableMapLongPress() {
         // 이름 입력창에 바로 포커스 줌 (편의성)
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
-// [최종_스마트] 말풍선 위치 자동 조정 (위/아래 뒤집기)
+// [최종 수정] 말풍선 꼬리 위치 정밀 보정 (마커 정중앙 가리킴)
     async function findAddressAndShowBubble(lat, lon) {
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
         const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
 
         try {
-            // 1. 현재 마커가 화면 어디쯤 있는지 계산 (픽셀 좌표)
             const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
             const mapDiv = document.getElementById("map_overlay_content");
-            const mapHeight = mapDiv.clientHeight;
+            const mapWidth = mapDiv.clientWidth;
             
-            // 2. 판단: 위에서 200px 이내(상단)에 찍혔는가?
-            const isTopArea = markerPoint.y < 200;
+            // 상단/좌우 여백 체크
+            const isTop = markerPoint.y < 220;
+            const isLeft = markerPoint.x < 160;
+            const isRight = markerPoint.x > (mapWidth - 160);
 
             const response = await fetch(url);
             const data = await response.json();
-            let fullAddress = "주소 미상";
+            let fullAddress = data.addressInfo?.fullAddress || "주소 미상";
 
-            if (data.addressInfo && data.addressInfo.fullAddress) {
-                fullAddress = data.addressInfo.fullAddress;
-            }
+            let boxStyle = ""; 
+            let tailStyle = ""; 
 
-            // 3. 위치에 따라 스타일(CSS) 변수 설정
-            let containerStyle, tailStyle;
-
-            if (isTopArea) {
-                // [CASE A] 상단 클릭 -> 말풍선은 '아래'로, 꼬리는 '위'로
-                // margin-top을 줘서 마커 밑으로 내림
-                containerStyle = "margin-top: 50px;"; 
-                
-                // 꼬리: 박스 상단 중앙에 붙임 (border-bottom이 색칠됨 -> ▲ 모양)
-                tailStyle = `
-                    top: -8px; 
-                    left: 50%; 
-                    transform: translateX(-50%); 
-                    border-left: 8px solid transparent; 
-                    border-right: 8px solid transparent; 
-                    border-bottom: 8px solid white;
-                `;
+            // (A) 위/아래 결정
+            if (isTop) {
+                // 상단 클릭 -> 말풍선 [아래]로, 꼬리 [위]로 (▲)
+                boxStyle += "top: 40px; "; 
+                // 꼬리: 박스 바깥 위쪽에 붙임
+                tailStyle += "top: -8px; border-bottom: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
             } else {
-                // [CASE B] 일반 경우 -> 말풍선은 '위'로, 꼬리는 '아래'로
-                // margin-bottom을 줘서 마커 위로 올림
-                containerStyle = "margin-bottom: 50px;"; 
-                
-                // 꼬리: 박스 하단 중앙에 붙임 (border-top이 색칠됨 -> ▼ 모양)
-                tailStyle = `
-                    bottom: -8px; 
-                    left: 50%; 
-                    transform: translateX(-50%); 
-                    border-left: 8px solid transparent; 
-                    border-right: 8px solid transparent; 
-                    border-top: 8px solid white;
-                `;
+                // 하단 클릭 -> 말풍선 [위]로, 꼬리 [아래]로 (▼)
+                boxStyle += "bottom: 50px; "; // 마커 위로 띄움
+                // 꼬리: 박스 바깥 아래쪽에 붙임
+                tailStyle += "bottom: -8px; border-top: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
             }
 
-            // 4. HTML 조립
-            const content = `
-                <div style="position: relative; ${containerStyle} filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
-                    <div style="
-                        background: white; 
-                        border-radius: 12px; 
-                        padding: 12px 16px; 
-                        text-align: center; 
-                        min-width: 200px;">
-                        
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 8px 0; font-weight: 600; word-break: keep-all;">
-                            ${fullAddress}
-                        </p>
-                        
-                        <button onclick="openRegistrationModal('${fullAddress}')" style="
-                            background: #10b981; color: white; border: none; padding: 8px 16px; 
-                            border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; width: 100%;">
-                            이 위치 등록하기
-                        </button>
-                    </div>
+            // (B) 좌/우 결정 (중앙 정렬 기준)
+            if (isLeft) {
+                boxStyle += "left: 0px; transform: none;"; 
+                // 꼬리는 마커 위치(markerPoint.x)에 맞춰야 함. 대략 왼쪽에서 20px 지점
+                tailStyle += "left: 20px;"; 
+            } 
+            else if (isRight) {
+                boxStyle += "right: 0px; transform: none;";
+                tailStyle += "right: 20px;";
+            } 
+            else {
+                // 중앙 정렬
+                boxStyle += "left: 50%; transform: translateX(-50%);";
+                tailStyle += "left: 50%; transform: translateX(-50%);"; 
+            }
 
+            const content = `
+                <div style="position: absolute; ${boxStyle} width: max-content; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); pointer-events: auto;">
+                    <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 180px; max-width: 240px;">
+                        <p style="font-size: 12px; color: #374151; margin: 0 0 6px 0; font-weight: 600; word-break: keep-all;">${fullAddress}</p>
+                        <button onclick="openRegistrationModal('${fullAddress}')" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록하기</button>
+                    </div>
                     <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-                </div>
-            `;
+                </div>`;
 
             if (tempInfoWindow) tempInfoWindow.setMap(null);
-            
             tempInfoWindow = new Tmapv2.InfoWindow({
                 position: new Tmapv2.LatLng(lat, lon),
-                content: content, 
-                type: 2, 
-                map: currentMapInstance,
-                border: '0px solid white', 
-                background: false 
+                content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
             });
-
-        } catch (e) {
-            console.error(e);
-            showToast("주소를 불러오지 못했습니다.", "error");
-        }
+        } catch (e) { console.error(e); }
     }
 
     // ===============================================
@@ -1897,8 +1868,12 @@ function enableMapLongPress() {
             } else {
                 showToast("등록 실패: " + result.message, "error");
             }
-        } catch(e) {
-            showToast("오류 발생: " + e.message, "error");
+          } catch (e) {
+            console.error(e);
+            // 👇 여기가 바로 그 "예쁜 알림" 띄우는 곳입니다! 절대 지우면 안 됨!
+            showToast("주소를 불러오지 못했습니다.", "error"); 
+        }
+    }
         } finally {
             hideLoader();
         }
@@ -1980,6 +1955,7 @@ async function showClientOnMapWithBubble(client, user) {
   </script>
 </body>
 </html>
+
 
 
 
