@@ -896,13 +896,13 @@ async function confirmGenerateReport() {
         }
     }
 
-// [최종] 디자인(꽉 채움) + 오류 해결(변수명 변경)
+// [최종 수정] 부모 여백 무시하고 꽉 채우기 + 마키 클릭 오류 해결
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
-        // 1. 사이드바 패딩 제거 (꽉 채우기)
-        container.style.padding = "0px";
-        container.className = ""; 
+        // 🚨 [핵심 기술] 부모(content-review)의 패딩(24px)을 상쇄하기 위해 음수 마진 적용
+        // 이렇게 하면 목록이 부모 박스를 뚫고 좌우 끝까지 늘어납니다.
+        container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
         
         if (clients.length === 0) {
             container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
@@ -916,11 +916,10 @@ async function confirmGenerateReport() {
         for (const client of clients) {
             const li = document.createElement('li');
             
-            li.className = 'w-full px-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
+            // 배경 투명, 좌우 여백(px-6)을 줘서 글자는 안 짤리게 함
+            li.className = 'w-full px-6 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
             
-            // -----------------------------------------------------------
-            // 1. HTML 구성
-            // -----------------------------------------------------------
+            // --- 이름 영역 (7자 이상 마키) ---
             const isLongText = client.name.length > 7;
             let nameHtml = '';
             
@@ -938,21 +937,19 @@ async function confirmGenerateReport() {
             }
 
             li.innerHTML = `
-                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
+                <div class="name-area flex-1 min-w-0 text-left pr-3 overflow-hidden" style="cursor: pointer;">
                     ${nameHtml}
                 </div>
 
-                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
+                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm" style="cursor: pointer;">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
                     </svg>
                 </div>
             `;
             
-            // -----------------------------------------------------------
-            // 2. 터치 로직 (변수명 listTouchTimer로 변경 -> 충돌 방지)
-            // -----------------------------------------------------------
-            let listTouchTimer; // ★ 이름 바꿈!
+            // --- 터치 로직 ---
+            let listTouchTimer;
             let isLongPress = false;
             let startX = 0;
             let startY = 0;
@@ -965,7 +962,6 @@ async function confirmGenerateReport() {
                 startY = e.touches[0].clientY;
                 li.classList.add('bg-white/30');
 
-                // ★ 변수명 변경
                 listTouchTimer = setTimeout(() => {
                     if (!isMoved) { 
                         isLongPress = true;
@@ -978,25 +974,24 @@ async function confirmGenerateReport() {
             }, { passive: true });
 
             li.addEventListener('touchmove', (e) => {
-                const currentX = e.touches[0].clientX;
-                const currentY = e.touches[0].clientY;
-                
-                if (Math.abs(currentX - startX) > 10 || Math.abs(currentY - startY) > 10) {
+                if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
                     isMoved = true;        
-                    clearTimeout(listTouchTimer); // ★ 변수명 변경
+                    clearTimeout(listTouchTimer); 
                     li.classList.remove('bg-white/30');
                 }
             }, { passive: true });
 
             li.addEventListener('touchend', (e) => {
-                clearTimeout(listTouchTimer); // ★ 변수명 변경
+                clearTimeout(listTouchTimer);
                 li.classList.remove('bg-white/30');
                 
                 if (isMoved || isLongPress) return;
 
+                // 클릭 분기점
                 if (e.target.closest('.nav-icon-target')) {
                     openNavPrompt(client, user);
                 } else {
+                    // 이름 부분을 누른 것으로 간주
                     showClientOnMapWithBubble(client, user);
                 }
             }, { passive: true });
@@ -1909,46 +1904,83 @@ function enableMapLongPress() {
         }
     }
     // [신규] 이름 클릭 시 -> 주소로 좌표 찾아서 지도 이동 & 말풍선 띄우기
-    async function showClientOnMapWithBubble(client, user) {
-        // 1. 지도 열기
+async function showClientOnMapWithBubble(client, user) {
+        // 지도 열기
         openMapOverlay();
         
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님의 키
-        
         try {
-            // 2. T맵 API로 주소 -> 좌표 변환 (Geocoding)
-            const encodedAddr = encodeURIComponent(client.address);
-            const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&callback=result&appKey=${appKey}&coordType=WGS84GEO&fullAddr=${encodedAddr}`;
+            // 1. 엑셀 주소로 좌표 찾기 (Geocoding)
+            const markerPos = await geocodeAndSetMarker(client.address, user);
+            const lat = parseFloat(markerPos.lat()); // 숫자 변환 필수!
+            const lon = parseFloat(markerPos.lng());
+
+            // 2. 지도 이동
+            currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+            currentMapInstance.setZoom(16); 
+
+            // 3. 마커 다시 찍기 (확실하게)
+            if (tempMarker) tempMarker.setMap(null);
+            if (tempInfoWindow) tempInfoWindow.setMap(null);
+
+            tempMarker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(lat, lon),
+                icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+                map: currentMapInstance
+            });
+
+            // 4. 도로명 주소 가져오기 (Reverse Geocoding)
+            const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
+            const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
             
             const response = await fetch(url);
             const data = await response.json();
             
-            if (data.coordinateInfo && data.coordinateInfo.coordinate.length > 0) {
-                // 좌표 확보
-                const coord = data.coordinateInfo.coordinate[0];
-                const lat = coord.newLat || coord.lat;
-                const lon = coord.newLon || coord.lon;
-                
-                // 3. 지도 이동 & 줌
-                const position = new Tmapv2.LatLng(lat, lon);
-                currentMapInstance.setCenter(position);
-                currentMapInstance.setZoom(16); // 적당히 확대
-                
-                // 4. 마커 & 말풍선 띄우기 (기존 함수 재활용)
-                // 핀도 찍고 주소 말풍선도 보여줍니다.
-                onMapLongPressTrigger(lat, lon); 
-                
-            } else {
-                showToast("위치 정보를 찾을 수 없습니다.", "error");
+            // 주소 결정 (도로명 우선, 없으면 엑셀 주소)
+            let displayAddress = client.address; 
+            if (data.addressInfo && data.addressInfo.fullAddress) {
+                displayAddress = data.addressInfo.fullAddress;
             }
+
+            // 5. 말풍선 디자인 (정보 표시용 - 등록 버튼 없음)
+            const content = `
+                <div style="position: relative; margin-bottom: 45px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
+                    <div style="
+                        background: white; 
+                        border-radius: 12px; 
+                        padding: 12px 16px; 
+                        text-align: center; 
+                        min-width: 180px;
+                        max-width: 240px;">
+                        
+                        <p style="font-size: 15px; color: #111827; margin: 0 0 4px 0; font-weight: 800;">
+                            ${client.name}
+                        </p>
+                        <p style="font-size: 12px; color: #6b7280; margin: 0; word-break: keep-all;">
+                            ${displayAddress}
+                        </p>
+                    </div>
+                    <div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white;"></div>
+                </div>
+            `;
+
+            tempInfoWindow = new Tmapv2.InfoWindow({
+                position: new Tmapv2.LatLng(lat, lon),
+                content: content,
+                type: 2,
+                map: currentMapInstance,
+                border: '0px solid white',
+                background: false 
+            });
+            
         } catch (e) {
-            console.error(e);
-            showToast("위치 검색 중 오류가 발생했습니다.", "error");
+            console.error("지도 이동 오류:", e);
+            showToast("위치 정보를 불러오는데 실패했습니다.", "error");
         }
     }
   </script>
 </body>
 </html>
+
 
 
 
