@@ -1585,8 +1585,122 @@ function openMapOverlay() {
 
         findAddressFromCoords(latLng.lat(), latLng.lng());
     }
+    // =========================================================
+    // [업그레이드] 롱프레스 -> 핀+말풍선 -> 등록 팝업
+    // =========================================================
+
+    let tempInfoWindow = null; // 말풍선 변수
+
+    // 1. 롱프레스 발동 시 (좌표만 넘겨받음)
+    function onMapLongPressTrigger(lat, lon) {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
+
+        // 기존 핀/말풍선이 있다면 지워줍니다 (깔끔하게)
+        if (tempMarker) tempMarker.setMap(null);
+        if (tempInfoWindow) tempInfoWindow.setMap(null);
+        
+        // 1. 파란 핀 찍기
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
+        
+        // 2. 지도를 핀 위치로 부드럽게 이동 (선택사항)
+        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+
+        // 3. 주소를 가져와서 말풍선을 띄웁니다
+        findAddressAndShowBubble(lat, lon);
+    }
+
+    // 2. 주소 찾아서 말풍선 띄우기 (핵심 기능!)
+    async function findAddressAndShowBubble(lat, lon) {
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님 API 키
+        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            let fullAddress = "주소 미상";
+
+            if (data.addressInfo && data.addressInfo.fullAddress) {
+                fullAddress = data.addressInfo.fullAddress;
+            }
+
+            // ---------------------------------------------------------
+            // [디자인] 말풍선 안에 들어갈 HTML을 여기서 만듭니다.
+            // ---------------------------------------------------------
+            const content = `
+                <div style="
+                    padding: 12px 16px; 
+                    background: white; 
+                    border-radius: 12px; 
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                    text-align: center; 
+                    min-width: 200px;
+                    font-family: 'Inter', sans-serif;">
+                    
+                    <p style="
+                        font-size: 13px; 
+                        color: #4b5563; 
+                        margin: 0 0 8px 0; 
+                        font-weight: 600;
+                        word-break: keep-all;">
+                        ${fullAddress}
+                    </p>
+                    
+                    <button onclick="openRegistrationModal('${fullAddress}')" style="
+                        background: #10b981; 
+                        color: white; 
+                        border: none; 
+                        padding: 8px 16px; 
+                        border-radius: 8px; 
+                        font-size: 13px; 
+                        font-weight: bold; 
+                        cursor: pointer; 
+                        width: 100%;
+                        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
+                        이 위치 등록하기
+                    </button>
+                </div>
+            `;
+
+            // T맵 InfoWindow 생성
+            tempInfoWindow = new Tmapv2.InfoWindow({
+                position: new Tmapv2.LatLng(lat, lon),
+                content: content, // 위에서 만든 예쁜 HTML
+                type: 2, // 2번 타입 (커스텀 팝업)
+                map: currentMapInstance,
+                border: '0px solid white', // 기본 테두리 제거 (우리가 만든 div가 테두리 역할)
+                background: false // 투명 배경
+            });
+
+        } catch (e) {
+            console.error(e);
+            showToast("주소를 불러오지 못했습니다.", "error");
+        }
+    }
+
+    // 3. 진짜 등록 팝업 열기 (말풍선의 버튼을 눌렀을 때 실행됨)
+    function openRegistrationModal(address) {
+        // 말풍선은 이제 닫아도 됨
+        if (tempInfoWindow) tempInfoWindow.setMap(null);
+
+        // 입력창 초기화 및 열기
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').textContent = address;
+        
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        
+        // 이름 입력창에 바로 포커스 줌 (편의성)
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
   </script>
 </body>
 </html>
+
 
 
