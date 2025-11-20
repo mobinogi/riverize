@@ -1478,14 +1478,17 @@ function openMapOverlay() {
 // ==================================================
     // [최종] 지도 롱프레스 (강제 캡처링 + 지도 고정)
     // ==================================================
-function enableMapLongPress() {
+// ==================================================
+    // [오류 수정] 지도 롱프레스 (screenToMap 사용)
+    // ==================================================
+    
+    function enableMapLongPress() {
         const mapDiv = document.getElementById("map_overlay_content");
         
         let pressTimer;
         let startX, startY;
         let isDragging = false;
         
-        // 설정: 0.5초 꾹, 20px 떨림 허용
         const LONG_PRESS_DURATION = 500; 
         const MOVE_THRESHOLD = 20; 
 
@@ -1508,7 +1511,9 @@ function enableMapLongPress() {
                     const y = startY - rect.top;
                     
                     const pixel = new Tmapv2.Point(x, y);
-                    const latLng = currentMapInstance.fromPixelToLatLng(pixel);
+                    
+                    // 👇👇 [수정된 부분] fromPixelToLatLng -> screenToMap
+                    const latLng = currentMapInstance.screenToMap(pixel);
                     
                     onMapLongPressTrigger(latLng.lat(), latLng.lng());
                 }
@@ -1528,8 +1533,6 @@ function enableMapLongPress() {
                 isDragging = true; 
                 clearTimeout(pressTimer);
             } else {
-                // 🚨 [수정] 오류 나던 stopPropagation() 삭제!
-                // preventDefault() 만으로도 지도 고정은 충분합니다.
                 if (e.cancelable) e.preventDefault();
             }
         }, { capture: true, passive: false }); 
@@ -1551,8 +1554,12 @@ function enableMapLongPress() {
                     const rect = mapDiv.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
+                    
                     const pixel = new Tmapv2.Point(x, y);
-                    const latLng = currentMapInstance.fromPixelToLatLng(pixel);
+                    
+                    // 👇👇 [수정된 부분] 여기도 screenToMap 으로 변경!
+                    const latLng = currentMapInstance.screenToMap(pixel);
+                    
                     onMapLongPressTrigger(latLng.lat(), latLng.lng());
                 }
             }, LONG_PRESS_DURATION);
@@ -1804,6 +1811,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
