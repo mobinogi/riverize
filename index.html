@@ -1462,59 +1462,114 @@ function openMapOverlay() {
     // (하지만 map div가 생성된 뒤에 걸어야 하므로, openMapOverlay 안에 넣는 게 좋습니다.)
     
     // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
+    // ==================================================
+    // [최종 수정] 지도 롱프레스 (PC/모바일 호환 + 1.5초)
+    // ==================================================
+    
     function enableMapLongPress() {
         const mapDiv = document.getElementById("map_overlay_content");
         
         let pressTimer;
         let startX, startY;
-        let isDragging = false;
+        let isMoved = false;
+        
+        // ⏱️ 꾹 누르는 시간 설정 (1500ms = 1.5초)
+        // 지도는 드래그 때문에 멈칫하는 시간이 있어서 1초 이상 주는 게 안전합니다.
+        const LONG_PRESS_DURATION = 1500; 
 
-        mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; // 두 손가락 터치는 무시 (줌인/아웃)
+        // --- [공통 로직] 시작/이동/끝 ---
+        
+        const handleStart = (x, y) => {
+            isMoved = false;
+            startX = x;
+            startY = y;
             
-            isDragging = false;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            
-            // 0.8초 타이머 시작
+            // 기존 타이머 있으면 제거 (안전장치)
+            clearTimeout(pressTimer);
+
             pressTimer = setTimeout(() => {
-                if (!isDragging) {
-                    navigator.vibrate(50); // 징~ 피드백
+                if (!isMoved) {
+                    // PC에서는 진동이 안 울리지만 에러 방지
+                    if (navigator.vibrate) navigator.vibrate(50);
                     
-                    // 현재 화면의 터치 위치를 T맵 좌표(위도, 경도)로 변환
-                    const touchPixel = new Tmapv2.Point(startX, startY);
-                    // 주의: TMapv2 API 버전에 따라 화면 좌표 -> 지도 좌표 변환법이 다를 수 있음.
-                    // 가장 확실한 건 "지도 중앙"을 기준으로 잡거나, 클릭 이벤트를 롱프레스로 흉내내는 것임.
-                    
-                    // [꼼수] 롱프레스가 인식되면 -> 그 위치를 강제로 '클릭'한 것처럼 처리
-                    // 하지만 Tmap API에서 터치 좌표변환이 까다로우므로,
-                    // 여기서는 "현재 지도 중앙"이 아니라 "내가 누른 곳"을 찾아야 함.
-                    
-                    // Tmap API는 '화면 좌표 -> 지도 좌표' 변환 함수(screenToMap)가 필요함.
-                    // 만약 복잡하면 차라리 "클릭" 방식을 유지하는 게 정신건강에 좋습니다.
-                    
-                    // 일단 "클릭" 방식을 쓰시되, "터치"를 꾹 했을 때만 발동하도록 우회하겠습니다.
-                    // (아래 코드는 삭제하고, 기존 클릭 방식을 유지하되 사용법만 바꾸는 걸 추천드립니다.)
+                    // 지도 좌표 변환 및 등록 함수 호출
+                    triggerLongPressAction(x, y, mapDiv);
                 }
-            }, 800);
-        });
+            }, LONG_PRESS_DURATION);
+        };
+
+        const handleMove = (x, y) => {
+            // 10px 이상 움직이면 취소 (손떨림 보정)
+            if (Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10) {
+                isMoved = true;
+                clearTimeout(pressTimer);
+            }
+        };
+
+        const handleEnd = () => {
+            clearTimeout(pressTimer); // 손 떼면 무조건 취소
+        };
+
+        // --- [1. 모바일 터치 이벤트] ---
+        mapDiv.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) return; // 멀티터치 무시
+            handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
 
         mapDiv.addEventListener('touchmove', (e) => {
-            // 조금이라도 움직이면(드래그) 취소
-            if (Math.abs(e.touches[0].clientX - startX) > 10 || 
-                Math.abs(e.touches[0].clientY - startY) > 10) {
-                isDragging = true;
-                clearTimeout(pressTimer);
+            handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+
+        mapDiv.addEventListener('touchend', handleEnd);
+        mapDiv.addEventListener('touchcancel', handleEnd); // 터치 캔슬(화면 밖 이동 등) 대응
+
+        // --- [2. PC 마우스 이벤트] ---
+        mapDiv.addEventListener('mousedown', (e) => {
+            // 왼쪽 버튼만 허용 (우클릭 무시)
+            if (e.button === 0) {
+                handleStart(e.clientX, e.clientY);
             }
         });
 
-        mapDiv.addEventListener('touchend', () => {
-            clearTimeout(pressTimer);
+        mapDiv.addEventListener('mousemove', (e) => {
+            // 마우스 누른 상태일 때만 체크하려 했으나, 
+            // 어차피 타이머 돌 때만 의미 있으므로 그냥 좌표 체크
+            handleMove(e.clientX, e.clientY);
         });
+
+        mapDiv.addEventListener('mouseup', handleEnd);
+        mapDiv.addEventListener('mouseleave', handleEnd); // 마우스가 지도 밖으로 나가면 취소
+    }
+
+    // [분리] 롱프레스 성공 시 실행 로직
+    function triggerLongPressAction(clientX, clientY, mapElement) {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
+
+        const rect = mapElement.getBoundingClientRect();
+        const relativeX = clientX - rect.left;
+        const relativeY = clientY - rect.top;
+        
+        const pixel = new Tmapv2.Point(relativeX, relativeY);
+        const latLng = currentMapInstance.fromPixelToLatLng(pixel);
+        
+        // 임시 마커 및 팝업
+        if (tempMarker) tempMarker.setMap(null);
+        
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(latLng.lat(), latLng.lng()),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
+
+        findAddressFromCoords(latLng.lat(), latLng.lng());
     }
   </script>
 </body>
 </html>
+
 
 
 
