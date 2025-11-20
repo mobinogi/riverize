@@ -780,14 +780,12 @@ async function confirmGenerateReport() {
     /**
      * '오버레이 열기' 버튼
      */
-function openMapOverlay() {
+    function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
-      
       document.getElementById('map-overlay').classList.remove('hidden');
       
-      // 지도가 아직 없을 때만 새로 생성 (초기화)
       if (!isMapInitialized) {
-        console.log("맵이 없으므로, 지금부터 생성합니다...");
+        console.log("맵 생성 시작...");
         try {
           // 1. 지도 생성
           currentMapInstance = new Tmapv2.Map("map_overlay_content", {
@@ -797,19 +795,77 @@ function openMapOverlay() {
             zoom: 12
           });
           
-          // 👇 [여기입니다!] 지도 생성 직후에 클릭 이벤트를 연결합니다.
-          // currentMapInstance.addListener("click", onMapClick);
+          // =========================================================
+          // 🖱️ [지도 롱프레스 구현 - T맵 내장 이벤트 사용] 
+          // =========================================================
           
+          let pressTimer;
+          let isLongPress = false;
+          
+          // 1. 누르기 시작 (터치 or 마우스 클릭)
+          // T맵은 'touchstart', 'mousedown' 이벤트를 따로 지원합니다.
+          const startHandler = function(e) {
+              isLongPress = false;
+              
+              // 기존 타이머 제거
+              clearTimeout(pressTimer);
+              
+              // 1초 뒤에 발동 예약
+              pressTimer = setTimeout(() => {
+                  isLongPress = true;
+                  if (navigator.vibrate) navigator.vibrate(50); // 징~
+                  
+                  // T맵이 이미 e.latLng에 정확한 좌표를 담아서 줍니다! (계산 불필요)
+                  const lat = e.latLng.lat();
+                  const lon = e.latLng.lng();
+                  
+                  // 등록 함수 호출
+                  onMapLongPressTrigger(lat, lon);
+                  
+              }, 1000); // 1초 (너무 길면 800으로 수정)
+          };
+
+          // 2. 떼거나 움직임 (취소 조건)
+          const cancelHandler = function() {
+              clearTimeout(pressTimer);
+          };
+
+          // 이벤트 연결
+          currentMapInstance.addListener("touchstart", startHandler); // 모바일 터치 시작
+          currentMapInstance.addListener("mousedown", startHandler);  // PC 클릭 시작
+          
+          currentMapInstance.addListener("touchend", cancelHandler);  // 모바일 뗌
+          currentMapInstance.addListener("mouseup", cancelHandler);   // PC 뗌
+          currentMapInstance.addListener("dragstart", cancelHandler); // 지도 드래그 시작하면 즉시 취소!
+
           isMapInitialized = true; 
-          console.log("지도 생성 및 클릭 이벤트 연결 성공!");
 
         } catch (e) {
           console.error("지도 생성 실패:", e);
           document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
       }
-     }
+    }
+    
+    // 👇 [이 함수는 스크립트 맨 아래에 따로 있어도 되고, 여기 둬도 됩니다]
+    function onMapLongPressTrigger(lat, lon) {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
 
+        // 임시 마커 표시
+        if (tempMarker) tempMarker.setMap(null);
+        
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
+
+        // 주소 찾기 & 팝업
+        findAddressFromCoords(lat, lon);
+    }
     /**
      * '닫기' 버튼
      */
@@ -1556,6 +1612,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
