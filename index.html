@@ -896,12 +896,13 @@ async function confirmGenerateReport() {
         }
     }
 
-// [최종] 배경 투명 + 좌우 꽉 채움 + 터치 오류 해결
+// [최종] 디자인(꽉 채움) + 오류 해결(변수명 변경)
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
         
-        // 컨테이너의 패딩을 강제로 없애서 리스트가 꽉 차게 만듦 (CSS 강제 적용)
+        // 1. 사이드바 패딩 제거 (꽉 채우기)
         container.style.padding = "0px";
+        container.className = ""; 
         
         if (clients.length === 0) {
             container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
@@ -910,22 +911,16 @@ async function confirmGenerateReport() {
 
         const listUl = document.createElement('ul');
         listUl.id = `list-${user}`;
-        // 좌우 여백(margin), 내부 여백(padding) 모두 0으로 초기화
-        listUl.className = "w-full p-0 m-0 list-none"; 
+        listUl.className = "w-full p-0 m-0 list-none block"; 
         
         for (const client of clients) {
             const li = document.createElement('li');
             
-            // [디자인 수정 핵심]
-            // 1. bg-white 제거 -> 배경 투명하게 (뒤에 있는 반투명 배경이 보임)
-            // 2. border-gray-100 -> border-gray-400/30 (구분선도 은은하게)
-            // 3. px-4 -> px-4 (내부 글자 여백은 유지하되, 리스트 자체는 꽉 참)
-            li.className = 'w-full px-4 py-3 border-b border-gray-400/30 flex items-center hover:bg-white/20 transition-colors select-none touch-manipulation';
+            li.className = 'w-full px-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
             
             // -----------------------------------------------------------
-            // 1. HTML 구성 (마키 + 아이콘)
+            // 1. HTML 구성
             // -----------------------------------------------------------
-            // 빈칸 포함 7자 넘으면 흐르게 설정
             const isLongText = client.name.length > 7;
             let nameHtml = '';
             
@@ -955,10 +950,9 @@ async function confirmGenerateReport() {
             `;
             
             // -----------------------------------------------------------
-            // 2. 터치 로직 (변수 중복 오류 해결됨)
+            // 2. 터치 로직 (변수명 listTouchTimer로 변경 -> 충돌 방지)
             // -----------------------------------------------------------
-            // 변수를 여기서 새로 선언하므로 'already declared' 오류가 나지 않습니다.
-            let pressTimer;
+            let listTouchTimer; // ★ 이름 바꿈!
             let isLongPress = false;
             let startX = 0;
             let startY = 0;
@@ -969,9 +963,10 @@ async function confirmGenerateReport() {
                 isMoved = false; 
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
-                li.classList.add('bg-white/30'); // 터치 시 살짝 밝게
+                li.classList.add('bg-white/30');
 
-                pressTimer = setTimeout(() => {
+                // ★ 변수명 변경
+                listTouchTimer = setTimeout(() => {
                     if (!isMoved) { 
                         isLongPress = true;
                         navigator.vibrate(50); 
@@ -988,13 +983,13 @@ async function confirmGenerateReport() {
                 
                 if (Math.abs(currentX - startX) > 10 || Math.abs(currentY - startY) > 10) {
                     isMoved = true;        
-                    clearTimeout(pressTimer); 
+                    clearTimeout(listTouchTimer); // ★ 변수명 변경
                     li.classList.remove('bg-white/30');
                 }
             }, { passive: true });
 
             li.addEventListener('touchend', (e) => {
-                clearTimeout(pressTimer);
+                clearTimeout(listTouchTimer); // ★ 변수명 변경
                 li.classList.remove('bg-white/30');
                 
                 if (isMoved || isLongPress) return;
@@ -1916,6 +1911,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
