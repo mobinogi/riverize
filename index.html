@@ -1707,21 +1707,19 @@ function openMapOverlay() {
         // 이름 입력창에 바로 포커스 줌 (편의성)
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
-    // [최종 완성] 4방향 코너 감지 스마트 말풍선 (구석 짤림 방지)
+// [최종_스마트] 말풍선 위치 자동 조정 (위/아래 뒤집기)
     async function findAddressAndShowBubble(lat, lon) {
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
         const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
 
         try {
-            // 1. 화면상 좌표 및 지도 크기 계산
+            // 1. 현재 마커가 화면 어디쯤 있는지 계산 (픽셀 좌표)
             const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
             const mapDiv = document.getElementById("map_overlay_content");
-            const mapWidth = mapDiv.clientWidth;
+            const mapHeight = mapDiv.clientHeight;
             
-            // 2. 위치 판단 (임계값 설정)
-            const isTop = markerPoint.y < 220; // 위쪽 220px 이내면 '상단'
-            const isLeft = markerPoint.x < 160; // 왼쪽 160px 이내면 '좌측'
-            const isRight = markerPoint.x > (mapWidth - 160); // 오른쪽 160px 이내면 '우측'
+            // 2. 판단: 위에서 200px 이내(상단)에 찍혔는가?
+            const isTopArea = markerPoint.y < 200;
 
             const response = await fetch(url);
             const data = await response.json();
@@ -1731,52 +1729,50 @@ function openMapOverlay() {
                 fullAddress = data.addressInfo.fullAddress;
             }
 
-            // 3. 위치에 따른 CSS 변수 생성
-            let boxStyle = "";  // 말풍선 본체 위치
-            let tailStyle = ""; // 꼬리 위치 및 모양
+            // 3. 위치에 따라 스타일(CSS) 변수 설정
+            let containerStyle, tailStyle;
 
-            // (A) 수직 위치 결정 (위/아래)
-            if (isTop) {
-                // 상단 클릭 -> 말풍선은 [아래]로
-                boxStyle += "top: 15px; "; 
-                // 꼬리는 [위]를 향함 (▲)
-                tailStyle += "top: -8px; border-bottom: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent; ";
+            if (isTopArea) {
+                // [CASE A] 상단 클릭 -> 말풍선은 '아래'로, 꼬리는 '위'로
+                // margin-top을 줘서 마커 밑으로 내림
+                containerStyle = "margin-top: 50px;"; 
+                
+                // 꼬리: 박스 상단 중앙에 붙임 (border-bottom이 색칠됨 -> ▲ 모양)
+                tailStyle = `
+                    top: -8px; 
+                    left: 50%; 
+                    transform: translateX(-50%); 
+                    border-left: 8px solid transparent; 
+                    border-right: 8px solid transparent; 
+                    border-bottom: 8px solid white;
+                `;
             } else {
-                // 일반/하단 클릭 -> 말풍선은 [위]로 (기본)
-                boxStyle += "bottom: 55px; "; // 마커 높이만큼 띄움
-                // 꼬리는 [아래]를 향함 (▼)
-                tailStyle += "bottom: -8px; border-top: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent; ";
-            }
-
-            // (B) 수평 위치 결정 (좌/우/중앙)
-            if (isLeft) {
-                // 왼쪽 구석 -> 말풍선을 [오른쪽]으로 밀기
-                boxStyle += "left: -10px; transform: none; "; 
-                tailStyle += "left: 20px; "; // 꼬리는 왼쪽에 붙어있어야 함
-            } 
-            else if (isRight) {
-                // 오른쪽 구석 -> 말풍선을 [왼쪽]으로 밀기
-                boxStyle += "right: -10px; transform: none; ";
-                tailStyle += "right: 20px; "; // 꼬리는 오른쪽에 붙어있어야 함
-            } 
-            else {
-                // 중앙 -> 말풍선도 중앙 정렬
-                boxStyle += "left: 50%; transform: translateX(-50%); ";
-                tailStyle += "left: 50%; transform: translateX(-50%); "; // 꼬리도 중앙
+                // [CASE B] 일반 경우 -> 말풍선은 '위'로, 꼬리는 '아래'로
+                // margin-bottom을 줘서 마커 위로 올림
+                containerStyle = "margin-bottom: 50px;"; 
+                
+                // 꼬리: 박스 하단 중앙에 붙임 (border-top이 색칠됨 -> ▼ 모양)
+                tailStyle = `
+                    bottom: -8px; 
+                    left: 50%; 
+                    transform: translateX(-50%); 
+                    border-left: 8px solid transparent; 
+                    border-right: 8px solid transparent; 
+                    border-top: 8px solid white;
+                `;
             }
 
             // 4. HTML 조립
             const content = `
-                <div style="position: absolute; ${boxStyle} width: max-content; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
+                <div style="position: relative; ${containerStyle} filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
                     <div style="
                         background: white; 
                         border-radius: 12px; 
                         padding: 12px 16px; 
                         text-align: center; 
-                        min-width: 200px; 
-                        max-width: 260px;">
+                        min-width: 200px;">
                         
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 8px 0; font-weight: 600; word-break: keep-all; line-height: 1.4;">
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 8px 0; font-weight: 600; word-break: keep-all;">
                             ${fullAddress}
                         </p>
                         
@@ -1810,5 +1806,6 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
