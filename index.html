@@ -1908,9 +1908,48 @@ function enableMapLongPress() {
             hideLoader();
         }
     }
+    // [신규] 이름 클릭 시 -> 주소로 좌표 찾아서 지도 이동 & 말풍선 띄우기
+    async function showClientOnMapWithBubble(client, user) {
+        // 1. 지도 열기
+        openMapOverlay();
+        
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님의 키
+        
+        try {
+            // 2. T맵 API로 주소 -> 좌표 변환 (Geocoding)
+            const encodedAddr = encodeURIComponent(client.address);
+            const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&callback=result&appKey=${appKey}&coordType=WGS84GEO&fullAddr=${encodedAddr}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.coordinateInfo && data.coordinateInfo.coordinate.length > 0) {
+                // 좌표 확보
+                const coord = data.coordinateInfo.coordinate[0];
+                const lat = coord.newLat || coord.lat;
+                const lon = coord.newLon || coord.lon;
+                
+                // 3. 지도 이동 & 줌
+                const position = new Tmapv2.LatLng(lat, lon);
+                currentMapInstance.setCenter(position);
+                currentMapInstance.setZoom(16); // 적당히 확대
+                
+                // 4. 마커 & 말풍선 띄우기 (기존 함수 재활용)
+                // 핀도 찍고 주소 말풍선도 보여줍니다.
+                onMapLongPressTrigger(lat, lon); 
+                
+            } else {
+                showToast("위치 정보를 찾을 수 없습니다.", "error");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("위치 검색 중 오류가 발생했습니다.", "error");
+        }
+    }
   </script>
 </body>
 </html>
+
 
 
 
