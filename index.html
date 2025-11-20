@@ -780,7 +780,7 @@ async function confirmGenerateReport() {
     /**
      * '오버레이 열기' 버튼
      */
-function openMapOverlay() {
+     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
       
@@ -1478,21 +1478,20 @@ function openMapOverlay() {
 // ==================================================
     // [최종] 지도 롱프레스 (강제 캡처링 + 지도 고정)
     // ==================================================
-    function enableMapLongPress() {
+function enableMapLongPress() {
         const mapDiv = document.getElementById("map_overlay_content");
         
         let pressTimer;
         let startX, startY;
         let isDragging = false;
         
-        // ⚡ 설정: 0.5초 꾹, 20px 떨림 허용
+        // 설정: 0.5초 꾹, 20px 떨림 허용
         const LONG_PRESS_DURATION = 500; 
         const MOVE_THRESHOLD = 20; 
 
-        // --- [1. 모바일 터치 핸들러] ---
-        // ★ 중요: capture: true 옵션을 켜서 T맵보다 먼저 이벤트를 잡습니다!
+        // 1. 모바일 터치
         mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; // 두 손가락은 줌인용이라 패스
+            if (e.touches.length > 1) return; 
             
             isDragging = false;
             startX = e.touches[0].clientX;
@@ -1502,9 +1501,8 @@ function openMapOverlay() {
 
             pressTimer = setTimeout(() => {
                 if (!isDragging) {
-                    if (navigator.vibrate) navigator.vibrate(50); // 징~
+                    if (navigator.vibrate) navigator.vibrate(50);
                     
-                    // 좌표 변환 (화면 절대좌표 -> 지도 상대좌표 -> 위도경도)
                     const rect = mapDiv.getBoundingClientRect();
                     const x = startX - rect.left;
                     const y = startY - rect.top;
@@ -1516,7 +1514,7 @@ function openMapOverlay() {
                 }
             }, LONG_PRESS_DURATION);
             
-        }, { capture: true, passive: false }); // 🚨 capture: true 필수!
+        }, { capture: true, passive: false }); 
 
         mapDiv.addEventListener('touchmove', (e) => {
             if (isDragging) return;
@@ -1524,30 +1522,25 @@ function openMapOverlay() {
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
             
-            // 20px 이상 움직였나?
             if (Math.abs(currentX - startX) > MOVE_THRESHOLD || 
                 Math.abs(currentY - startY) > MOVE_THRESHOLD) {
                 
-                isDragging = true; // 드래그다!
+                isDragging = true; 
                 clearTimeout(pressTimer);
             } else {
-                // 20px 이내면 지도 고정 (T맵 이동 막기)
-                // capture 단계에서 막아야 확실하게 멈춥니다.
-                e.stopPropagation(); 
+                // 🚨 [수정] 오류 나던 stopPropagation() 삭제!
+                // preventDefault() 만으로도 지도 고정은 충분합니다.
                 if (e.cancelable) e.preventDefault();
             }
-        }, { capture: true, passive: false }); // 🚨 capture: true 필수!
+        }, { capture: true, passive: false }); 
 
         const cancelHandler = () => clearTimeout(pressTimer);
         mapDiv.addEventListener('touchend', cancelHandler, { capture: true });
         mapDiv.addEventListener('touchcancel', cancelHandler, { capture: true });
 
-
-        // --- [2. PC 마우스 핸들러] ---
-        // PC도 똑같이 capture: true를 써야 클릭이 안 씹힙니다.
+        // 2. PC 마우스
         mapDiv.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; // 좌클릭만
-            
+            if (e.button !== 0) return; 
             isDragging = false;
             startX = e.clientX;
             startY = e.clientY;
@@ -1558,13 +1551,12 @@ function openMapOverlay() {
                     const rect = mapDiv.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
-                    
                     const pixel = new Tmapv2.Point(x, y);
                     const latLng = currentMapInstance.fromPixelToLatLng(pixel);
                     onMapLongPressTrigger(latLng.lat(), latLng.lng());
                 }
             }, LONG_PRESS_DURATION);
-        }, { capture: true }); // 🚨 capture: true
+        }, { capture: true }); 
 
         mapDiv.addEventListener('mousemove', (e) => {
             if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
@@ -1812,6 +1804,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
