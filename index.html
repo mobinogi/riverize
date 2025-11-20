@@ -896,9 +896,12 @@ async function confirmGenerateReport() {
         }
     }
 
-// [통합 완성] 마키 디자인 + 스크롤 방지 + 롱프레스 삭제 + 기능 분리
+// [최종] 배경 투명 + 좌우 꽉 채움 + 터치 오류 해결
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
+        
+        // 컨테이너의 패딩을 강제로 없애서 리스트가 꽉 차게 만듦 (CSS 강제 적용)
+        container.style.padding = "0px";
         
         if (clients.length === 0) {
             container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
@@ -907,15 +910,22 @@ async function confirmGenerateReport() {
 
         const listUl = document.createElement('ul');
         listUl.id = `list-${user}`;
+        // 좌우 여백(margin), 내부 여백(padding) 모두 0으로 초기화
         listUl.className = "w-full p-0 m-0 list-none"; 
         
         for (const client of clients) {
             const li = document.createElement('li');
-            li.className = 'w-full px-3 py-3 border-b border-gray-100 flex items-center bg-white hover:bg-gray-50 transition-colors select-none touch-manipulation';
+            
+            // [디자인 수정 핵심]
+            // 1. bg-white 제거 -> 배경 투명하게 (뒤에 있는 반투명 배경이 보임)
+            // 2. border-gray-100 -> border-gray-400/30 (구분선도 은은하게)
+            // 3. px-4 -> px-4 (내부 글자 여백은 유지하되, 리스트 자체는 꽉 참)
+            li.className = 'w-full px-4 py-3 border-b border-gray-400/30 flex items-center hover:bg-white/20 transition-colors select-none touch-manipulation';
             
             // -----------------------------------------------------------
             // 1. HTML 구성 (마키 + 아이콘)
             // -----------------------------------------------------------
+            // 빈칸 포함 7자 넘으면 흐르게 설정
             const isLongText = client.name.length > 7;
             let nameHtml = '';
             
@@ -923,13 +933,13 @@ async function confirmGenerateReport() {
                 nameHtml = `
                     <div class="marquee-container pointer-events-none">
                         <div class="marquee-content do-scroll">
-                            <span class="text-[15px] font-semibold text-gray-800">${client.name}</span>
+                            <span class="text-[15px] font-semibold text-gray-900">${client.name}</span>
                             <span class="inline-block w-8"></span>
-                            <span class="text-[15px] font-semibold text-gray-800">${client.name}</span>
+                            <span class="text-[15px] font-semibold text-gray-900">${client.name}</span>
                         </div>
                     </div>`;
             } else {
-                nameHtml = `<div class="text-[15px] font-semibold text-gray-800 leading-snug truncate pointer-events-none">${client.name}</div>`;
+                nameHtml = `<div class="text-[15px] font-semibold text-gray-900 leading-snug truncate pointer-events-none">${client.name}</div>`;
             }
 
             li.innerHTML = `
@@ -937,7 +947,7 @@ async function confirmGenerateReport() {
                     ${nameHtml}
                 </div>
 
-                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-500 bg-blue-50 rounded-full active:scale-90 transition-transform">
+                <div class="nav-icon-target flex-shrink-0 w-10 h-10 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
                     </svg>
@@ -945,69 +955,57 @@ async function confirmGenerateReport() {
             `;
             
             // -----------------------------------------------------------
-            // 2. 터치 로직 (스크롤 방지 + 롱프레스 + 클릭 분기)
+            // 2. 터치 로직 (변수 중복 오류 해결됨)
             // -----------------------------------------------------------
+            // 변수를 여기서 새로 선언하므로 'already declared' 오류가 나지 않습니다.
             let pressTimer;
             let isLongPress = false;
             let startX = 0;
             let startY = 0;
             let isMoved = false; 
 
-            // (1) 터치 시작
             li.addEventListener('touchstart', (e) => {
                 isLongPress = false;
                 isMoved = false; 
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
-                
-                li.classList.add('bg-gray-100'); // 터치 효과
+                li.classList.add('bg-white/30'); // 터치 시 살짝 밝게
 
-                // 롱프레스 타이머 (삭제)
                 pressTimer = setTimeout(() => {
                     if (!isMoved) { 
                         isLongPress = true;
                         navigator.vibrate(50); 
                         closeNavPrompt(); 
                         openDeletePrompt(client, user); 
-                        li.classList.remove('bg-gray-100');
+                        li.classList.remove('bg-white/30');
                     }
                 }, 800); 
             }, { passive: true });
 
-            // (2) 터치 이동 (스크롤 감지)
             li.addEventListener('touchmove', (e) => {
                 const currentX = e.touches[0].clientX;
                 const currentY = e.touches[0].clientY;
                 
-                // 10px 이상 움직이면 스크롤로 간주
                 if (Math.abs(currentX - startX) > 10 || Math.abs(currentY - startY) > 10) {
                     isMoved = true;        
                     clearTimeout(pressTimer); 
-                    li.classList.remove('bg-gray-100');
+                    li.classList.remove('bg-white/30');
                 }
             }, { passive: true });
 
-            // (3) 터치 끝 (실행)
             li.addEventListener('touchend', (e) => {
                 clearTimeout(pressTimer);
-                li.classList.remove('bg-gray-100');
+                li.classList.remove('bg-white/30');
                 
-                // 스크롤이나 롱프레스였으면 클릭 실행 안 함
                 if (isMoved || isLongPress) return;
 
-                // ★ 클릭 분기점 (어디를 눌렀나?) ★
-                // e.target이 아이콘 영역(.nav-icon-target) 안에 있으면 -> 길안내
                 if (e.target.closest('.nav-icon-target')) {
                     openNavPrompt(client, user);
-                } 
-                // 아니면(이름 영역이면) -> 지도 이동
-                else {
+                } else {
                     showClientOnMapWithBubble(client, user);
                 }
-
             }, { passive: true });
             
-            // PC 마우스 우클릭 (삭제)
             li.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 closeNavPrompt();
@@ -1020,7 +1018,7 @@ async function confirmGenerateReport() {
         container.appendChild(listUl);
     }
     
-/**
+     /**
      * [수정] 담당자 버튼 클릭 시 실행되는 함수
      * - 기능 추가: 탭을 변경하면 기존에 열려있던 길안내 팝업을 즉시 닫습니다.
      */
@@ -1918,6 +1916,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
