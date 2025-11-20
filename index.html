@@ -214,7 +214,14 @@
   </div>
 
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
-  
+  <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[50]">
+        <button onclick="openManualAddModal()" class="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg active:scale-95 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="font-bold text-lg">거래처 추가</span>
+        </button>
+    </div>
   <div class="flex-1 relative"> 
     
 <button onclick="closeMapOverlay()" class="map-close-button-new">
@@ -254,8 +261,8 @@
     <h3 class="text-xl font-bold text-gray-800 text-center">📍 신규 거래처 등록</h3>
     
     <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-      <p class="text-xs text-gray-500 mb-1">위치 (자동 감지됨)</p>
-      <p id="new-client-address" class="text-sm font-medium text-gray-800 break-words">주소를 가져오는 중...</p>
+      <label class="block text-xs text-gray-500 mb-1">주소 입력</label>
+      <input type="text" id="new-client-address" placeholder="예: 부산 강서구 대저동 123-4" class="w-full bg-transparent outline-none text-sm font-medium text-gray-800 placeholder-gray-400">
     </div>
 
     <div>
@@ -1103,7 +1110,7 @@ function openMapOverlay() {
           });
           
           // 👇 롱프레스 기능 활성화 (이거 한 줄이면 끝!)
-          enableMapLongPress(); 
+          //  enableMapLongPress(); 
 
           isMapInitialized = true; 
 
@@ -1786,9 +1793,71 @@ function enableMapLongPress() {
             showToast("주소를 불러오지 못했습니다.", "error");
         }
     }
+
+    // ===============================================
+    // [신규] 수동 거래처 추가 (플로팅 버튼용)
+    // ===============================================
+
+    // 1. [+ 거래처 추가] 버튼 누르면 실행
+    function openManualAddModal() {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
+
+        // 입력창 초기화
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = ''; // 주소창도 비움
+        
+        // 팝업 띄우기
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        
+        // 상호명에 포커스
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
+
+    // 2. [등록하기] 버튼 누르면 실행 (최종 저장)
+    async function saveNewClient() {
+        const name = document.getElementById('new-client-name').value.trim();
+        // 👇 [수정] 이제 textContent가 아니라 value(입력값)를 가져옵니다!
+        const address = document.getElementById('new-client-address').value.trim(); 
+        const user = activeClientUser;
+
+        if (!name) { showToast("상호명을 입력해주세요.", "error"); return; }
+        if (!address) { showToast("주소를 입력해주세요.", "error"); return; }
+
+        if(!confirm(`[${user}] 담당으로\n"${name}"\n등록하시겠습니까?`)) return;
+
+        showLoader("거래처 등록 중...");
+        closeAddClientModal();
+
+        try {
+            const result = await callAppsScript('addNewClient', { 
+                user: user, 
+                name: name, 
+                address: address 
+            });
+
+            if (result.status === 'success') {
+                showToast("등록 완료! 목록을 갱신합니다.", "success");
+                loadedClientData[user] = null; 
+                toggleClientList(user, document.getElementById(user === '김원대' ? 'btn-kim' : 'btn-jung'));
+                
+                // 지도에 임시 핀이 있었다면 삭제
+                if(typeof tempMarker !== 'undefined' && tempMarker) tempMarker.setMap(null); 
+            } else {
+                showToast("등록 실패: " + result.message, "error");
+            }
+        } catch(e) {
+            showToast("오류 발생: " + e.message, "error");
+        } finally {
+            hideLoader();
+        }
+    }
   </script>
 </body>
 </html>
+
 
 
 
