@@ -780,7 +780,7 @@ async function confirmGenerateReport() {
     /**
      * '오버레이 열기' 버튼
      */
-    function openMapOverlay() {
+function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
       
@@ -795,48 +795,8 @@ async function confirmGenerateReport() {
             zoom: 12
           });
           
-          // =========================================================
-          // 🖱️ [지도 롱프레스 구현 - T맵 내장 이벤트 사용] 
-          // =========================================================
-          
-          let pressTimer;
-          let isLongPress = false;
-          
-          // 1. 누르기 시작 (터치 or 마우스 클릭)
-          // T맵은 'touchstart', 'mousedown' 이벤트를 따로 지원합니다.
-          const startHandler = function(e) {
-              isLongPress = false;
-              
-              // 기존 타이머 제거
-              clearTimeout(pressTimer);
-              
-              // 1초 뒤에 발동 예약
-              pressTimer = setTimeout(() => {
-                  isLongPress = true;
-                  if (navigator.vibrate) navigator.vibrate(50); // 징~
-                  
-                  // T맵이 이미 e.latLng에 정확한 좌표를 담아서 줍니다! (계산 불필요)
-                  const lat = e.latLng.lat();
-                  const lon = e.latLng.lng();
-                  
-                  // 등록 함수 호출
-                  onMapLongPressTrigger(lat, lon);
-                  
-              }, 1000); // 1초 (너무 길면 800으로 수정)
-          };
-
-          // 2. 떼거나 움직임 (취소 조건)
-          const cancelHandler = function() {
-              clearTimeout(pressTimer);
-          };
-
-          // 이벤트 연결
-          currentMapInstance.addListener("touchstart", startHandler); // 모바일 터치 시작
-          currentMapInstance.addListener("mousedown", startHandler);  // PC 클릭 시작
-          
-          currentMapInstance.addListener("touchend", cancelHandler);  // 모바일 뗌
-          currentMapInstance.addListener("mouseup", cancelHandler);   // PC 뗌
-          currentMapInstance.addListener("dragstart", cancelHandler); // 지도 드래그 시작하면 즉시 취소!
+          // 👇 [수정] 복잡한 리스너 코드 다 지우고, 이 함수 딱 하나만 실행!
+          enableMapLongPress(); 
 
           isMapInitialized = true; 
 
@@ -1644,4 +1604,5 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
