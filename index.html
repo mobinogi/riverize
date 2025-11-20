@@ -798,7 +798,7 @@ function openMapOverlay() {
           });
           
           // 👇 [여기입니다!] 지도 생성 직후에 클릭 이벤트를 연결합니다.
-          currentMapInstance.addListener("click", onMapClick);
+          // currentMapInstance.addListener("click", onMapClick);
           
           isMapInitialized = true; 
           console.log("지도 생성 및 클릭 이벤트 연결 성공!");
@@ -1463,7 +1463,7 @@ function openMapOverlay() {
     
     // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
     // ==================================================
-    // [최종 수정] 지도 롱프레스 (PC/모바일 호환 + 1.5초)
+    // [최종_진짜_완성] 지도 롱프레스 (이벤트 캡처링 적용)
     // ==================================================
     
     function enableMapLongPress() {
@@ -1472,76 +1472,64 @@ function openMapOverlay() {
         let pressTimer;
         let startX, startY;
         let isMoved = false;
-        
-        // ⏱️ 꾹 누르는 시간 설정 (1500ms = 1.5초)
-        // 지도는 드래그 때문에 멈칫하는 시간이 있어서 1초 이상 주는 게 안전합니다.
-        const LONG_PRESS_DURATION = 1500; 
+        const LONG_PRESS_DURATION = 1000; // 1초 (너무 길면 800으로 줄이세요)
 
-        // --- [공통 로직] 시작/이동/끝 ---
-        
+        // --- 공통 핸들러 ---
         const handleStart = (x, y) => {
             isMoved = false;
             startX = x;
             startY = y;
             
-            // 기존 타이머 있으면 제거 (안전장치)
             clearTimeout(pressTimer);
 
             pressTimer = setTimeout(() => {
                 if (!isMoved) {
-                    // PC에서는 진동이 안 울리지만 에러 방지
                     if (navigator.vibrate) navigator.vibrate(50);
-                    
-                    // 지도 좌표 변환 및 등록 함수 호출
                     triggerLongPressAction(x, y, mapDiv);
                 }
             }, LONG_PRESS_DURATION);
         };
 
         const handleMove = (x, y) => {
-            // 10px 이상 움직이면 취소 (손떨림 보정)
-            if (Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10) {
+            // 15px 이상 움직이면 취소
+            if (Math.abs(x - startX) > 15 || Math.abs(y - startY) > 15) {
                 isMoved = true;
                 clearTimeout(pressTimer);
             }
         };
 
         const handleEnd = () => {
-            clearTimeout(pressTimer); // 손 떼면 무조건 취소
+            clearTimeout(pressTimer);
         };
 
-        // --- [1. 모바일 터치 이벤트] ---
+        // --- [1. 모바일 터치] --- 
+        // ★ 중요: 마지막에 'true'를 넣어서 이벤트를 가장 먼저 낚아챕니다 (Capture)
         mapDiv.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return; // 멀티터치 무시
+            if (e.touches.length > 1) return; 
             handleStart(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: true });
+        }, true); // 👈 true 필수!
 
         mapDiv.addEventListener('touchmove', (e) => {
             handleMove(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: true });
+        }, true); // 👈 true 필수!
 
-        mapDiv.addEventListener('touchend', handleEnd);
-        mapDiv.addEventListener('touchcancel', handleEnd); // 터치 캔슬(화면 밖 이동 등) 대응
+        mapDiv.addEventListener('touchend', handleEnd, true);
+        mapDiv.addEventListener('touchcancel', handleEnd, true);
 
-        // --- [2. PC 마우스 이벤트] ---
+        // --- [2. PC 마우스] ---
         mapDiv.addEventListener('mousedown', (e) => {
-            // 왼쪽 버튼만 허용 (우클릭 무시)
-            if (e.button === 0) {
-                handleStart(e.clientX, e.clientY);
-            }
-        });
+            if (e.button === 0) handleStart(e.clientX, e.clientY);
+        }, true); // 👈 true 필수!
 
         mapDiv.addEventListener('mousemove', (e) => {
-            // 마우스 누른 상태일 때만 체크하려 했으나, 
-            // 어차피 타이머 돌 때만 의미 있으므로 그냥 좌표 체크
             handleMove(e.clientX, e.clientY);
-        });
+        }, true);
 
-        mapDiv.addEventListener('mouseup', handleEnd);
-        mapDiv.addEventListener('mouseleave', handleEnd); // 마우스가 지도 밖으로 나가면 취소
+        mapDiv.addEventListener('mouseup', handleEnd, true);
+        mapDiv.addEventListener('mouseleave', handleEnd, true);
     }
 
-    // [분리] 롱프레스 성공 시 실행 로직
+    // [실행 로직]
     function triggerLongPressAction(clientX, clientY, mapElement) {
         if (!activeClientUser) {
             showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
@@ -1555,7 +1543,6 @@ function openMapOverlay() {
         const pixel = new Tmapv2.Point(relativeX, relativeY);
         const latLng = currentMapInstance.fromPixelToLatLng(pixel);
         
-        // 임시 마커 및 팝업
         if (tempMarker) tempMarker.setMap(null);
         
         tempMarker = new Tmapv2.Marker({
@@ -1569,6 +1556,7 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
 
 
