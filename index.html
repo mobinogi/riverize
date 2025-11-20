@@ -1477,7 +1477,7 @@ function openMapOverlay() {
         let pressTimer;
         let startX, startY;
         let isDragging = false;
-        const LONG_PRESS_DURATION = 1000; // 1초
+        const LONG_PRESS_DURATION = 300; // 1초
         
         // 30px 정도는 손떨림으로 간주하고 지도를 꽉 잡고 있음 (이동 안 됨)
         const LOCK_THRESHOLD = 30; 
@@ -1588,4 +1588,5 @@ function openMapOverlay() {
   </script>
 </body>
 </html>
+
 
