@@ -1836,58 +1836,54 @@ function enableMapLongPress() {
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
 
-// [최종] T맵 API 데이터로 '도로명 주소' 직접 조립 (가장 정확함)
+// [최종 수정] 말풍선 띄우기 (도로명 주소만 깔끔하게)
     async function findAddressAndShowBubble(lat, lon) {
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
         const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
 
         try {
-            // 1. 위치 계산 (말풍선 방향)
+            // 위치 계산
             const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
-            const mapDiv = document.getElementById("map_overlay_content");
-            const mapWidth = mapDiv.clientWidth;
-            
             const isTop = markerPoint.y < 220;
+            const mapDiv = document.getElementById("map_overlay_content");
             const isLeft = markerPoint.x < 160;
-            const isRight = markerPoint.x > (mapWidth - 160);
+            const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
 
-            // 2. API 호출
             const response = await fetch(url);
             const data = await response.json();
             let finalAddress = "주소 미상";
 
-            // 🚨 [핵심 수정] 콤마로 자르지 않고, 도로명 구성요소를 직접 조립합니다.
+            // 🚨 [주소 정제 로직 강화]
             if (data.addressInfo) {
                 const info = data.addressInfo;
                 
-                // 도로명 주소 공식: 시/도 + 구/군 + 도로명 + 건물번호
-                // 예: 부산광역시 + 강서구 + 대저로 + 123
+                // 1순위: 도로명 구성요소로 직접 조립 (가장 정확)
                 if (info.roadName) {
                     finalAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`;
-                    // 혹시 건물번호가 없으면 도로명까지만
-                    finalAddress = finalAddress.trim(); 
-                } else {
-                    // 도로명이 없는 시골길이라면 지번 주소(fullAddress) 사용
-                    finalAddress = info.fullAddress.split(",")[0]; 
+                } 
+                // 2순위: 도로명이 없으면 전체 주소 중 '맨 마지막' 부분 사용 (보통 도로명임)
+                else if (info.fullAddress) {
+                    const parts = info.fullAddress.split(",");
+                    finalAddress = parts[parts.length - 1];
                 }
             }
+            finalAddress = finalAddress.trim(); // 공백 제거
 
-            // 3. 스타일 설정
-            let boxStyle = isTop ? "top: 15px; " : "bottom: 55px; ";
+            // 스타일 설정
+            let boxStyle = isTop ? "top: 45px; " : "bottom: 50px; ";
             let tailStyle = isTop 
                 ? "top: -8px; border-bottom: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;"
                 : "bottom: -8px; border-top: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
             
-            if (isLeft) { boxStyle += "left: -10px;"; tailStyle += "left: 20px;"; }
-            else if (isRight) { boxStyle += "right: -10px;"; tailStyle += "right: 20px;"; }
+            if (isLeft) { boxStyle += "left: -10px; transform: none;"; tailStyle += "left: 24px;"; }
+            else if (isRight) { boxStyle += "right: -10px; transform: none;"; tailStyle += "right: 24px;"; }
             else { boxStyle += "left: 50%; transform: translateX(-50%);"; tailStyle += "left: 50%; transform: translateX(-50%);"; }
 
-            // 4. HTML 조립
             const content = `
                 <div style="position: absolute; ${boxStyle} width: max-content; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); pointer-events: auto;">
-                    <div style="background: white; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 200px; max-width: 260px;">
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 8px 0; font-weight: 600; word-break: keep-all;">${finalAddress}</p>
-                        <button onclick="openRegistrationModal('${finalAddress}')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록하기</button>
+                    <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 6px 0; font-weight: 600; word-break: keep-all; line-height: 1.4;">${finalAddress}</p>
+                        <button onclick="openRegistrationModal('${finalAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록</button>
                     </div>
                     <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
                 </div>`;
@@ -1897,10 +1893,7 @@ function enableMapLongPress() {
                 position: new Tmapv2.LatLng(lat, lon),
                 content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
             });
-        } catch (e) { 
-            console.error(e);
-            showToast("주소를 불러오지 못했습니다.", "error"); 
-        }
+        } catch (e) { console.error(e); showToast("주소 로딩 실패", "error"); }
     }
     // [신규] 이름 클릭 시 -> 주소로 좌표 찾아서 지도 이동 & 말풍선 띄우기
 async function showClientOnMapWithBubble(client, user) {
@@ -1979,6 +1972,7 @@ async function showClientOnMapWithBubble(client, user) {
   </script>
 </body>
 </html>
+
 
 
 
