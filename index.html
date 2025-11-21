@@ -918,7 +918,7 @@ async function confirmGenerateReport() {
             // [디자인 수정]
             // pl-7: 왼쪽 여백을 넉넉하게 줘서(약 28px) 글자가 짤리지 않게 함
             // pr-4: 오른쪽 여백
-            li.className = 'w-full pl-9 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
+            li.className = 'w-full pl-7 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
             
             // --- 이름 영역 (6자 이상이면 흐름 - 기준 낮춤) ---
             const isLongText = client.name.length > 7;
@@ -1979,6 +1979,7 @@ async function showClientOnMapWithBubble(client, user) {
   </script>
 </body>
 </html>
+
 
 
 
