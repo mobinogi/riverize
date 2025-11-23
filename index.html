@@ -903,7 +903,20 @@ async function confirmGenerateReport() {
           
           // 👇 [수정] 복잡한 리스너 코드 다 지우고, 이 함수 딱 하나만 실행!
           enableMapLongPress(); 
+          // -----------------------------------------------------------
+          // ✋ [신규] 지도를 만지면(줌, 이동) 사이드바 숨기기
+          // -----------------------------------------------------------
+          
+          // 1. 모바일 터치 시작 (두 손가락 줌 포함)
+          currentMapInstance.addListener("touchstart", function(e) {
+              hideSidebarMode(); // 사이드바 숨김 함수 실행
+          });
 
+          // 2. PC 마우스 드래그 시작
+          currentMapInstance.addListener("dragstart", function(e) {
+              hideSidebarMode();
+          });
+          
           isMapInitialized = true; 
 
         } catch (e) {
@@ -2167,9 +2180,22 @@ function startDirectNav(name, lat, lon) {
             });
         }
     });
+
+    // [신규] 사이드바를 숨기고 플로팅 버튼을 보여주는 함수 (공통 사용)
+    function hideSidebarMode() {
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        
+        // 패널이 열려있다면 -> 닫고 아이콘 보여주기
+        if (panel && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+            if (restoreBtn) restoreBtn.classList.remove('hidden');
+        }
+    }
   </script>
 </body>
 </html>
+
 
 
 
