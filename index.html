@@ -2079,18 +2079,25 @@ function enableMapLongPress() {
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
 
-    // 2. [말풍선 안의 버튼] 용
+    // ==========================================================================
+    // 4. [필수] 말풍선 버튼이 찾는 함수들 (이게 없어서 오류 난 겁니다!)
+    // ==========================================================================
+
+    // [1] 말풍선 안의 "이 위치 등록" 버튼을 누르면 실행되는 함수
     function openRegistrationModal(address) {
-        // 말풍선 닫기
+        // 기존 말풍선 닫기
         if (tempInfoWindow) tempInfoWindow.setMap(null);
         
+        // 입력창에 주소 자동으로 채워넣고 팝업 열기
         document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').value = address; // 주소 자동 입력
+        document.getElementById('new-client-address').value = address; 
         document.getElementById('add-client-modal').classList.remove('hidden');
+        
+        // 편의성: 상호명 입력칸으로 커서 이동
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
 
-    // 3. [등록하기] 최종 저장
+    // [2] 팝업창의 "등록하기" 버튼을 누르면 실행되는 함수 (저장 로직)
     async function saveNewClient() {
         const name = document.getElementById('new-client-name').value.trim();
         const addressInput = document.getElementById('new-client-address');
@@ -2104,18 +2111,28 @@ function enableMapLongPress() {
         closeAddClientModal(); // 팝업 닫기
 
         try {
+            // 여기서 Google Apps Script로 데이터를 보냅니다
             const result = await callAppsScript('addNewClient', { user, name, address });
+            
             if (result.status === 'success') {
                 showToast("등록 완료!", "success");
-                loadedClientData[user] = null; // 캐시 초기화
-                toggleClientList(user, document.getElementById(user === '김원대' ? 'btn-kim' : 'btn-jung'));
-                if(tempMarker) tempMarker.setMap(null); // 핀 제거
+                
+                // 목록 새로고침
+                loadedClientData[user] = null; 
+                const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
+                toggleClientList(user, document.getElementById(btnId));
+                
+                // 지도에 임시로 찍은 핀 제거
+                if(tempMarker) tempMarker.setMap(null); 
             } else {
                 showToast("등록 실패: " + result.message, "error");
             }
-        } catch(e) { showToast("오류: " + e.message, "error"); } finally { hideLoader(); }
+        } catch(e) { 
+            showToast("오류: " + e.message, "error"); 
+        } finally { 
+            hideLoader(); 
+        }
     }
-
     // 4. [삭제하기] 최종 삭제
     async function executeDelete() {
         if (!deleteTargetClient || !deleteTargetUser) return;
@@ -2143,6 +2160,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
