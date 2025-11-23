@@ -1867,9 +1867,9 @@ function openMapOverlay() {
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
 
-// [최종 수정] 말풍선 & 꼬리 위치 초정밀 교정 (마커에 착붙)
-// [수정] 말풍선 띄우기 함수 (등록 버튼 제어 기능 추가 + 에러 방지)
-async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showRegisterBtn = true) {
+
+// [최종 수정] 말풍선 띄우기 (제목, 주소, 버튼 여부 분리 및 최적화)
+async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBtn = true) {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
     
     // 1. 화면 좌표 변환 (에러 방지용 try-catch)
@@ -1887,36 +1887,28 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
     const isLeft = markerPoint.x < 160;
     const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
 
-    let displayAddress = "주소 로딩 중...";
-    let displayName = "위치 정보"; // 제목으로 쓸 텍스트
+    // 2. 제목과 주소 설정 (거래처면 주소가 무조건 있으므로 바로 대입)
+    let displayName = title || "위치 정보"; 
+    let displayAddress = address; 
 
-    // A. 기존 거래처 목록에서 클릭한 경우 (preLoadedAddress에 이름이 들어옴)
-    if (preLoadedAddress && !showRegisterBtn) {
-        displayAddress = ""; // 기존 거래처는 주소 굳이 다시 안 보여줘도 됨 (혹은 필요하면 표시)
-        displayName = preLoadedAddress; // 상호명을 제목으로
-    } 
-    // B. 지도 검색이나 롱프레스인 경우
-    else {
-        if (preLoadedAddress) {
-             displayAddress = preLoadedAddress;
-        } else {
-            try {
-                const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.addressInfo) {
-                    const info = data.addressInfo;
-                    if (info.roadName) {
-                        displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
-                    } else {
-                        displayAddress = info.fullAddress.split(",")[0];
-                    }
+    // 3. 주소가 없는 경우에만(지도 롱프레스, 검색 등) API로 검색
+    if (!displayAddress) {
+        try {
+            const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.addressInfo) {
+                const info = data.addressInfo;
+                if (info.roadName) {
+                    displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
+                } else {
+                    displayAddress = info.fullAddress.split(",")[0];
                 }
-            } catch (e) {
-                console.error(e);
-                displayAddress = "주소 정보 없음";
             }
+        } catch (e) {
+            console.error(e);
+            displayAddress = "주소 정보 없음";
         }
     }
 
@@ -1969,7 +1961,7 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
             <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
         </div>`;
 
-    // 🚨 [오류 수정] mapInfoLayer 에러 방지를 위한 안전 처리
+    // 🚨 기존 말풍선 안전하게 제거 (에러 방지)
     if (tempInfoWindow) {
         try {
             tempInfoWindow.setMap(null);
@@ -1989,41 +1981,38 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
 }
   
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
-    async function showClientOnMapWithBubble(client, user) {
-        openMapOverlay();
+   async function showClientOnMapWithBubble(client, user) {
+    openMapOverlay();
+    
+    try {
+        // 주소 -> 좌표 변환
+        const markerPos = await geocodeAndSetMarker(client.address, user);
+        const lat = parseFloat(markerPos.lat());
+        const lon = parseFloat(markerPos.lng());
+
+        // 지도 이동 & 중앙 보정 (사이드바 고려하여 살짝 옆으로 이동)
+        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+        currentMapInstance.setZoom(16); 
+        currentMapInstance.panBy(120, 0); 
+
+        // 마커 찍기 (기존 임시 마커 제거 후)
+        if (tempMarker) tempMarker.setMap(null);
         
-        try {
-            // 주소 -> 좌표 변환
-            const markerPos = await geocodeAndSetMarker(client.address, user);
-            const lat = parseFloat(markerPos.lat());
-            const lon = parseFloat(markerPos.lng());
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
 
-            // 지도 이동 & 중앙 보정
-            currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
-            currentMapInstance.setZoom(16); 
-            currentMapInstance.panBy(120, 0); // 사이드바 공간만큼 밀기
-
-            // 마커 찍기 (기존 마커 제거 후)
-            if (tempMarker) tempMarker.setMap(null);
-            // ※ 참고: searchMapLocation에서는 tempInfoWindow를 닫아주지만, 
-            // 여기서는 findAddressAndShowBubble 안에서 닫으므로 놔둬도 됩니다.
-
-            tempMarker = new Tmapv2.Marker({
-                position: new Tmapv2.LatLng(lat, lon),
-                icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-                map: currentMapInstance
-            });
-
-            // ★ 중요: 네 번째 인자로 false를 전달 -> 등록 버튼 숨김!
-            // 세 번째 인자에는 상호명(client.name)을 전달해 제목으로 쓰게 함
-            findAddressAndShowBubble(lat, lon, client.name, false); 
-            
-        } catch (e) {
-            console.error("지도 이동 오류:", e);
-            showToast("위치 정보를 불러오는데 실패했습니다.", "error");
-        }
+        // ★ [핵심 수정] 인자 순서: (위도, 경도, 상호명, 주소, 버튼표시여부=false)
+        // 상호명(client.name)과 주소(client.address)를 그대로 넘기고, 버튼은 숨깁니다.
+        findAddressAndShowBubble(lat, lon, client.name, client.address, false); 
+        
+    } catch (e) {
+        console.error("지도 이동 오류:", e);
+        showToast("위치 정보를 불러오는데 실패했습니다.", "error");
     }
-
+}
     // =========================================================
     // [신규] 지도 상단 검색바 기능
     // =========================================================
@@ -2169,6 +2158,7 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
   </script>
 </body>
 </html>
+
 
 
 
