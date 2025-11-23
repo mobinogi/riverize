@@ -1868,30 +1868,24 @@ function openMapOverlay() {
     }
 
 
-// [최종 수정] 말풍선 띄우기 (제목, 주소, 버튼 여부 분리 및 최적화)
-async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBtn = true) {
+// [최종 수정] 말풍선 띄우기 (매개변수 이름을 mode로 통일)
+async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
     
-    // 1. 화면 좌표 변환 (에러 방지용 try-catch)
     let markerPoint;
     try {
         markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
-    } catch (e) {
-        console.error("좌표 변환 실패:", e);
-        return; // 지도가 없으면 중단
-    }
+    } catch (e) { return; }
     
     const mapDiv = document.getElementById("map_overlay_content");
-    
     const isTop = markerPoint.y < 220;
     const isLeft = markerPoint.x < 160;
     const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
 
-    // 2. 제목과 주소 설정 (거래처면 주소가 무조건 있으므로 바로 대입)
     let displayName = title || "위치 정보"; 
     let displayAddress = address; 
 
-    // 3. 주소가 없는 경우에만(지도 롱프레스, 검색 등) API로 검색
+    // 주소가 없으면 API 호출 (검색/롱프레스인 경우)
     if (!displayAddress) {
         try {
             const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
@@ -1913,8 +1907,33 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
     }
 
     // -----------------------------------------------------------
-    // 🎨 [디자인] 말풍선 위치 계산
+    // 🔘 [버튼 로직] mode 변수에 따라 버튼 모양 결정
     // -----------------------------------------------------------
+    let buttonHtml = "";
+    
+    // A. 길안내 모드 (기존 거래처) -> 빨간 버튼 + T맵 아이콘
+    if (mode === 'navigate') {
+        buttonHtml = `
+            <div style="margin-top: 8px;">
+                <button onclick="startDirectNav('${displayName}', ${lat}, ${lon})" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                    T맵 길안내
+                </button>
+            </div>
+        `;
+    } 
+    // B. 등록 모드 (검색/롱프레스) -> 파란 버튼
+    else if (mode === 'register') {
+        buttonHtml = `
+            <div style="margin-top: 8px;">
+                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
+                    이 위치 등록
+                </button>
+            </div>
+        `;
+    }
+
+    // 말풍선 위치 스타일
     let boxStyle = ""; 
     let tailStyle = ""; 
 
@@ -1937,40 +1956,17 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
         tailStyle += "left: 50%; transform: translateX(-50%);"; 
     }
 
-    // -----------------------------------------------------------
-    // 🔘 [버튼 로직] 모드에 따라 다른 버튼 생성
-    // -----------------------------------------------------------
-    let buttonHtml = "";
-    
-    // A. 길안내 모드 (기존 거래처) -> 빨간 버튼
-    if (mode === 'navigate') {
-        buttonHtml = `
-            <div style="margin-top: 8px;">
-                <button onclick="startDirectNav('${displayName}', ${lat}, ${lon})" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-                    T맵 길안내
-                </button>
+    const content = `
+        <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
+            <div style="background: white; border-radius: 12px; padding: 12px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                <p style="font-size: 14px; color: #111827; margin: 0 0 2px 0; font-weight: 800; word-break: keep-all; line-height: 1.4;">${displayName}</p>
+                <p style="font-size: 12px; color: #6b7280; margin: 0; font-weight: 500; word-break: keep-all;">${displayAddress}</p>
+                ${buttonHtml}
             </div>
-        `;
-    } 
-    // B. 등록 모드 (검색/롱프레스) -> 파란 버튼
-    else if (mode === 'register') {
-        buttonHtml = `
-            <div style="margin-top: 8px;">
-                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
-                    이 위치 등록
-                </button>
-            </div>
-        `;
-    }
-    // 🚨 기존 말풍선 안전하게 제거 (에러 방지)
-    if (tempInfoWindow) {
-        try {
-            tempInfoWindow.setMap(null);
-        } catch(e) {
-            console.warn("기존 말풍선 제거 중 무시된 에러:", e);
-        }
-    }
+            <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
+        </div>`;
+
+    if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch(e) {} }
     
     tempInfoWindow = new Tmapv2.InfoWindow({
         position: new Tmapv2.LatLng(lat, lon),
@@ -2157,9 +2153,17 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
 
     // 팝업 닫기 함수들
     function closeAddClientModal() { document.getElementById('add-client-modal').classList.add('hidden'); }
+
+// [신규] 말풍선에서 바로 T맵 앱 실행하는 함수
+  function startDirectNav(name, lat, lon) {
+    // T맵 URL 스키마 (명칭, 경도, 위도)
+    const tmapUrl = `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${lon}&goaly=${lat}`;
+    window.location.href = tmapUrl;
+}
   </script>
 </body>
 </html>
+
 
 
 
