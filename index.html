@@ -1836,81 +1836,129 @@ function enableMapLongPress() {
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
 
-// [최종 수정] 말풍선 띄우기 (도로명 주소만 깔끔하게)
-    async function findAddressAndShowBubble(lat, lon) {
+// =========================================================
+    // [최종] 말풍선 & 꼬리 위치 초정밀 교정 (마커에 착붙)
+    // =========================================================
+
+    // 1. 주소 찾고 말풍선 띄우기 (롱프레스용 & 목록클릭용 공통)
+    async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null) {
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+        
+        // 화면상 위치 계산 (4분면 판단)
+        const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
+        const mapDiv = document.getElementById("map_overlay_content");
+        
+        // 지도 상단 220px 이내면 '위쪽'으로 판단
+        const isTop = markerPoint.y < 220;
+        // 지도 좌측 160px 이내면 '왼쪽'으로 판단
+        const isLeft = markerPoint.x < 160;
+        // 지도 우측 여유공간 확인
+        const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
 
-        try {
-            // 위치 계산
-            const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
-            const isTop = markerPoint.y < 220;
-            const mapDiv = document.getElementById("map_overlay_content");
-            const isLeft = markerPoint.x < 160;
-            const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
+        let displayAddress = "주소 로딩 중...";
 
-            const response = await fetch(url);
-            const data = await response.json();
-            let finalAddress = "주소 미상";
-
-            // 🚨 [주소 정제 로직 강화]
-            if (data.addressInfo) {
-                const info = data.addressInfo;
+        // 주소가 미리 있으면(목록 클릭 시) 그거 쓰고, 없으면 API 호출
+        if (preLoadedAddress) {
+            displayAddress = preLoadedAddress;
+        } else {
+            try {
+                const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+                const response = await fetch(url);
+                const data = await response.json();
                 
-                // 1순위: 도로명 구성요소로 직접 조립 (가장 정확)
-                if (info.roadName) {
-                    finalAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`;
-                } 
-                // 2순위: 도로명이 없으면 전체 주소 중 '맨 마지막' 부분 사용 (보통 도로명임)
-                else if (info.fullAddress) {
-                    const parts = info.fullAddress.split(",");
-                    finalAddress = parts[parts.length - 1];
+                if (data.addressInfo) {
+                    const info = data.addressInfo;
+                    if (info.roadName) {
+                        // 도로명 주소 조립
+                        displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
+                    } else {
+                        // 지번 주소 조립 (맨 앞부분만)
+                        displayAddress = info.fullAddress.split(",")[0];
+                    }
                 }
+            } catch (e) {
+                console.error(e);
+                displayAddress = "주소 정보 없음";
             }
-            finalAddress = finalAddress.trim(); // 공백 제거
+        }
 
-            // 스타일 설정
-            let boxStyle = isTop ? "top: 45px; " : "bottom: 50px; ";
-            let tailStyle = isTop 
-                ? "top: -8px; border-bottom: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;"
-                : "bottom: -8px; border-top: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
-            
-            if (isLeft) { boxStyle += "left: -10px; transform: none;"; tailStyle += "left: 24px;"; }
-            else if (isRight) { boxStyle += "right: -10px; transform: none;"; tailStyle += "right: 24px;"; }
-            else { boxStyle += "left: 50%; transform: translateX(-50%);"; tailStyle += "left: 50%; transform: translateX(-50%);"; }
+        // -----------------------------------------------------------
+        // 🎨 [디자인] 꼬리 위치 정밀 계산 (Pixel Perfect)
+        // -----------------------------------------------------------
+        let boxStyle = ""; 
+        let tailStyle = ""; 
 
-            const content = `
-                <div style="position: absolute; ${boxStyle} width: max-content; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); pointer-events: auto;">
-                    <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 6px 0; font-weight: 600; word-break: keep-all; line-height: 1.4;">${finalAddress}</p>
-                        <button onclick="openRegistrationModal('${finalAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록</button>
-                    </div>
-                    <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-                </div>`;
+        // (A) 수직 위치 (마커 높이 약 40px 고려)
+        if (isTop) {
+            // 마커 [아래]에 말풍선 (마커 발끝에서 시작)
+            // top: 10px (마커 발끝 살짝 아래)
+            boxStyle += "top: 10px; "; 
+            // 꼬리: 위쪽(▲)을 향함
+            tailStyle += "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+        } else {
+            // 마커 [위]에 말풍선 (마커 머리 위)
+            // bottom: 45px (마커 키만큼 띄움)
+            boxStyle += "bottom: 45px; "; 
+            // 꼬리: 아래쪽(▼)을 향함
+            tailStyle += "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+        }
 
-            if (tempInfoWindow) tempInfoWindow.setMap(null);
-            tempInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(lat, lon),
-                content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
-            });
-        } catch (e) { console.error(e); showToast("주소 로딩 실패", "error"); }
+        // (B) 수평 위치 (좌/우/중앙)
+        if (isLeft) {
+            // 왼쪽 구석 -> 박스 왼쪽 정렬
+            boxStyle += "left: 0px; transform: none;"; 
+            // 꼬리: 왼쪽에서 22px 떨어진 곳 (마커 중심 맞춤)
+            tailStyle += "left: 22px; transform: translateX(-50%);"; 
+        } 
+        else if (isRight) {
+            // 오른쪽 구석 -> 박스 오른쪽 정렬
+            boxStyle += "right: 0px; transform: none;";
+            // 꼬리: 오른쪽에서 22px 떨어진 곳
+            tailStyle += "right: 22px; transform: translateX(50%);"; 
+        } 
+        else {
+            // 중앙 (기본)
+            boxStyle += "left: 50%; transform: translateX(-50%);";
+            tailStyle += "left: 50%; transform: translateX(-50%);"; 
+        }
+
+        const content = `
+            <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
+                <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                    <p style="font-size: 13px; color: #374151; margin: 0 0 6px 0; font-weight: 700; word-break: keep-all; line-height: 1.4;">${displayAddress}</p>
+                    <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록</button>
+                </div>
+                <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
+            </div>`;
+
+        if (tempInfoWindow) tempInfoWindow.setMap(null);
+        
+        tempInfoWindow = new Tmapv2.InfoWindow({
+            position: new Tmapv2.LatLng(lat, lon),
+            content: content, 
+            type: 2, 
+            map: currentMapInstance, 
+            border: '0px solid white', 
+            background: false 
+        });
     }
-    // [신규] 이름 클릭 시 -> 주소로 좌표 찾아서 지도 이동 & 말풍선 띄우기
-async function showClientOnMapWithBubble(client, user) {
-        // 지도 열기
+
+    // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
+    async function showClientOnMapWithBubble(client, user) {
         openMapOverlay();
         
         try {
-            // 1. 엑셀 주소로 좌표 찾기 (Geocoding)
+            // 주소 -> 좌표 변환
             const markerPos = await geocodeAndSetMarker(client.address, user);
-            const lat = parseFloat(markerPos.lat()); // 숫자 변환 필수!
+            const lat = parseFloat(markerPos.lat());
             const lon = parseFloat(markerPos.lng());
 
-            // 2. 지도 이동
+            // 지도 이동 & 중앙 보정
             currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
             currentMapInstance.setZoom(16); 
+            currentMapInstance.panBy(120, 0); // 사이드바 공간만큼 밀기
 
-            // 3. 마커 다시 찍기 (확실하게)
+            // 마커 찍기
             if (tempMarker) tempMarker.setMap(null);
             if (tempInfoWindow) tempInfoWindow.setMap(null);
 
@@ -1920,49 +1968,15 @@ async function showClientOnMapWithBubble(client, user) {
                 map: currentMapInstance
             });
 
-            // 4. 도로명 주소 가져오기 (Reverse Geocoding)
-            const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-            const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
+            // ★ 중요: 위에서 만든 공통 함수(findAddressAndShowBubble)를 재사용!
+            // 세 번째 인자로 '이름'을 넘겨서 주소 대신 이름을 띄울 수도 있습니다.
+            // 여기서는 일단 도로명 주소를 다시 찾거나, 엑셀 주소를 그대로 씁니다.
             
-            const response = await fetch(url);
-            const data = await response.json();
+            // (A) 엑셀 주소 그대로 쓰고 싶으면:
+            // findAddressAndShowBubble(lat, lon, client.name); // 이름 띄우기
             
-            // 주소 결정 (도로명 우선, 없으면 엑셀 주소)
-            let displayAddress = client.address; 
-            if (data.addressInfo && data.addressInfo.fullAddress) {
-                displayAddress = data.addressInfo.fullAddress;
-            }
-
-            // 5. 말풍선 디자인 (정보 표시용 - 등록 버튼 없음)
-            const content = `
-                <div style="position: relative; margin-bottom: 45px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
-                    <div style="
-                        background: white; 
-                        border-radius: 12px; 
-                        padding: 12px 16px; 
-                        text-align: center; 
-                        min-width: 180px;
-                        max-width: 240px;">
-                        
-                        <p style="font-size: 15px; color: #111827; margin: 0 0 4px 0; font-weight: 800;">
-                            ${client.name}
-                        </p>
-                        <p style="font-size: 12px; color: #6b7280; margin: 0; word-break: keep-all;">
-                            ${displayAddress}
-                        </p>
-                    </div>
-                    <div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white;"></div>
-                </div>
-            `;
-
-            tempInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(lat, lon),
-                content: content,
-                type: 2,
-                map: currentMapInstance,
-                border: '0px solid white',
-                background: false 
-            });
+            // (B) 도로명 주소 다시 찾고 싶으면 (이게 더 깔끔):
+            findAddressAndShowBubble(lat, lon); 
             
         } catch (e) {
             console.error("지도 이동 오류:", e);
@@ -1972,6 +1986,7 @@ async function showClientOnMapWithBubble(client, user) {
   </script>
 </body>
 </html>
+
 
 
 
