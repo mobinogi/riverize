@@ -1938,29 +1938,31 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
     }
 
     // -----------------------------------------------------------
-    // 🔘 [버튼 로직] showRegisterBtn이 true일 때만 버튼 HTML 생성
+    // 🔘 [버튼 로직] 모드에 따라 다른 버튼 생성
     // -----------------------------------------------------------
     let buttonHtml = "";
-    if (showRegisterBtn) {
+    
+    // A. 길안내 모드 (기존 거래처) -> 빨간 버튼
+    if (mode === 'navigate') {
         buttonHtml = `
-            <div style="margin-top: 6px;">
-                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">
+            <div style="margin-top: 8px;">
+                <button onclick="startDirectNav('${displayName}', ${lat}, ${lon})" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                    T맵 길안내
+                </button>
+            </div>
+        `;
+    } 
+    // B. 등록 모드 (검색/롱프레스) -> 파란 버튼
+    else if (mode === 'register') {
+        buttonHtml = `
+            <div style="margin-top: 8px;">
+                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
                     이 위치 등록
                 </button>
             </div>
         `;
     }
-
-    const content = `
-        <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
-            <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
-                <p style="font-size: 13px; color: #374151; margin: 0; font-weight: 700; word-break: keep-all; line-height: 1.4;">${displayName}</p>
-                ${displayAddress ? `<p style="font-size: 11px; color: #6b7280; margin-top: 2px;">${displayAddress}</p>` : ''}
-                ${buttonHtml}
-            </div>
-            <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-        </div>`;
-
     // 🚨 기존 말풍선 안전하게 제거 (에러 방지)
     if (tempInfoWindow) {
         try {
@@ -2006,7 +2008,7 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
 
         // ★ [핵심 수정] 인자 순서: (위도, 경도, 상호명, 주소, 버튼표시여부=false)
         // 상호명(client.name)과 주소(client.address)를 그대로 넘기고, 버튼은 숨깁니다.
-        findAddressAndShowBubble(lat, lon, client.name, client.address, false); 
+        findAddressAndShowBubble(lat, lon, client.name, client.address, 'navigate');
         
     } catch (e) {
         console.error("지도 이동 오류:", e);
@@ -2158,6 +2160,7 @@ async function findAddressAndShowBubble(lat, lon, title, address, showRegisterBt
   </script>
 </body>
 </html>
+
 
 
 
