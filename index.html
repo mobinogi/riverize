@@ -187,6 +187,25 @@
     .rotate-180-icon {
         transform: rotate(180deg);
     }
+
+    /* [수정] 사이드바 접었을 때 스타일 (카드형 위젯으로 변신) */
+    .client-list-minimized {
+        width: 170px !important; /* 너비 고정 */
+        
+        /* 1. 높이 자동 조절 (화면 꽉 채우지 않고 내용물만큼만) */
+        height: auto !important; 
+        min-height: 0 !important;
+        
+        /* 2. 하단 디자인 다듬기 (둥글게 + 패딩) */
+        border-bottom-right-radius: 24px; /* 우측 하단 둥글게 */
+        padding-bottom: 20px !important;  /* 하단 패딩 넉넉하게 추가 */
+        
+        /* 3. 예쁜 그림자 추가 (떠있는 느낌) */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+        
+        /* 배경 불투명도 조절 (선택사항: 닫혔을 땐 좀 더 진하게) */
+        background-color: rgba(255, 255, 255, 0.95);
+    }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -2195,6 +2214,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
