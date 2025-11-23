@@ -1526,21 +1526,13 @@ function openMapOverlay() {
         }
     }
 
-// [수정] 등록 취소/팝업 닫기 함수
+// [수정] 등록 취소 (지도 위 핀/말풍선은 건드리지 않음)
     function closeAddClientModal() {
+        // 팝업창만 숨김
         document.getElementById('add-client-modal').classList.add('hidden');
         
-        // 취소했으므로 지도에 찍힌 임시 핀 제거
-        if (tempMarker) { 
-            try { tempMarker.setMap(null); } catch(e) {}
-            tempMarker = null; 
-        }
-
-        // 말풍선도 혹시 남아있다면 제거
-        if (tempInfoWindow) {
-            try { tempInfoWindow.setMap(null); } catch(e) {}
-            tempInfoWindow = null;
-        }
+        // [중요] tempMarker, tempInfoWindow를 지우는 코드를 모두 뺐습니다.
+        // 이제 취소해도 지도에 파란 핀과 "이 위치 등록" 말풍선이 살아있습니다.
     }
     // ===============================================
     // [신규] 예쁜 토스트 알림 함수 (Alert 대체)
@@ -2033,19 +2025,17 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     // ==========================================================================
 
     // [1] 말풍선 안의 "이 위치 등록" 버튼을 누르면 실행되는 함수
+// [수정] 등록 팝업 열기 (말풍선 유지)
     function openRegistrationModal(address) {
-        // 기존 말풍선 닫기
-        if (tempInfoWindow) tempInfoWindow.setMap(null);
-        
-        // 입력창에 주소 자동으로 채워넣고 팝업 열기
+        // [삭제됨] if (tempInfoWindow) tempInfoWindow.setMap(null); 
+        // 👆 이제 팝업이 열려도 뒤에 말풍선이 그대로 남아있습니다.
+
         document.getElementById('new-client-name').value = '';
         document.getElementById('new-client-address').value = address; 
         document.getElementById('add-client-modal').classList.remove('hidden');
         
-        // 편의성: 상호명 입력칸으로 커서 이동
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
-
     // [2] 팝업창의 "등록하기" 버튼을 누르면 실행되는 함수 (저장 로직)
     async function saveNewClient() {
         const name = document.getElementById('new-client-name').value.trim();
@@ -2104,9 +2094,6 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
         } catch (e) { showToast("오류: " + e.message, "error"); } finally { hideLoader(); }
     }
 
-    // 팝업 닫기 함수들
-    function closeAddClientModal() { document.getElementById('add-client-modal').classList.add('hidden'); }
-
 // [필수] T맵 길안내 실행 함수 (전역 함수)
 function startDirectNav(name, lat, lon) {
     console.log("길안내 버튼 클릭됨:", name); // 로그 확인용
@@ -2153,6 +2140,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
