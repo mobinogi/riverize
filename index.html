@@ -1868,29 +1868,36 @@ function enableMapLongPress() {
     }
 
 // [최종 수정] 말풍선 & 꼬리 위치 초정밀 교정 (마커에 착붙)
-    async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null) {
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-        
-        // ============================================================
-        // 🔴 [수정됨] 좌표(LatLng) -> 화면좌표(Pixel) 변환 함수 교체
-        // fromLatLngToContainerPixel -> realToScreen
-        // ============================================================
-        const markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
-        
-        const mapDiv = document.getElementById("map_overlay_content");
-        
-        // 지도 상단 220px 이내면 '위쪽'으로 판단
-        const isTop = markerPoint.y < 220;
-        // 지도 좌측 160px 이내면 '왼쪽'으로 판단
-        const isLeft = markerPoint.x < 160;
-        // 지도 우측 여유공간 확인
-        const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
+async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showRegisterBtn = true) {
+    const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
+    
+    // 1. 화면 좌표 변환 (에러 방지용 try-catch)
+    let markerPoint;
+    try {
+        markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
+    } catch (e) {
+        console.error("좌표 변환 실패:", e);
+        return; // 지도가 없으면 중단
+    }
+    
+    const mapDiv = document.getElementById("map_overlay_content");
+    
+    const isTop = markerPoint.y < 220;
+    const isLeft = markerPoint.x < 160;
+    const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
 
-        let displayAddress = "주소 로딩 중...";
+    let displayAddress = "주소 로딩 중...";
+    let displayName = "위치 정보"; // 제목으로 쓸 텍스트
 
-        // 주소가 미리 있으면(목록 클릭 시) 그거 쓰고, 없으면 API 호출
+    // A. 기존 거래처 목록에서 클릭한 경우 (preLoadedAddress에 이름이 들어옴)
+    if (preLoadedAddress && !showRegisterBtn) {
+        displayAddress = ""; // 기존 거래처는 주소 굳이 다시 안 보여줘도 됨 (혹은 필요하면 표시)
+        displayName = preLoadedAddress; // 상호명을 제목으로
+    } 
+    // B. 지도 검색이나 롱프레스인 경우
+    else {
         if (preLoadedAddress) {
-            displayAddress = preLoadedAddress;
+             displayAddress = preLoadedAddress;
         } else {
             try {
                 const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
@@ -1900,10 +1907,8 @@ function enableMapLongPress() {
                 if (data.addressInfo) {
                     const info = data.addressInfo;
                     if (info.roadName) {
-                        // 도로명 주소 조립
                         displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
                     } else {
-                        // 지번 주소 조립 (맨 앞부분만)
                         displayAddress = info.fullAddress.split(",")[0];
                     }
                 }
@@ -1912,58 +1917,64 @@ function enableMapLongPress() {
                 displayAddress = "주소 정보 없음";
             }
         }
+    }
 
-        // -----------------------------------------------------------
-        // 🎨 [디자인] 꼬리 위치 정밀 계산
-        // -----------------------------------------------------------
-        let boxStyle = ""; 
-        let tailStyle = ""; 
+    // -----------------------------------------------------------
+    // 🎨 [디자인] 말풍선 위치 계산
+    // -----------------------------------------------------------
+    let boxStyle = ""; 
+    let tailStyle = ""; 
 
-        // (A) 수직 위치 (마커 높이 약 40px 고려)
-        if (isTop) {
-            // 마커 [아래]에 말풍선
-            boxStyle += "top: 10px; "; 
-            tailStyle += "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
-        } else {
-            // 마커 [위]에 말풍선
-            boxStyle += "bottom: 45px; "; 
-            tailStyle += "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+    if (isTop) {
+        boxStyle += "top: 10px; "; 
+        tailStyle += "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+    } else {
+        boxStyle += "bottom: 45px; "; 
+        tailStyle += "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+    }
+
+    if (isLeft) {
+        boxStyle += "left: 0px; transform: none;"; 
+        tailStyle += "left: 22px; transform: translateX(-50%);"; 
+    } else if (isRight) {
+        boxStyle += "right: 0px; transform: none;";
+        tailStyle += "right: 22px; transform: translateX(50%);"; 
+    } else {
+        boxStyle += "left: 50%; transform: translateX(-50%);";
+        tailStyle += "left: 50%; transform: translateX(-50%);"; 
+    }
+
+    // -----------------------------------------------------------
+    // 🔘 [버튼 로직] showRegisterBtn이 true일 때만 버튼 HTML 생성
+    // -----------------------------------------------------------
+    let buttonHtml = "";
+    if (showRegisterBtn) {
+        buttonHtml = `
+            <div style="margin-top: 6px;">
+                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">
+                    이 위치 등록
+                </button>
+            </div>
+        `;
+    }
+
+    const content = `
+        <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
+            <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                <p style="font-size: 13px; color: #374151; margin: 0; font-weight: 700; word-break: keep-all; line-height: 1.4;">${displayName}</p>
+                ${displayAddress ? `<p style="font-size: 11px; color: #6b7280; margin-top: 2px;">${displayAddress}</p>` : ''}
+                ${buttonHtml}
+            </div>
+            <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
+        </div>`;
+
+    // 🚨 [오류 수정] mapInfoLayer 에러 방지를 위한 안전 처리
+    if (tempInfoWindow) {
+        try {
+            tempInfoWindow.setMap(null);
+        } catch(e) {
+            console.warn("기존 말풍선 제거 중 무시된 에러:", e);
         }
-
-        // (B) 수평 위치 (좌/우/중앙)
-        if (isLeft) {
-            boxStyle += "left: 0px; transform: none;"; 
-            tailStyle += "left: 22px; transform: translateX(-50%);"; 
-        } 
-        else if (isRight) {
-            boxStyle += "right: 0px; transform: none;";
-            tailStyle += "right: 22px; transform: translateX(50%);"; 
-        } 
-        else {
-            // 중앙 (기본)
-            boxStyle += "left: 50%; transform: translateX(-50%);";
-            tailStyle += "left: 50%; transform: translateX(-50%);"; 
-        }
-
-        const content = `
-            <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
-                <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 160px; max-width: 240px;">
-                    <p style="font-size: 13px; color: #374151; margin: 0 0 6px 0; font-weight: 700; word-break: keep-all; line-height: 1.4;">${displayAddress}</p>
-                    <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록</button>
-                </div>
-                <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-            </div>`;
-
-        if (tempInfoWindow) tempInfoWindow.setMap(null);
-        
-        tempInfoWindow = new Tmapv2.InfoWindow({
-            position: new Tmapv2.LatLng(lat, lon),
-            content: content, 
-            type: 2, 
-            map: currentMapInstance, 
-            border: '0px solid white', 
-            background: false 
-        });
     }
 
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
@@ -2152,6 +2163,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
