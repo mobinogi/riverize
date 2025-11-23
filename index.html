@@ -1868,12 +1868,13 @@ function openMapOverlay() {
     }
 
 
-// [최종 수정] 말풍선 띄우기 (매개변수 이름을 mode로 통일)
+// [최종 수정] 말풍선 띄우기 (터치 씹힘 방지 적용)
 async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
     
     let markerPoint;
     try {
+        // 화면 좌표 변환
         markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
     } catch (e) { return; }
     
@@ -1885,55 +1886,57 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     let displayName = title || "위치 정보"; 
     let displayAddress = address; 
 
-    // 주소가 없으면 API 호출 (검색/롱프레스인 경우)
+    // 주소 없으면 API 호출
     if (!displayAddress) {
         try {
             const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
             const response = await fetch(url);
             const data = await response.json();
-            
             if (data.addressInfo) {
                 const info = data.addressInfo;
-                if (info.roadName) {
-                    displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
-                } else {
-                    displayAddress = info.fullAddress.split(",")[0];
-                }
+                if (info.roadName) displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
+                else displayAddress = info.fullAddress.split(",")[0];
             }
-        } catch (e) {
-            console.error(e);
-            displayAddress = "주소 정보 없음";
-        }
+        } catch (e) { displayAddress = "주소 정보 없음"; }
     }
 
     // -----------------------------------------------------------
-    // 🔘 [버튼 로직] mode 변수에 따라 버튼 모양 결정
+    // 🔘 [버튼 로직] 터치 간섭 방지 코드 추가
     // -----------------------------------------------------------
     let buttonHtml = "";
     
-    // A. 길안내 모드 (기존 거래처) -> 빨간 버튼 + T맵 아이콘
     if (mode === 'navigate') {
+        // 이름 안전 처리
+        const safeName = displayName.replace(/'/g, "").replace(/"/g, "");
+        
         buttonHtml = `
             <div style="margin-top: 8px;">
-                <button onclick="startDirectNav('${displayName}', ${lat}, ${lon})" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
+                <button 
+                    onclick="startDirectNav('${safeName}', ${lat}, ${lon})" 
+                    ontouchstart="event.stopPropagation();" 
+                    onmousedown="event.stopPropagation();"
+                    style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
                     T맵 길안내
                 </button>
             </div>
         `;
     } 
-    // B. 등록 모드 (검색/롱프레스) -> 파란 버튼
     else if (mode === 'register') {
         buttonHtml = `
             <div style="margin-top: 8px;">
-                <button onclick="openRegistrationModal('${displayAddress}')" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
+                <button 
+                    onclick="openRegistrationModal('${displayAddress}')" 
+                    ontouchstart="event.stopPropagation();" 
+                    onmousedown="event.stopPropagation();"
+                    style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
                     이 위치 등록
                 </button>
             </div>
         `;
     }
 
-    // 말풍선 위치 스타일
+    // 위치 및 스타일 계산
     let boxStyle = ""; 
     let tailStyle = ""; 
 
@@ -1945,16 +1948,9 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
         tailStyle += "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
     }
 
-    if (isLeft) {
-        boxStyle += "left: 0px; transform: none;"; 
-        tailStyle += "left: 22px; transform: translateX(-50%);"; 
-    } else if (isRight) {
-        boxStyle += "right: 0px; transform: none;";
-        tailStyle += "right: 22px; transform: translateX(50%);"; 
-    } else {
-        boxStyle += "left: 50%; transform: translateX(-50%);";
-        tailStyle += "left: 50%; transform: translateX(-50%);"; 
-    }
+    if (isLeft) { boxStyle += "left: 0px; transform: none;"; tailStyle += "left: 22px; transform: translateX(-50%);"; }
+    else if (isRight) { boxStyle += "right: 0px; transform: none;"; tailStyle += "right: 22px; transform: translateX(50%);"; }
+    else { boxStyle += "left: 50%; transform: translateX(-50%);"; tailStyle += "left: 50%; transform: translateX(-50%);"; }
 
     const content = `
         <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
@@ -2168,6 +2164,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
