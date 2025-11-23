@@ -944,19 +944,26 @@ function onMapLongPressTrigger(lat, lon) {
       document.getElementById('map-overlay').classList.add('hidden');
     }
     
-    /**
-     * 목록 패널을 축소/확대하는 함수
+/**
+     * [수정] 목록 패널 축소/확대 (아이콘 회전 적용)
      */
     function togglePanelMinimize() {
         const panel = document.getElementById('client-list-panel');
-        const icon = document.getElementById('toggle-icon');
+        // const icon = document.getElementById('toggle-icon'); // 기존 코드 주석 처리
+        const iconSvg = document.getElementById('toggle-icon-svg'); // 신규 아이콘
         
         panel.classList.toggle('client-list-minimized');
         isPanelMinimized = !isPanelMinimized;
 
-        icon.textContent = isPanelMinimized ? '▶️' : '◀️';
+        // 텍스트를 바꾸는 대신, 아이콘을 180도 회전시킵니다. (훨씬 부드러움)
+        if (isPanelMinimized) {
+            // 접혔을 때: 아이콘 뒤집기 (▶ 모양처럼 됨)
+            iconSvg.style.transform = "rotate(180deg)";
+        } else {
+            // 펼쳐졌을 때: 원래대로 (◀ 모양)
+            iconSvg.style.transform = "rotate(0deg)";
+        }
     }
-
     /**
      * 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
      */
@@ -1480,12 +1487,12 @@ function openMapOverlay() {
 
     let tempMarker = null; // 등록용 임시 마커
 
-// [수정] 지도 클릭 이벤트 (담당자 체크 로직 제거)
+// [최종 수정] 지도 클릭 이벤트 (담당자 체크 완전 제거)
 function onMapClick(e) {
     const lat = e.latLng.lat();
     const lon = e.latLng.lng();
 
-    // 롱프레스 함수 재활용 (로직 동일함)
+    // 담당자 체크 없이 바로 핀 찍는 함수 호출
     onMapLongPressTrigger(lat, lon);
 }
 
@@ -1710,37 +1717,31 @@ function onMapClick(e) {
     let tempInfoWindow = null; // 말풍선 변수
 
 
-// [수정] 롱프레스 트리거 (안전한 초기화 적용)
-    function onMapLongPressTrigger(lat, lon) {
-        if (!activeClientUser) {
-            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
-            return;
-        }
-
-        // 1. 기존 마커 안전하게 제거
-        if (tempMarker) {
-            try { tempMarker.setMap(null); } catch (e) {}
-            tempMarker = null; // ★중요: 변수 비우기
-        }
-
-        // 2. 기존 말풍선 안전하게 제거
-        if (tempInfoWindow) {
-            try { tempInfoWindow.setMap(null); } catch (e) {}
-            tempInfoWindow = null; // ★중요: 변수 비우기
-        }
-        
-        // 3. 새 파란 핀 찍기
-        tempMarker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(lat, lon),
-            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-            map: currentMapInstance
-        });
-        
-        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
-
-        // 4. 주소 찾고 말풍선 띄우기 (등록 모드)
-        findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
+// [최종 수정] 롱프레스/검색 결과 트리거 (담당자 체크 완전 제거)
+function onMapLongPressTrigger(lat, lon) {
+    // 1. 기존 마커/말풍선 정리 (변수 초기화 포함)
+    if (tempMarker) {
+        try { tempMarker.setMap(null); } catch (e) {}
+        tempMarker = null;
     }
+    if (tempInfoWindow) {
+        try { tempInfoWindow.setMap(null); } catch (e) {}
+        tempInfoWindow = null;
+    }
+    
+    // 2. 파란 핀 찍기 (담당자 선택 안 해도 찍힘!)
+    tempMarker = new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(lat, lon),
+        icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+        map: currentMapInstance
+    });
+    
+    currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+
+    // 3. 주소 찾고 말풍선 띄우기
+    // 여기서 'register' 모드로 띄우지만, 버튼 누르기 전까진 아무 검사도 안 함
+    findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
+}
 
     // 2. 주소 찾아서 말풍선 띄우기 (핵심 기능!)
     async function findAddressAndShowBubble(lat, lon) {
@@ -1933,23 +1934,18 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     // [신규] 수동 거래처 추가 (플로팅 버튼용)
     // ===============================================
 
-    // 1. [+ 거래처 추가] 버튼 누르면 실행
-    function openManualAddModal() {
-        if (!activeClientUser) {
-            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
-            return;
-        }
-
-        // 입력창 초기화
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').value = ''; // 주소창도 비움
-        
-        // 팝업 띄우기
-        document.getElementById('add-client-modal').classList.remove('hidden');
-        
-        // 상호명에 포커스
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
+   // [최종 수정] 수동 추가 버튼 (일단 팝업은 열리게 허용)
+  function openManualAddModal() {
+    // 입력창 초기화
+    document.getElementById('new-client-name').value = '';
+    document.getElementById('new-client-address').value = ''; 
+    
+    // 팝업 열기
+    document.getElementById('add-client-modal').classList.remove('hidden');
+    
+    // 상호명에 포커스
+    setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+}
   
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
    async function showClientOnMapWithBubble(client, user) {
@@ -2168,6 +2164,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
