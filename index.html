@@ -1777,104 +1777,12 @@ function openMapOverlay() {
         // 이름 입력창에 바로 포커스 줌 (편의성)
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
     }
-// [최종 수정] 말풍선 꼬리 위치 정밀 보정 (마커 정중앙 가리킴)
-    async function findAddressAndShowBubble(lat, lon) {
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
-
-        try {
-            const markerPoint = currentMapInstance.fromLatLngToContainerPixel(new Tmapv2.LatLng(lat, lon));
-            const mapDiv = document.getElementById("map_overlay_content");
-            const mapWidth = mapDiv.clientWidth;
-            
-            // 상단/좌우 여백 체크
-            const isTop = markerPoint.y < 220;
-            const isLeft = markerPoint.x < 160;
-            const isRight = markerPoint.x > (mapWidth - 160);
-
-            const response = await fetch(url);
-            const data = await response.json();
-            let fullAddress = data.addressInfo?.fullAddress || "주소 미상";
-
-            let boxStyle = ""; 
-            let tailStyle = ""; 
-
-            // (A) 위/아래 결정
-            if (isTop) {
-                // 상단 클릭 -> 말풍선 [아래]로, 꼬리 [위]로 (▲)
-                boxStyle += "top: 40px; "; 
-                // 꼬리: 박스 바깥 위쪽에 붙임
-                tailStyle += "top: -8px; border-bottom: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
-            } else {
-                // 하단 클릭 -> 말풍선 [위]로, 꼬리 [아래]로 (▼)
-                boxStyle += "bottom: 50px; "; // 마커 위로 띄움
-                // 꼬리: 박스 바깥 아래쪽에 붙임
-                tailStyle += "bottom: -8px; border-top: 8px solid white; border-left: 8px solid transparent; border-right: 8px solid transparent;";
-            }
-
-            // (B) 좌/우 결정 (중앙 정렬 기준)
-            if (isLeft) {
-                boxStyle += "left: 0px; transform: none;"; 
-                // 꼬리는 마커 위치(markerPoint.x)에 맞춰야 함. 대략 왼쪽에서 20px 지점
-                tailStyle += "left: 20px;"; 
-            } 
-            else if (isRight) {
-                boxStyle += "right: 0px; transform: none;";
-                tailStyle += "right: 20px;";
-            } 
-            else {
-                // 중앙 정렬
-                boxStyle += "left: 50%; transform: translateX(-50%);";
-                tailStyle += "left: 50%; transform: translateX(-50%);"; 
-            }
-
-            const content = `
-                <div style="position: absolute; ${boxStyle} width: max-content; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); pointer-events: auto;">
-                    <div style="background: white; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 180px; max-width: 240px;">
-                        <p style="font-size: 12px; color: #374151; margin: 0 0 6px 0; font-weight: 600; word-break: keep-all;">${fullAddress}</p>
-                        <button onclick="openRegistrationModal('${fullAddress}')" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%;">이 위치 등록하기</button>
-                    </div>
-                    <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-                </div>`;
-
-            if (tempInfoWindow) tempInfoWindow.setMap(null);
-            tempInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(lat, lon),
-                content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
-            });
-        } catch (e) { console.error(e); }
-    }
-
-    // ===============================================
-    // [신규] 수동 거래처 추가 (플로팅 버튼용)
-    // ===============================================
-
-    // 1. [+ 거래처 추가] 버튼 누르면 실행
-    function openManualAddModal() {
-        if (!activeClientUser) {
-            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
-            return;
-        }
-
-        // 입력창 초기화
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').value = ''; // 주소창도 비움
-        
-        // 팝업 띄우기
-        document.getElementById('add-client-modal').classList.remove('hidden');
-        
-        // 상호명에 포커스
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
-
-
-// [최종 수정] 말풍선 띄우기 (터치 씹힘 방지 적용)
+// [최종 완성] 말풍선 띄우기 (터치/클릭 완벽 제어 + 에러 방지)
 async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
     
     let markerPoint;
     try {
-        // 화면 좌표 변환
         markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
     } catch (e) { return; }
     
@@ -1886,7 +1794,7 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     let displayName = title || "위치 정보"; 
     let displayAddress = address; 
 
-    // 주소 없으면 API 호출
+    // 주소 미상일 때 검색
     if (!displayAddress) {
         try {
             const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
@@ -1901,20 +1809,20 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     }
 
     // -----------------------------------------------------------
-    // 🔘 [버튼 로직] 터치 간섭 방지 코드 추가
+    // 🔘 [버튼 로직] 이벤트 전파 차단(stopPropagation) 풀세트 적용
     // -----------------------------------------------------------
     let buttonHtml = "";
     
     if (mode === 'navigate') {
-        // 이름 안전 처리
         const safeName = displayName.replace(/'/g, "").replace(/"/g, "");
-        
         buttonHtml = `
             <div style="margin-top: 8px;">
                 <button 
                     onclick="startDirectNav('${safeName}', ${lat}, ${lon})" 
                     ontouchstart="event.stopPropagation();" 
+                    ontouchend="event.stopPropagation();"
                     onmousedown="event.stopPropagation();"
+                    onmouseup="event.stopPropagation();"
                     style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
                     T맵 길안내
@@ -1928,7 +1836,9 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
                 <button 
                     onclick="openRegistrationModal('${displayAddress}')" 
                     ontouchstart="event.stopPropagation();" 
+                    ontouchend="event.stopPropagation();"
                     onmousedown="event.stopPropagation();"
+                    onmouseup="event.stopPropagation();"
                     style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
                     이 위치 등록
                 </button>
@@ -1936,10 +1846,8 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
         `;
     }
 
-    // 위치 및 스타일 계산
-    let boxStyle = ""; 
-    let tailStyle = ""; 
-
+    // 말풍선 위치 스타일
+    let boxStyle = ""; let tailStyle = ""; 
     if (isTop) {
         boxStyle += "top: 10px; "; 
         tailStyle += "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
@@ -1973,6 +1881,28 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
         background: false 
     });
 }
+
+    // ===============================================
+    // [신규] 수동 거래처 추가 (플로팅 버튼용)
+    // ===============================================
+
+    // 1. [+ 거래처 추가] 버튼 누르면 실행
+    function openManualAddModal() {
+        if (!activeClientUser) {
+            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
+            return;
+        }
+
+        // 입력창 초기화
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = ''; // 주소창도 비움
+        
+        // 팝업 띄우기
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        
+        // 상호명에 포커스
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
   
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
    async function showClientOnMapWithBubble(client, user) {
@@ -2164,6 +2094,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
