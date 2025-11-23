@@ -1521,45 +1521,51 @@ function onMapClick(e) {
         }
     }
 
-    // 3. 저장 버튼 눌렀을 때
-    async function saveNewClient() {
-        const name = document.getElementById('new-client-name').value.trim();
-        const address = document.getElementById('new-client-address').textContent;
-        const user = activeClientUser;
-
-        if (!name) { alert("상호명을 입력해주세요."); return; }
-        if (address.includes("오류") || address.includes("중...")) { alert("올바른 주소가 아닙니다."); return; }
-
-        if(!confirm(`[${user}] 담당으로\n"${name}"\n이 거래처를 등록하시겠습니까?`)) return;
-
-        showLoader("거래처 등록 중...");
-        closeAddClientModal();
-
-        try {
-            // 백엔드 호출 (addNewClientToSheet) - action 이름 주의!
-            // ⚠️ 중요: code.js의 doGet 함수에 'addNewClient' 케이스를 추가해야 함!
-            // 일단 callAppsScript로 보냅니다.
-             const result = await callAppsScript('addNewClient', { 
-                user: user, 
-                name: name, 
-                address: address 
-            });
-
-            if (result.status === 'success') {
-                alert("성공적으로 등록되었습니다! 목록을 갱신합니다.");
-                // 목록 새로고침
-                loadedClientData[user] = null; // 캐시 삭제
-                toggleClientList(user, document.getElementById(user === '김원대' ? 'btn-kim' : 'btn-jung'));
-                if(tempMarker) tempMarker.setMap(null); // 임시 마커 삭제
-            } else {
-                alert("등록 실패: " + result.message);
-            }
-        } catch(e) {
-            alert("오류 발생: " + e.message);
-        } finally {
-            hideLoader();
+// [최종] 저장 버튼 누를 때 (여기서만 엄격하게 검사!)
+async function saveNewClient() {
+    // 1. 여기서 담당자 확인!
+    if (!activeClientUser) { 
+        showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error"); 
+        
+        // (센스) 사이드바가 닫혀있으면 열어서 선택 유도
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            if(restoreBtn) restoreBtn.classList.add('hidden');
         }
+        return; 
     }
+
+    const name = document.getElementById('new-client-name').value.trim();
+    const addressInput = document.getElementById('new-client-address');
+    const address = addressInput.value.trim() || addressInput.textContent; 
+    const user = activeClientUser;
+
+    if (!name) { showToast("상호명을 입력해주세요.", "error"); return; }
+    if (!address) { showToast("주소를 입력해주세요.", "error"); return; }
+
+    showLoader("등록 중...");
+    closeAddClientModal(); 
+
+    try {
+        const result = await callAppsScript('addNewClient', { user, name, address });
+        
+        if (result.status === 'success') {
+            showToast("등록 완료!", "success");
+            loadedClientData[user] = null; 
+            const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
+            toggleClientList(user, document.getElementById(btnId));
+            if(tempMarker) tempMarker.setMap(null); 
+        } else {
+            showToast("등록 실패: " + result.message, "error");
+        }
+    } catch(e) { 
+        showToast("오류: " + e.message, "error"); 
+    } finally { 
+        hideLoader(); 
+    }
+}
 
 // [수정] 등록 취소 (지도 위 핀/말풍선은 건드리지 않음)
     function closeAddClientModal() {
@@ -2164,6 +2170,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
