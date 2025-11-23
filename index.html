@@ -1526,9 +1526,21 @@ function openMapOverlay() {
         }
     }
 
+// [수정] 등록 취소/팝업 닫기 함수
     function closeAddClientModal() {
         document.getElementById('add-client-modal').classList.add('hidden');
-        if (tempMarker) tempMarker.setMap(null); // 취소하면 마커도 삭제
+        
+        // 취소했으므로 지도에 찍힌 임시 핀 제거
+        if (tempMarker) { 
+            try { tempMarker.setMap(null); } catch(e) {}
+            tempMarker = null; 
+        }
+
+        // 말풍선도 혹시 남아있다면 제거
+        if (tempInfoWindow) {
+            try { tempInfoWindow.setMap(null); } catch(e) {}
+            tempInfoWindow = null;
+        }
     }
     // ===============================================
     // [신규] 예쁜 토스트 알림 함수 (Alert 대체)
@@ -1677,29 +1689,37 @@ function openMapOverlay() {
 
     let tempInfoWindow = null; // 말풍선 변수
 
-    // 1. 롱프레스 발동 시 (좌표만 넘겨받음)
+
+// [수정] 롱프레스 트리거 (안전한 초기화 적용)
     function onMapLongPressTrigger(lat, lon) {
         if (!activeClientUser) {
             showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
             return;
         }
 
-        // 기존 핀/말풍선이 있다면 지워줍니다 (깔끔하게)
-        if (tempMarker) tempMarker.setMap(null);
-        if (tempInfoWindow) tempInfoWindow.setMap(null);
+        // 1. 기존 마커 안전하게 제거
+        if (tempMarker) {
+            try { tempMarker.setMap(null); } catch (e) {}
+            tempMarker = null; // ★중요: 변수 비우기
+        }
+
+        // 2. 기존 말풍선 안전하게 제거
+        if (tempInfoWindow) {
+            try { tempInfoWindow.setMap(null); } catch (e) {}
+            tempInfoWindow = null; // ★중요: 변수 비우기
+        }
         
-        // 1. 파란 핀 찍기
+        // 3. 새 파란 핀 찍기
         tempMarker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(lat, lon),
             icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
             map: currentMapInstance
         });
         
-        // 2. 지도를 핀 위치로 부드럽게 이동 (선택사항)
         currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
 
-        // 3. 주소를 가져와서 말풍선을 띄웁니다
-        findAddressAndShowBubble(lat, lon);
+        // 4. 주소 찾고 말풍선 띄우기 (등록 모드)
+        findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
     }
 
     // 2. 주소 찾아서 말풍선 띄우기 (핵심 기능!)
@@ -2133,6 +2153,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
