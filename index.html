@@ -2154,18 +2154,21 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     // 팝업 닫기 함수들
     function closeAddClientModal() { document.getElementById('add-client-modal').classList.add('hidden'); }
 
-// [말풍선 전용] 좌표와 이름만으로 바로 T맵 실행하는 헬퍼 함수
-    function startDirectNav(name, lat, lon) {
-        // 이름에 혹시 따옴표가 있으면 에러나니까 제거
-        const safeName = name ? name.replace(/'/g, "") : "목적지";
-        
-        // T맵 실행 (좌표 기반)
-        const tmapUrl = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
-        window.location.href = tmapUrl;
-    }
+// [필수] T맵 길안내 실행 함수 (전역 함수)
+function startDirectNav(name, lat, lon) {
+    console.log("길안내 버튼 클릭됨:", name); // 로그 확인용
+    
+    // 따옴표 제거 (에러 방지)
+    const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
+    
+    // URL 스키마 실행
+    const tmapUrl = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
+    window.location.href = tmapUrl;
+}
   </script>
 </body>
 </html>
+
 
 
 
