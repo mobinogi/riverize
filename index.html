@@ -147,6 +147,19 @@
     animation: flow-left 10s linear infinite; /* 10초 동안 천천히 흐름 */
     padding-right: 30px; /* 반복 텍스트 사이 간격 */
 }
+    /* 🪄 [마법의 검색바] 스르륵 늘어나는 애니메이션 */
+    .search-pill {
+        width: 120px; /* 평소 크기: 아주 작음 (사이드바 안 가림) */
+    }
+
+    /* 입력창을 클릭하면(focus-within) -> 확 늘어남 */
+    .search-pill:focus-within {
+        width: 90%; /* 화면의 90%까지 차지 */
+        max-width: 340px; /* 너무 커지진 않게 제한 */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* 그림자도 진해짐 */
+        border-color: #3b82f6; /* 테두리 파란색으로 강조 */
+        background-color: #ffffff; /* 배경 완전 불투명 */
+    }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -257,20 +270,22 @@
     </div>
       <div id="map_overlay_content" class="w-full h-full"></div>
 
-    <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm z-[60]">
-        <div class="flex items-center bg-white/95 backdrop-blur-sm rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.1)] border border-green-100 p-1 pr-1 transition-all focus-within:ring-2 focus-within:ring-green-400 focus-within:shadow-lg">
+<div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-sm flex justify-center pointer-events-none">
+        
+        <div class="search-pill group pointer-events-auto relative flex items-center bg-white/90 backdrop-blur-md rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-200/50 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
             
-            <input type="text" id="map-search-input" 
-                   placeholder="주소 또는 건물명 검색" 
-                   onkeydown="if(event.key === 'Enter') searchMapLocation()"
-                   class="flex-1 ml-5 bg-transparent outline-none text-sm font-medium text-gray-700 placeholder-gray-400 h-10">
-            
-            <button onclick="searchMapLocation()" class="w-10 h-10 bg-[#10b981] rounded-full flex items-center justify-center text-white shadow-md hover:bg-[#059669] transition-all active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <div class="pl-3 pr-2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-            </button>
-        </div>
+            </div>
+
+            <input type="text" id="map-search-input" 
+                   placeholder="주소 검색..." 
+                   onkeydown="if(event.key === 'Enter') searchMapLocation()"
+                   class="w-full bg-transparent outline-none text-sm font-medium text-gray-700 placeholder-gray-400 h-10 pr-4">
+                   
+            </div>
     </div>
     <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
       
@@ -2128,6 +2143,7 @@ function enableMapLongPress() {
   </script>
 </body>
 </html>
+
 
 
 
