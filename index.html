@@ -72,12 +72,28 @@
     }
     #client-list-panel::-webkit-scrollbar { display: none; }
     #client-list-panel { scrollbar-width: none; }
+    /* [최종 수정] 사이드바 접었을 때 (라운드/패딩 강제 적용 + 그림자 제거) */
     .client-list-minimized {
-        width: 3rem !important;
-    }
-    .client-address { display: none; }
-    @media (min-width: 768px) {
-        .client-address { display: inline; }
+        width: 170px !important;
+        
+        /* 높이는 내용물만큼만 */
+        height: auto !important; 
+        min-height: 0 !important;
+        
+        /* ★ 핵심: 내부의 흰색 박스가 둥근 모서리를 가리지 않게 잘라냄 */
+        overflow: hidden !important;
+        
+        /* 우측 하단 둥글게 */
+        border-bottom-right-radius: 24px !important;
+        
+        /* 하단 여백 강제 확보 */
+        padding-bottom: 20px !important;
+        
+        /* 그림자 제거 */
+        box-shadow: none !important;
+        
+        /* (선택사항) 접혔을 때 배경색을 확실하게 잡아줌 */
+        background-color: rgba(247, 249, 252, 0.95) !important;
     }
     /* 1. 공통 디자인 및 기본 위치 (모바일 기준) */
     .map-close-button-new {
@@ -2224,6 +2240,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
