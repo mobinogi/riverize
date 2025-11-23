@@ -875,25 +875,30 @@ async function confirmGenerateReport() {
       }
     }
     
-    // 👇 [이 함수는 스크립트 맨 아래에 따로 있어도 되고, 여기 둬도 됩니다]
-    function onMapLongPressTrigger(lat, lon) {
-        if (!activeClientUser) {
-            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
-            return;
-        }
-
-        // 임시 마커 표시
-        if (tempMarker) tempMarker.setMap(null);
-        
-        tempMarker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(lat, lon),
-            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-            map: currentMapInstance
-        });
-
-        // 주소 찾기 & 팝업
-        findAddressFromCoords(lat, lon);
+// [수정] 롱프레스/검색 결과 트리거 (담당자 체크 로직 제거 -> 자유롭게 검색 가능)
+function onMapLongPressTrigger(lat, lon) {
+    // 1. 기존 마커/말풍선 정리
+    if (tempMarker) {
+        try { tempMarker.setMap(null); } catch (e) {}
+        tempMarker = null;
     }
+    if (tempInfoWindow) {
+        try { tempInfoWindow.setMap(null); } catch (e) {}
+        tempInfoWindow = null;
+    }
+    
+    // 2. 파란 핀 찍기 (담당자 없어도 찍힘)
+    tempMarker = new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(lat, lon),
+        icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+        map: currentMapInstance
+    });
+    
+    currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+
+    // 3. 주소 찾고 말풍선 띄우기
+    findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
+}
     /**
      * '닫기' 버튼
      */
@@ -1437,29 +1442,14 @@ function openMapOverlay() {
 
     let tempMarker = null; // 등록용 임시 마커
 
-// [최종] 지도 클릭 시 실행되는 함수 (상대 경로 사용)
-    function onMapClick(e) {
-        if (!activeClientUser) {
-            alert("먼저 담당자(김원대/정병준)를 선택해주세요.");
-            return;
-        }
+// [수정] 지도 클릭 이벤트 (담당자 체크 로직 제거)
+function onMapClick(e) {
+    const lat = e.latLng.lat();
+    const lon = e.latLng.lng();
 
-        const lat = e.latLng.lat();
-        const lon = e.latLng.lng();
-
-        if (tempMarker) tempMarker.setMap(null);
-        
-        tempMarker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(lat, lon),
-            
-            // 👇 [수정] 주소를 다 안 쓰고 파일명만 적어도 됩니다!
-            icon: "pin_b_m_a.png", 
-            
-            map: currentMapInstance
-        });
-
-        findAddressFromCoords(lat, lon);
-    }
+    // 롱프레스 함수 재활용 (로직 동일함)
+    onMapLongPressTrigger(lat, lon);
+}
 
     // 2. 좌표로 주소 따오기 (T맵 API)
     async function findAddressFromCoords(lat, lon) {
@@ -2140,6 +2130,7 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
 
