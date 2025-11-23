@@ -1523,7 +1523,7 @@ function openMapOverlay() {
         document.getElementById('add-client-modal').classList.add('hidden');
         if (tempMarker) tempMarker.setMap(null); // 취소하면 마커도 삭제
     }
-  // ===============================================
+    // ===============================================
     // [신규] 예쁜 토스트 알림 함수 (Alert 대체)
     // ===============================================
     let toastTimer;
@@ -1562,14 +1562,14 @@ function openMapOverlay() {
     // (하지만 map div가 생성된 뒤에 걸어야 하므로, openMapOverlay 안에 넣는 게 좋습니다.)
     
     // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
-// ==================================================
+    // ==================================================
     // [최종] 지도 롱프레스 (강제 캡처링 + 지도 고정)
     // ==================================================
-// ==================================================
+    // ==================================================
     // [오류 수정] 지도 롱프레스 (screenToMap 사용)
     // ==================================================
     
-function enableMapLongPress() {
+     function enableMapLongPress() {
         // 설정
         const LONG_PRESS_DURATION = 500; // 0.5초
         const MOVE_THRESHOLD = 20; // 20px (손떨림 허용 범위)
@@ -1868,6 +1868,7 @@ function enableMapLongPress() {
     }
 
 // [최종 수정] 말풍선 & 꼬리 위치 초정밀 교정 (마커에 착붙)
+// [수정] 말풍선 띄우기 함수 (등록 버튼 제어 기능 추가 + 에러 방지)
 async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showRegisterBtn = true) {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
     
@@ -1976,7 +1977,17 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
             console.warn("기존 말풍선 제거 중 무시된 에러:", e);
         }
     }
-
+    
+    tempInfoWindow = new Tmapv2.InfoWindow({
+        position: new Tmapv2.LatLng(lat, lon),
+        content: content, 
+        type: 2, 
+        map: currentMapInstance, 
+        border: '0px solid white', 
+        background: false 
+    });
+}
+  
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
     async function showClientOnMapWithBubble(client, user) {
         openMapOverlay();
@@ -1992,9 +2003,10 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
             currentMapInstance.setZoom(16); 
             currentMapInstance.panBy(120, 0); // 사이드바 공간만큼 밀기
 
-            // 마커 찍기
+            // 마커 찍기 (기존 마커 제거 후)
             if (tempMarker) tempMarker.setMap(null);
-            if (tempInfoWindow) tempInfoWindow.setMap(null);
+            // ※ 참고: searchMapLocation에서는 tempInfoWindow를 닫아주지만, 
+            // 여기서는 findAddressAndShowBubble 안에서 닫으므로 놔둬도 됩니다.
 
             tempMarker = new Tmapv2.Marker({
                 position: new Tmapv2.LatLng(lat, lon),
@@ -2002,15 +2014,9 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
                 map: currentMapInstance
             });
 
-            // ★ 중요: 위에서 만든 공통 함수(findAddressAndShowBubble)를 재사용!
-            // 세 번째 인자로 '이름'을 넘겨서 주소 대신 이름을 띄울 수도 있습니다.
-            // 여기서는 일단 도로명 주소를 다시 찾거나, 엑셀 주소를 그대로 씁니다.
-            
-            // (A) 엑셀 주소 그대로 쓰고 싶으면:
-            // findAddressAndShowBubble(lat, lon, client.name); // 이름 띄우기
-            
-            // (B) 도로명 주소 다시 찾고 싶으면 (이게 더 깔끔):
-            findAddressAndShowBubble(lat, lon); 
+            // ★ 중요: 네 번째 인자로 false를 전달 -> 등록 버튼 숨김!
+            // 세 번째 인자에는 상호명(client.name)을 전달해 제목으로 쓰게 함
+            findAddressAndShowBubble(lat, lon, client.name, false); 
             
         } catch (e) {
             console.error("지도 이동 오류:", e);
@@ -2163,6 +2169,7 @@ async function findAddressAndShowBubble(lat, lon, preLoadedAddress = null, showR
   </script>
 </body>
 </html>
+
 
 
 
