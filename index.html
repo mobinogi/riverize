@@ -560,7 +560,7 @@
     // 3. 지도 핵심 기능 (초기화, 롱프레스, UI제어)
     // ===============================================
 
-    // [최신] 중복 제거된 통합 지도 열기 함수 (사이드바 숨김 로직 포함)
+    // [최종 수정] 지도 열기 + 강력한 터치 감지 (Capture 모드)
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
@@ -568,6 +568,7 @@
       if (!isMapInitialized) {
         console.log("맵 생성 시작...");
         try {
+          // 1. 지도 생성
           currentMapInstance = new Tmapv2.Map("map_overlay_content", {
             center: new Tmapv2.LatLng(35.2128, 128.9806),
             width: "100%",
@@ -575,17 +576,33 @@
             zoom: 12
           });
           
+          // 2. 롱프레스 기능 활성화
           enableMapLongPress(); 
 
-          // [최신] TMap 리스너 대신 HTML 엘리먼트에 직접 이벤트를 걸어서 사이드바 숨김을 확실하게 처리
+          // -----------------------------------------------------------
+          // ✋ [핵심] 지도를 만지면 사이드바 숨기기 (Capture 모드)
+          // -----------------------------------------------------------
           const mapDiv = document.getElementById("map_overlay_content");
+
+          // (1) 모바일 터치 (Zoom, 이동 포함)
+          // { capture: true } -> 지도가 알기 전에 우리가 먼저 챘습니다!
+          mapDiv.addEventListener("touchstart", function() {
+              hideSidebarMode();
+          }, { capture: true, passive: true });
+
+          // (2) PC 마우스 클릭
+          mapDiv.addEventListener("mousedown", function() {
+              hideSidebarMode();
+          }, { capture: true });
+
+          // (3) PC 마우스 휠
+          mapDiv.addEventListener("wheel", function() {
+              hideSidebarMode();
+          }, { capture: true, passive: true });
           
-          // PC용
-          mapDiv.addEventListener("mousedown", () => hideSidebarMode());
-          mapDiv.addEventListener("wheel", () => hideSidebarMode(), { passive: true });
-          
-          // 모바일용 (터치)
-          mapDiv.addEventListener("touchstart", () => hideSidebarMode(), { passive: true });
+          // (4) [보험용] TMap API 자체 이벤트도 한 번 더 걸어둠
+          currentMapInstance.addListener("dragstart", hideSidebarMode);
+          currentMapInstance.addListener("zoomstart", hideSidebarMode);
 
           isMapInitialized = true; 
 
@@ -595,11 +612,6 @@
         }
       }
     }
-
-    function closeMapOverlay() {
-      document.getElementById('map-overlay').classList.add('hidden');
-    }
-
     // [최신] 롱프레스 활성화 함수
     function enableMapLongPress() {
         const LONG_PRESS_DURATION = 500;
@@ -1122,4 +1134,5 @@
 </script>
 </body>
 </html>
+
 
