@@ -612,6 +612,14 @@
         }
       }
     }
+
+    /**
+     * '닫기' 버튼
+     */
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
+    }
+  
     // [최신] 롱프레스 활성화 함수
     function enableMapLongPress() {
         const LONG_PRESS_DURATION = 500;
@@ -1134,5 +1142,6 @@
 </script>
 </body>
 </html>
+
 
 
