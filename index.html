@@ -1231,48 +1231,6 @@ function onMapLongPressTrigger(lat, lon) {
         deleteTargetClient = null;
     }
 
-    // 3. '삭제하기' 버튼 클릭 시 실행
-    async function executeDelete() {
-        if (!deleteTargetClient || !deleteTargetUser) return;
-
-        const name = deleteTargetClient.name;
-        const user = deleteTargetUser;
-
-        // 팝업 닫고 로딩 표시
-        closeDeletePrompt();
-        showLoader("삭제 중입니다...");
-
-        try {
-            // 백엔드 호출 (deleteClient)
-            const result = await callAppsScript('deleteClient', { 
-                user: user, 
-                name: name 
-            });
-
-            if (result.status === 'success') {
-                alert("삭제되었습니다.");
-                
-                // 목록 새로고침
-                loadedClientData[user] = null; 
-                // 해당 탭 버튼 찾아서 클릭 효과(새로고침)
-                const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
-                toggleClientList(user, document.getElementById(btnId));
-                
-                // 지도에 찍힌 마커도 있으면 지우기
-                if(currentMarker) {
-                    currentMarker.setMap(null);
-                    currentMarker = null;
-                }
-
-            } else {
-                alert("삭제 실패: " + result.message);
-            }
-        } catch (e) {
-            alert("오류 발생: " + e.message);
-        } finally {
-            hideLoader();
-        }
-    }
 
     // ---------------------------------------------------
     // 하단 팝업(Bottom Sheet) 제어 변수 및 함수
@@ -1699,88 +1657,7 @@ function onMapLongPressTrigger(lat, lon) {
     findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
 }
 
-    // 2. 주소 찾아서 말풍선 띄우기 (핵심 기능!)
-    async function findAddressAndShowBubble(lat, lon) {
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님 API 키
-        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
 
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            let fullAddress = "주소 미상";
-
-            if (data.addressInfo && data.addressInfo.fullAddress) {
-                fullAddress = data.addressInfo.fullAddress;
-            }
-
-            // ---------------------------------------------------------
-            // [디자인] 말풍선 안에 들어갈 HTML을 여기서 만듭니다.
-            // ---------------------------------------------------------
-            const content = `
-                <div style="
-                    padding: 12px 16px; 
-                    background: white; 
-                    border-radius: 12px; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                    text-align: center; 
-                    min-width: 200px;
-                    font-family: 'Inter', sans-serif;">
-                    
-                    <p style="
-                        font-size: 13px; 
-                        color: #4b5563; 
-                        margin: 0 0 8px 0; 
-                        font-weight: 600;
-                        word-break: keep-all;">
-                        ${fullAddress}
-                    </p>
-                    
-                    <button onclick="openRegistrationModal('${fullAddress}')" style="
-                        background: #10b981; 
-                        color: white; 
-                        border: none; 
-                        padding: 8px 16px; 
-                        border-radius: 8px; 
-                        font-size: 13px; 
-                        font-weight: bold; 
-                        cursor: pointer; 
-                        width: 100%;
-                        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
-                        이 위치 등록하기
-                    </button>
-                </div>
-            `;
-
-            // T맵 InfoWindow 생성
-            tempInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(lat, lon),
-                content: content, // 위에서 만든 예쁜 HTML
-                type: 2, // 2번 타입 (커스텀 팝업)
-                map: currentMapInstance,
-                border: '0px solid white', // 기본 테두리 제거 (우리가 만든 div가 테두리 역할)
-                background: false // 투명 배경
-            });
-
-        } catch (e) {
-            console.error(e);
-            showToast("주소를 불러오지 못했습니다.", "error");
-        }
-    }
-
-    // 3. 진짜 등록 팝업 열기 (말풍선의 버튼을 눌렀을 때 실행됨)
-    function openRegistrationModal(address) {
-        // 말풍선은 이제 닫아도 됨
-        if (tempInfoWindow) tempInfoWindow.setMap(null);
-
-        // 입력창 초기화 및 열기
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').textContent = address;
-        
-        document.getElementById('add-client-modal').classList.remove('hidden');
-        
-        // 이름 입력창에 바로 포커스 줌 (편의성)
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
 // [최종 완성] 말풍선 띄우기 (터치/클릭 완벽 제어 + 에러 방지)
 async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
     const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
@@ -1886,22 +1763,6 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     });
 }
 
-    // ===============================================
-    // [신규] 수동 거래처 추가 (플로팅 버튼용)
-    // ===============================================
-
-   // [최종 수정] 수동 추가 버튼 (일단 팝업은 열리게 허용)
-  function openManualAddModal() {
-    // 입력창 초기화
-    document.getElementById('new-client-name').value = '';
-    document.getElementById('new-client-address').value = ''; 
-    
-    // 팝업 열기
-    document.getElementById('add-client-modal').classList.remove('hidden');
-    
-    // 상호명에 포커스
-    setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-}
   
     // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
    async function showClientOnMapWithBubble(client, user) {
@@ -2005,7 +1866,7 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
     // ==========================================================================
 
     // [1] 말풍선 안의 "이 위치 등록" 버튼을 누르면 실행되는 함수
-// [수정] 등록 팝업 열기 (말풍선 유지)
+    // [수정] 등록 팝업 열기 (말풍선 유지)
     function openRegistrationModal(address) {
         // [삭제됨] if (tempInfoWindow) tempInfoWindow.setMap(null); 
         // 👆 이제 팝업이 열려도 뒤에 말풍선이 그대로 남아있습니다.
@@ -2015,42 +1876,6 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
         document.getElementById('add-client-modal').classList.remove('hidden');
         
         setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
-    // [2] 팝업창의 "등록하기" 버튼을 누르면 실행되는 함수 (저장 로직)
-    async function saveNewClient() {
-        const name = document.getElementById('new-client-name').value.trim();
-        const addressInput = document.getElementById('new-client-address');
-        const address = addressInput.value.trim() || addressInput.textContent; 
-        const user = activeClientUser;
-
-        if (!name) { showToast("상호명을 입력해주세요.", "error"); return; }
-        if (!address) { showToast("주소를 입력해주세요.", "error"); return; }
-
-        showLoader("등록 중...");
-        closeAddClientModal(); // 팝업 닫기
-
-        try {
-            // 여기서 Google Apps Script로 데이터를 보냅니다
-            const result = await callAppsScript('addNewClient', { user, name, address });
-            
-            if (result.status === 'success') {
-                showToast("등록 완료!", "success");
-                
-                // 목록 새로고침
-                loadedClientData[user] = null; 
-                const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
-                toggleClientList(user, document.getElementById(btnId));
-                
-                // 지도에 임시로 찍은 핀 제거
-                if(tempMarker) tempMarker.setMap(null); 
-            } else {
-                showToast("등록 실패: " + result.message, "error");
-            }
-        } catch(e) { 
-            showToast("오류: " + e.message, "error"); 
-        } finally { 
-            hideLoader(); 
-        }
     }
     // 4. [삭제하기] 최종 삭제
     async function executeDelete() {
@@ -2132,6 +1957,3 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
-
-
-
