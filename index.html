@@ -809,7 +809,7 @@
         
         if (activeClientUser === user) {
             activeClientUser = null;
-            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+           
             if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
             return;
         }
@@ -1369,6 +1369,7 @@
 </script>
 </body>
 </html>
+
 
 
 
