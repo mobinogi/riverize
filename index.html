@@ -950,30 +950,144 @@
             closeNavPrompt();
         }
     }
+// ===============================================
+    // 🚑 [복구] T맵 연동 바텀 시트 (변수 + 함수 통합)
+    // ===============================================
 
-    // 팝업 변수 및 함수
-    let currentNavClient = null, currentNavUser = null;
-    let deleteTargetClient = null, deleteTargetUser = null;
+    // 1. 상태 저장 변수 (누구를 안내할지 기억)
+    let currentNavClient = null;
+    let currentNavUser = null;
 
-    // 2. 팝업 열기 (애니메이션 작동)
+    // 2. 팝업 열기 (애니메이션 초기화 포함)
     function openNavPrompt(client, user) {
         currentNavClient = client;
         currentNavUser = user;
         
-        document.getElementById('nav-target-name').textContent = client.name;
+        // 텍스트 업데이트
+        const nameEl = document.getElementById('nav-target-name');
+        if (nameEl) nameEl.textContent = client.name;
         
         const modal = document.getElementById('nav-confirm-modal');
-        // 'translate-y-full'(화면 아래 숨김) 클래스를 제거하면 -> 스르륵 올라옴
-        modal.classList.remove('translate-y-full');
+        if (modal) {
+            // 드래그로 망가진 스타일 초기화
+            modal.style.transform = ''; 
+            modal.style.transition = ''; 
+            
+            // 스르륵 올라오게 함
+            setTimeout(() => {
+                modal.classList.remove('translate-y-full');
+            }, 10);
+        }
     }
-    // 3. 팝업 닫기 (애니메이션 작동)
+
+    // 3. 팝업 닫기 (취소)
     function closeNavPrompt() {
         const modal = document.getElementById('nav-confirm-modal');
-        // 'translate-y-full' 클래스를 추가하면 -> 스르륵 내려감
-        modal.classList.add('translate-y-full');
-        
+        if (modal) {
+            modal.classList.add('translate-y-full');
+            // 애니메이션 후 스타일 초기화
+            setTimeout(() => { modal.style.transform = ''; }, 300);
+        }
         currentNavClient = null;
+        currentNavUser = null;
     }
+
+    // 4. 'T맵 실행' 버튼 클릭 시
+    async function executeNavigation() {
+        if (currentNavClient && currentNavUser) {
+            // 좌표 확인 후 실행
+            await launchTMapApp(currentNavClient, currentNavUser);
+            closeNavPrompt();
+        } else {
+            showToast("선택된 거래처 정보가 없습니다.", "error");
+        }
+    }
+
+    // 5. 안전한 T맵 실행 (좌표 없으면 찾아서 실행)
+    async function launchTMapApp(client, user) {
+        let lat, lon;
+        
+        // (A) 이미 좌표가 있으면 사용
+        if (client.coords) {
+            lat = client.coords.lat();
+            lon = client.coords.lng();
+        } 
+        // (B) 좌표가 없으면(목록에서 바로 클릭 등) 주소로 찾기
+        else {
+            try {
+                showToast("위치 정보를 확인 중입니다...", "success");
+                const markerPos = await geocodeAndSetMarker(client.address, user);
+                lat = markerPos.lat();
+                lon = markerPos.lng();
+                
+                // 찾은 좌표 저장 (다음에 또 안 찾게)
+                if(loadedClientData[user]) {
+                    const userData = loadedClientData[user].find(c => c.name === client.name);
+                    if (userData) userData.coords = markerPos;
+                }
+            } catch (e) {
+                showToast("주소 위치를 찾을 수 없습니다.", "error");
+                return;
+            }
+        }
+        // 최종 실행
+        startDirectNav(client.name, lat, lon);
+    }
+
+    // 6. URL 스키마로 앱 열기
+    function startDirectNav(name, lat, lon) {
+        const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
+        // 아이폰/안드로이드 공통 URL 스키마
+        window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
+    }
+
+    // ===============================================
+    // 🖐 [드래그 제스처] 바텀 시트 내리기 기능
+    // ===============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('nav-confirm-modal');
+        if (!modal) return;
+
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+
+        // 터치 시작
+        modal.addEventListener('touchstart', (e) => {
+            // 내용물이 아니라 헤더(손잡이) 부분을 잡았을 때만 드래그 추천 (선택사항)
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            modal.style.transition = 'none'; // 드래그 중엔 애니메이션 끄기 (빠릿하게)
+        }, { passive: true });
+
+        // 터치 이동
+        modal.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+
+            // 아래로 내릴 때만 이동
+            if (diff > 0) {
+                modal.style.transform = `translateY(${diff}px)`;
+            }
+        }, { passive: true });
+
+        // 터치 끝
+        modal.addEventListener('touchend', (e) => {
+            isDragging = false;
+            modal.style.transition = 'transform 0.3s ease-out';
+            
+            const diff = currentY - startY;
+            // 100px 이상 내렸으면 닫기, 아니면 복귀
+            if (diff > 100) {
+                closeNavPrompt();
+            } else {
+                modal.style.transform = '';
+            }
+            startY = 0;
+            currentY = 0;
+        });
+    });
     
     function openDeletePrompt(client, user) {
         deleteTargetClient = client; deleteTargetUser = user;
@@ -1256,6 +1370,7 @@
 </script>
 </body>
 </html>
+
 
 
 
