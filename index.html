@@ -69,8 +69,8 @@
       max-height: 100%; /* 내용은 많으면 스크롤 */
       
       /* [신규] 배경 및 디자인 다듬기 */
-      background-color: rgba(247, 249, 252, 0.95); /* 배경색 좀 더 진하게 (가독성 UP) */
-      backdrop-filter: blur(4px); 
+      background-color: rgba(247, 249, 252, 0.5); /* 배경색 좀 더 진하게 (가독성 UP) */
+      backdrop-filter: blur(15px); 
       z-index: 10; 
       
       /* [신규] 펼쳐졌을 때도 우측 하단 둥글게 + 패딩 추가 */
@@ -83,6 +83,7 @@
       
       /* 그림자 살짝 추가 (입체감) */
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border-right: 1px solid rgba(255, 255, 255, 0.3); /* 유리 경계선 느낌 */
     }
     #client-list-panel::-webkit-scrollbar { display: none; }
     #client-list-panel { scrollbar-width: none; }
@@ -1370,6 +1371,7 @@
 </script>
 </body>
 </html>
+
 
 
 
