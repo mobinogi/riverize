@@ -456,8 +456,89 @@
     </div>
   <span id="toast-message" class="text-sm font-bold text-gray-800 whitespace-nowrap">알림 메시지</span>
 </div>
-  <script>
-    // 1. 탭 제어 함수 (2개 탭용)
+<script>
+    // ===============================================
+    // 1. 전역 변수 및 초기 설정
+    // ===============================================
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // TMap App Key
+
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
+    let isDataLoading = false; 
+    
+    // 지도 관련 변수
+    let isMapInitialized = false;     
+    let currentMapInstance = null;
+    let currentMarker = null; 
+    let tempMarker = null;      // [최신] 등록용 임시 핀
+    let tempInfoWindow = null;  // [최신] 등록용 임시 말풍선
+
+    // 거래처 데이터 변수
+    let loadedClientData = {};       
+    let activeClientUser = null;     
+    let isPanelMinimized = false;    
+
+    const markerColors = {
+        '김원대': 'blue', 
+        '정병준': 'red'   
+    };
+
+    // ===============================================
+    // 2. 유틸리티 & UI 헬퍼 함수
+    // ===============================================
+
+    function formatDate(date) {
+      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+    
+    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
+    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
+
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
+      return "Other";
+    }
+
+    // [최신] 예쁜 토스트 알림 (기존 alert 대체)
+    let toastTimer;
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const iconEl = document.getElementById('toast-icon');
+        const msgEl = document.getElementById('toast-message');
+
+        msgEl.textContent = message;
+
+        if (type === 'success') {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+        } else {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+        }
+
+        container.classList.remove('opacity-0', '-translate-y-10'); 
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            container.classList.add('opacity-0', '-translate-y-10');
+        }, 2500);
+    }
+
+    function openSheetApp(url, targetWindow) {
+      const os = getMobileOS();
+      if (os === "iOS" || os === "Android") {
+          if (targetWindow) targetWindow.close();
+          window.location.href = url;
+      } else {
+          if (targetWindow) targetWindow.location.href = url;
+          else window.open(url, '_blank');
+      }
+    }
+    
+    // 탭 변경 함수
     function changeTab(tabName) {
       document.getElementById('tab-write').classList.remove('tab-active');
       document.getElementById('tab-review').classList.remove('tab-active');
@@ -476,800 +557,10 @@
     }
 
     // ===============================================
-    // 1. 전역 변수 및 초기 설정
-    // ===============================================
-    
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
-    
-    let reportsMap = {}; 
-    let currentYear, currentMonth;
-    let selectedDateForGeneration = null;
-    let isDataLoading = false; 
-    
-    let isMapInitialized = false;     
-    let loadedClientData = {};       
-    let activeClientUser = null;     
-    let isPanelMinimized = false;    
-
-    // T맵 관련 전역 변수
-    let currentMapInstance = null;
-    let currentMarker = null; 
-    const markerColors = {
-        '김원대': 'blue', 
-        '정병준': 'red'   
-    };
-
-    // ===============================================
-    // 2. 유틸리티 함수
+    // 3. 지도 핵심 기능 (초기화, 롱프레스, UI제어)
     // ===============================================
 
-    function formatDate(date) {
-      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
-    }
-    
-    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
-    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
-
-    function getMobileOS() {
-      const ua = navigator.userAgent;
-      if (/android/i.test(ua)) return "Android";
-      if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
-      return "Other";
-    }
-    
-/**
-     * [깃헙 전용] 모바일 앱 실행 최적화 함수
-     * 앱스 버전 코드랑 섞지 마세요! 이게 모바일에서 훨씬 잘 작동합니다.
-     */
-    function openSheetApp(url, targetWindow) {
-      const os = getMobileOS();
-      
-      // 1. 모바일(iOS/Android)인 경우: 현재 창에서 이동 (앱 실행됨)
-      if (os === "iOS" || os === "Android") {
-          // 혹시 열려있는 빈 창이 있다면 닫아버림 (깔끔하게)
-          if (targetWindow) {
-              targetWindow.close();
-          }
-          // 현재 페이지를 시트 주소로 넘겨버림 -> 폰이 알아서 앱을 띄워줌
-          window.location.href = url;
-      } 
-      
-      // 2. PC인 경우: 새 탭이나 미리 연 창에서 열기
-      else {
-          if (targetWindow) {
-              targetWindow.location.href = url;
-          } else {
-              window.open(url, '_blank');
-          }
-      }
-    }
-    
-    // ===============================================
-    // 3. T맵 통신 및 데이터 처리 함수 (Fetch API 사용)
-    // ===============================================
-
-    /**
-     * ✅ [수정] T맵 지오코딩 함수 (jQuery/$.ajax 제거, Fetch API 사용)
-     */
-    async function geocodeAndSetMarker(address, user) {
-        if (!currentMapInstance) return;
-
-        if (currentMarker) {
-            currentMarker.setMap(null);
-            currentMarker = null;
-        }
-
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
-        const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
-        
-        // TMAP API URL (Fetch용)
-        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
-
-        try {
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                 throw new Error(`API 호출 실패 (${response.status})`);
-            }
-            
-            const data = await response.json();
-            
-            const resultInfo = data.coordinateInfo;
-            if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
-                throw new Error("요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다.");
-            }
-            
-            let lon, lat;
-            const resultCoordinate = resultInfo.coordinate[0];
-            
-            if (resultCoordinate.lon && resultCoordinate.lon.length > 0) {
-                lon = resultCoordinate.lon;
-                lat = resultCoordinate.lat;
-            } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) {
-                lon = resultCoordinate.newLon;
-                lat = resultCoordinate.newLat;
-            } else {
-                throw new Error("좌표를 찾을 수 없습니다.");
-            }
-
-            const markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
-            
-            currentMarker = new Tmapv2.Marker({
-                position: markerPosition,
-                icon: markerImageUrl,
-                iconSize: new Tmapv2.Size(24, 38),
-                map: currentMapInstance,
-                title: address
-            });
-            
-            currentMapInstance.setCenter(markerPosition);
-            currentMapInstance.setZoom(15);
-            
-            console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
-            return markerPosition; // Promise<LatLng> 반환
-
-        } catch (error) {
-            console.error("Geocoding API 오류:", error);
-            throw new Error(`API 호출 실패 (${error.message})`);
-        }
-    }
-
-    /**
-     * 지도에 단일 마커를 표시하고 중앙으로 이동시키는 함수 (클라이언트 클릭 시 호출됨)
-     */
-    async function setSingleMarkerAndCenter(client, user) {
-        if (!currentMapInstance) return;
-
-        if (client.coords) {
-             const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
-            
-            if (currentMarker) { currentMarker.setMap(null); }
-            
-            currentMarker = new Tmapv2.Marker({
-                position: client.coords,
-                map: currentMapInstance,
-                title: client.name,
-                icon: markerImageUrl
-            });
-            currentMapInstance.setCenter(client.coords);
-            currentMapInstance.setZoom(15);
-            return;
-        }
-
-        try {
-            const coords = await geocodeAndSetMarker(client.address, user);
-            const userData = loadedClientData[user].find(c => c.name === client.name);
-            if (userData) {
-                userData.coords = coords; 
-            }
-        } catch(e) {
-            alert(`[마커 생성 실패] 주소: ${client.address}. 오류: ${e.message}`);
-            console.error("마커 생성 최종 실패", e);
-        }
-    }
-    
-    // ===============================================
-    // 4. UI 및 이벤트 처리 함수 (메인 로직)
-    // ===============================================
-
-    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
-      const monthKey = year + '-' + month;
-      if (reportsMap[monthKey] === 'completed') {
-        renderCalendar();
-        if (!isInitialLoad) preloadAdjacentMonths(year, month);
-        return;
-      }
-      isDataLoading = true;
-      if (!isInitialLoad) showLoader(month + '월 달력 정보를 불러오는 중...');
-      try {
-        const result = await callAppsScript('getReportFilesByMonth', { year, month });
-        if (Array.isArray(result)) {
-          result.forEach(report => { reportsMap[report.date] = report; });
-          reportsMap[monthKey] = 'completed';
-          document.getElementById('review-status').textContent = '✅ ' + month + '월 ' + result.length + '개 보고서 로딩 완료.';
-        } else { 
-          document.getElementById('review-status').textContent = '❌ 오류: ' + result.message; 
-        }
-      } finally {
-        isDataLoading = false;
-        hideLoader();
-        renderCalendar();
-        preloadAdjacentMonths(year, month);
-      }
-    }
-
-    function preloadAdjacentMonths(year, month) {
-        const prevDate = new Date(year, month - 2, 1);
-        const prevYear = prevDate.getFullYear();
-        const prevMonth = prevDate.getMonth() + 1;
-        const prevMonthKey = prevYear + '-' + prevMonth;
-        const nextDate = new Date(year, month, 1);
-        const nextYear = nextDate.getFullYear();
-        const nextMonth = nextDate.getMonth() + 1;
-        const nextMonthKey = nextYear + '-' + nextMonth;
-        if (!reportsMap[prevMonthKey]) {
-            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
-                if (Array.isArray(result)) {
-                    result.forEach(report => { reportsMap[report.date] = report; });
-                    reportsMap[prevMonthKey] = 'completed';
-                }
-            });
-        }
-        if (!reportsMap[nextMonthKey]) {
-            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
-                 if (Array.isArray(result)) {
-                    result.forEach(report => { reportsMap[report.date] = report; });
-                    reportsMap[nextMonthKey] = 'completed';
-                }
-            });
-        }
-    }
-    
-    async function changeMonth(delta) {
-      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
-      currentYear = date.getFullYear();
-      currentMonth = date.getMonth() + 1;
-      fetchReportsForMonth(currentYear, currentMonth);
-    }
-    
-    async function callAppsScript(action, params = {}) {
-      if (action === 'getTmapApiKey') {
-        console.warn("getTmapApiKey is deprecated. Key is now hardcoded.");
-        return; 
-      }
-      
-      const url = new URL(API_URL);
-      url.searchParams.set('action', action);
-      for (const key in params) {
-        url.searchParams.set(key, params[key]);
-      }
-      try {
-        const response = await fetch(url.toString(), {
-          method: 'GET'
-        });
-        if (!response.ok) {
-          throw new Error('HTTP 오류: ' + response.status);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        return {
-          status: 'error',
-          message: error.message
-        };
-      }
-    }
-    
-async function generateTodayReport() {
-      const os = getMobileOS(); // 기기 확인
-      let newWindow = null;
-
-      // 1. PC일 때만 '빈 창'을 미리 엽니다. (모바일은 금지!)
-      if (os === "Other") {
-          newWindow = window.open('', '_blank');
-      }
-      
-      showLoader('오늘 일보를 생성 중...');
-      
-      try {
-        // [수정] google.script.run 대신 callAppsScript를 사용해야 합니다!
-        const result = await callAppsScript('generate'); 
-        
-        if (result.status === 'success' && result.url) {
-          hideLoader();
-          
-          // 성공하면 앱 열기 (모바일은 여기서 앱 실행됨)
-          openSheetApp(result.url, newWindow); 
-          
-          if (new Date().getMonth() + 1 === currentMonth) {
-            fetchReportsForMonth(currentYear, currentMonth, true);
-          }
-        } else {
-          hideLoader();
-          if (newWindow) newWindow.close(); 
-          alert('보고서 생성 실패: ' + result.message);
-        }
-      } catch (error) {
-        hideLoader();
-        if (newWindow) newWindow.close(); 
-        alert('오류 발생: ' + error.message);
-      }
-    }
-    
-    async function createMonthlySummary() {
-      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
-      try {
-        const result = await callAppsScript('createSummary', {
-          year: currentYear,
-          month: currentMonth
-        });
-        if (result.status === 'success' && result.url) {
-          hideLoader();
-          openSheetApp(result.url);
-        } else {
-          hideLoader();
-          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
-        }
-      } catch (error) {
-        hideLoader();
-        alert('월별 통계 생성 오류: ' + error.message);
-      }
-    }
-    
-    function onDateClick(day, isSunday) {
-      if (isSunday) return;
-      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-      selectedDateForGeneration = formattedDate;
-      const report = reportsMap[formattedDate];
-      if (report && report.url) {
-        openSheetApp(report.url);
-      } else {
-        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
-        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
-        openModal();
-      }
-    }
-    
-    function renderCalendar() {
-      const display = document.getElementById('current-month-display');
-      if (!display) return;
-      display.textContent = currentYear + '년 ' + currentMonth + '월';
-      document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성 및 열기';
-      const container = document.getElementById('calendar-days');
-      if (!container) return;
-      container.innerHTML = '';
-      const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
-      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-      const startDayOfWeek = firstDayOfMonth.getDay();
-      const today = new Date();
-      const todayYear = today.getFullYear();
-      const todayMonth = today.getMonth() + 1;
-      const todayDay = today.getDate();
-
-      for (let i = 0; i < startDayOfWeek; i++) container.innerHTML += '<div class="p-2"></div>';
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
-        const isToday = todayYear === currentYear && todayMonth === currentMonth && todayDay === day;
-        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        const isReportExists = reportsMap[dateKey];
-        
-        let boxClasses = ['date-box'];
-        if (isSunday) {
-          boxClasses.push('sunday-date');
-        } else if (isReportExists) {
-          boxClasses.push('report-exists');
-        } else {
-          boxClasses.push('no-report');
-        }
-        
-        if (isToday && !isSunday) {
-          boxClasses.push('today-highlight');
-        }
-        
-        container.innerHTML += '<div class="p-2 flex justify-center items-center"><div class="' + boxClasses.join(' ') + '" ' + (isSunday ? '' : 'onclick="onDateClick(' + day + ', false)"') + '>' + day + '</div></div>';
-      }
-    }
-
-async function confirmGenerateReport() {
-      if (!selectedDateForGeneration) { closeModal(); return; }
-      
-      const os = getMobileOS(); 
-      let newWindow = null;
-
-      // 1. PC일 때만 '빈 창' 미리 열기
-      if (os === "Other") {
-          newWindow = window.open('', '_blank');
-      }
-
-      const dateToGenerate = selectedDateForGeneration;
-      closeModal();
-      const [year, month, day] = dateToGenerate.split('-').map(Number);
-      showLoader(year + '년 ' + month + '월 ' + day + '일 새 보고서를 생성 중...');
-      
-      try {
-        // [수정] 여기도 callAppsScript로 변경!
-        const result = await callAppsScript('generateByDate', { 
-            year: year, 
-            month: month, 
-            day: day, 
-            shouldPropagate: true 
-        });
-        
-        if (result.status === 'success' && result.url) {
-          if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
-          renderCalendar();
-          
-          openSheetApp(result.url, newWindow);
-        } else {
-          if (newWindow) newWindow.close();
-          alert('보고서 생성 실패: ' + (result.message || '알 수 없는 오류'));
-        }
-      } catch (error) {
-        if (newWindow) newWindow.close();
-        alert('보고서 생성 중 오류 발생: ' + error.message);
-      } finally {
-        hideLoader();
-      }
-    }
-    
-    // ===============================================
-    // 5. T맵/목록 UI 함수
-    // ===============================================
-
-    /**
-     * '오버레이 열기' 버튼
-     */
-     function openMapOverlay() {
-      console.log("지도 열기 버튼 클릭.");
-      document.getElementById('map-overlay').classList.remove('hidden');
-      
-      if (!isMapInitialized) {
-        console.log("맵 생성 시작...");
-        try {
-          // 1. 지도 생성
-          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          // 2. 롱프레스 기능 활성화
-          enableMapLongPress(); 
-
-          // -----------------------------------------------------------
-          // ✋ [최종 수정] 지도를 만지면 사이드바 숨기기 (DOM 직접 제어)
-          // -----------------------------------------------------------
-          // TMap 리스너 대신 HTML 엘리먼트에 직접 이벤트를 겁니다.
-          
-          const mapDiv = document.getElementById("map_overlay_content");
-
-          // (1) PC: 마우스를 누르는 순간 (mousedown)
-          mapDiv.addEventListener("mousedown", function() {
-              hideSidebarMode();
-          });
-
-          // (2) 모바일: 화면에 손이 닿는 순간 (touchstart)
-          // passive: true 옵션은 스크롤 성능 향상을 위해 권장됨
-          mapDiv.addEventListener("touchstart", function() {
-              hideSidebarMode();
-          }, { passive: true });
-
-          // (3) PC: 마우스 휠을 굴릴 때 (wheel) - 줌인/아웃 감지
-          mapDiv.addEventListener("wheel", function() {
-              hideSidebarMode();
-          }, { passive: true });
-          
-          isMapInitialized = true; 
-
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
-        }
-      }
-    }
-    
-// [수정] 롱프레스/검색 결과 트리거 (담당자 체크 로직 제거 -> 자유롭게 검색 가능)
-function onMapLongPressTrigger(lat, lon) {
-    // 1. 기존 마커/말풍선 정리
-    if (tempMarker) {
-        try { tempMarker.setMap(null); } catch (e) {}
-        tempMarker = null;
-    }
-    if (tempInfoWindow) {
-        try { tempInfoWindow.setMap(null); } catch (e) {}
-        tempInfoWindow = null;
-    }
-    
-    // 2. 파란 핀 찍기 (담당자 없어도 찍힘)
-    tempMarker = new Tmapv2.Marker({
-        position: new Tmapv2.LatLng(lat, lon),
-        icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-        map: currentMapInstance
-    });
-    
-    currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
-
-    // 3. 주소 찾고 말풍선 띄우기
-    findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
-}
-    /**
-     * '닫기' 버튼
-     */
-    function closeMapOverlay() {
-      document.getElementById('map-overlay').classList.add('hidden');
-    }
-    
-/**
-     * [수정] 목록 패널 축소/확대 (아이콘 회전 적용)
-     */
-    function togglePanelMinimize() {
-        const panel = document.getElementById('client-list-panel');
-        // const icon = document.getElementById('toggle-icon'); // 기존 코드 주석 처리
-        const iconSvg = document.getElementById('toggle-icon-svg'); // 신규 아이콘
-        
-        panel.classList.toggle('client-list-minimized');
-        isPanelMinimized = !isPanelMinimized;
-
-        // 텍스트를 바꾸는 대신, 아이콘을 180도 회전시킵니다. (훨씬 부드러움)
-        if (isPanelMinimized) {
-            // 접혔을 때: 아이콘 뒤집기 (▶ 모양처럼 됨)
-            iconSvg.style.transform = "rotate(180deg)";
-        } else {
-            // 펼쳐졌을 때: 원래대로 (◀ 모양)
-            iconSvg.style.transform = "rotate(0deg)";
-        }
-    }
-    /**
-     * 거래처 목록을 code.js에서 불러와서 메모리에 저장하는 함수
-     */
-    async function fetchClientList(user) {
-        if (loadedClientData[user]) return; 
-        
-        try {
-            const result = await callAppsScript('getClients', { user: user });
-            if (result.status === 'success' && result.clients.length > 0) {
-                loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
-            } else {
-                loadedClientData[user] = []; 
-                console.warn(`거래처 목록 로드 실패 (${user}): ${result.message || '거래처 없음'}`);
-            }
-        } catch (e) {
-            console.error(`거래처 목록 로드 오류 (${user}):`, e);
-            loadedClientData[user] = []; 
-        }
-    }
-
-// [최종 수정] 왼쪽 여백 확보 + 폰트 축소 + ...삭제
-    function displayClientList(user, clients) {
-        const container = document.getElementById('client-list-container');
-        
-        // 부모 여백 무시하고 배경은 꽉 채우기
-        container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
-        
-        if (clients.length === 0) {
-            container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
-            return;
-        }
-
-        const listUl = document.createElement('ul');
-        listUl.id = `list-${user}`;
-        listUl.className = "w-full p-0 m-0 list-none block"; 
-        
-        for (const client of clients) {
-            const li = document.createElement('li');
-            
-            // [디자인 수정]
-            // pl-7: 왼쪽 여백을 넉넉하게 줘서(약 28px) 글자가 짤리지 않게 함
-            // pr-4: 오른쪽 여백
-            li.className = 'w-full pl-5 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
-            
-            // --- 이름 영역 (6자 이상이면 흐름 - 기준 낮춤) ---
-            const isLongText = client.name.length > 7;
-            let nameHtml = '';
-            
-            if (isLongText) {
-                nameHtml = `
-                    <div class="marquee-container pointer-events-none">
-                        <div class="marquee-content do-scroll">
-                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
-                            <span class="inline-block w-8"></span>
-                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
-                        </div>
-                    </div>`;
-            } else {
-                // [수정] truncate 제거 -> ... 안 찍히고 다 나옴
-                nameHtml = `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
-            }
-
-            li.innerHTML = `
-                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
-                    ${nameHtml}
-                </div>
-
-                <div class="nav-icon-target flex-shrink-0 w-9 h-9 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
-                    </svg>
-                </div>
-            `;
-            
-            // --- 터치 로직 ---
-            let listTouchTimer;
-            let isLongPress = false;
-            let startX = 0;
-            let startY = 0;
-            let isMoved = false; 
-
-            li.addEventListener('touchstart', (e) => {
-                isLongPress = false;
-                isMoved = false; 
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                li.classList.add('bg-white/30');
-
-                listTouchTimer = setTimeout(() => {
-                    if (!isMoved) { 
-                        isLongPress = true;
-                        navigator.vibrate(50); 
-                        closeNavPrompt(); 
-                        openDeletePrompt(client, user); 
-                        li.classList.remove('bg-white/30');
-                    }
-                }, 800); 
-            }, { passive: true });
-
-            li.addEventListener('touchmove', (e) => {
-                if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
-                    isMoved = true;        
-                    clearTimeout(listTouchTimer); 
-                    li.classList.remove('bg-white/30');
-                }
-            }, { passive: true });
-
-            li.addEventListener('touchend', (e) => {
-                clearTimeout(listTouchTimer);
-                li.classList.remove('bg-white/30');
-                
-                if (isMoved || isLongPress) return;
-
-                if (e.target.closest('.nav-icon-target')) {
-                    openNavPrompt(client, user);
-                } else {
-                    showClientOnMapWithBubble(client, user);
-                }
-            }, { passive: true });
-            
-            li.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                closeNavPrompt();
-                openDeletePrompt(client, user);
-            });
-
-            listUl.appendChild(li);
-        }
-        container.innerHTML = ''; 
-        container.appendChild(listUl);
-    }
-    
-     /**
-     * [수정] 담당자 버튼 클릭 시 실행되는 함수
-     * - 기능 추가: 탭을 변경하면 기존에 열려있던 길안내 팝업을 즉시 닫습니다.
-     */
-    async function toggleClientList(user, buttonElement) {
-        // 1. [핵심] 담당자가 바뀌거나 탭을 누르면, 열려있던 팝업부터 무조건 닫습니다.
-        if (typeof closeNavPrompt === 'function') {
-            closeNavPrompt();
-        }
-
-        const container = document.getElementById('client-list-container');
-        const allButtons = document.querySelectorAll('#client-list-panel button');
-        
-        // 2. 버튼 활성화/비활성화 상태 변경
-        allButtons.forEach(btn => {
-            if (btn.id !== 'btn-toggle') {
-                 btn.classList.remove('toggle-active');
-            }
-        });
-        
-        if (activeClientUser === user) {
-            activeClientUser = null;
-            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
-            
-            // 마커도 지우기
-            if (currentMarker) {
-                currentMarker.setMap(null);
-                currentMarker = null;
-            }
-            return;
-        }
-        
-        buttonElement.classList.add('toggle-active');
-        activeClientUser = user;
-
-        // 3. 데이터 로드 및 화면 표시
-        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
-        
-        if (!loadedClientData[user]) {
-            await fetchClientList(user);
-        }
-        
-        // 4. 목록 표시
-        displayClientList(user, loadedClientData[user]);
-        
-        // 5. 목록 패널이 최소화되어 있다면 펼치기
-        if (isPanelMinimized) {
-            togglePanelMinimize();
-        }
-    }
-    
-    // ===============================================
-    // 6. 🚀 앱 시작 (시동)
-    // ===============================================
-    document.addEventListener('DOMContentLoaded', () => {
-      const today = new Date();
-      currentYear = today.getFullYear();
-      currentMonth = today.getMonth() + 1;
-      
-      document.getElementById('current-date').textContent = formatDate(today);
-      document.getElementById('generate-button').disabled = false;
-      document.getElementById('app-status').textContent = '상태: 준비 완료.';
-      
-      fetchReportsForMonth(currentYear, currentMonth, true);
-    });
-
-function openMapOverlay() {
-      console.log("지도 열기 버튼 클릭.");
-      document.getElementById('map-overlay').classList.remove('hidden');
-      
-      if (!isMapInitialized) {
-        console.log("맵 생성 시작...");
-        try {
-          // 1. 지도 생성
-          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          // =========================================================
-          // 🖱️ [지도 롱프레스 구현 - T맵 내장 이벤트 사용] 
-          // =========================================================
-          
-          let pressTimer;
-          let isLongPress = false;
-          
-          // 1. 누르기 시작 (터치 or 마우스 클릭)
-          // T맵은 'touchstart', 'mousedown' 이벤트를 따로 지원합니다.
-          const startHandler = function(e) {
-              isLongPress = false;
-              
-              // 기존 타이머 제거
-              clearTimeout(pressTimer);
-              
-              // 1초 뒤에 발동 예약
-              pressTimer = setTimeout(() => {
-                  isLongPress = true;
-                  if (navigator.vibrate) navigator.vibrate(50); // 징~
-                  
-                  // T맵이 이미 e.latLng에 정확한 좌표를 담아서 줍니다! (계산 불필요)
-                  const lat = e.latLng.lat();
-                  const lon = e.latLng.lng();
-                  
-                  // 등록 함수 호출
-                  enableMapLongPress(); 
-
-                  isMapInitialized = true;
-                  
-              }, 500); // 1초 (너무 길면 800으로 수정)
-          };
-
-          // 2. 떼거나 움직임 (취소 조건)
-          const cancelHandler = function() {
-              clearTimeout(pressTimer);
-          };
-
-          // 이벤트 연결
-          currentMapInstance.addListener("touchstart", startHandler); // 모바일 터치 시작
-          currentMapInstance.addListener("mousedown", startHandler);  // PC 클릭 시작
-          
-          currentMapInstance.addListener("touchend", cancelHandler);  // 모바일 뗌
-          currentMapInstance.addListener("mouseup", cancelHandler);   // PC 뗌
-          currentMapInstance.addListener("dragstart", cancelHandler); // 지도 드래그 시작하면 즉시 취소!
-
-          isMapInitialized = true; 
-
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
-        }
-      }
-    }
-    
+    // [최신] 중복 제거된 통합 지도 열기 함수 (사이드바 숨김 로직 포함)
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
@@ -1277,7 +568,6 @@ function openMapOverlay() {
       if (!isMapInitialized) {
         console.log("맵 생성 시작...");
         try {
-          // 1. 지도 생성
           currentMapInstance = new Tmapv2.Map("map_overlay_content", {
             center: new Tmapv2.LatLng(35.2128, 128.9806),
             width: "100%",
@@ -1285,768 +575,400 @@ function openMapOverlay() {
             zoom: 12
           });
           
-          // 👇 롱프레스 기능 활성화 (이거 한 줄이면 끝!)
-          //  enableMapLongPress(); 
+          enableMapLongPress(); 
+
+          // [최신] TMap 리스너 대신 HTML 엘리먼트에 직접 이벤트를 걸어서 사이드바 숨김을 확실하게 처리
+          const mapDiv = document.getElementById("map_overlay_content");
+          
+          // PC용
+          mapDiv.addEventListener("mousedown", () => hideSidebarMode());
+          mapDiv.addEventListener("wheel", () => hideSidebarMode(), { passive: true });
+          
+          // 모바일용 (터치)
+          mapDiv.addEventListener("touchstart", () => hideSidebarMode(), { passive: true });
 
           isMapInitialized = true; 
 
         } catch (e) {
           console.error("지도 생성 실패:", e);
+          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
         }
       }
     }
-    // ---------------------------------------------------
-    // [신규] 삭제 팝업(Delete Sheet) 제어 로직
-    // ---------------------------------------------------
-    
-    let deleteTargetClient = null;
-    let deleteTargetUser = null;
-    const deleteModal = document.getElementById('delete-confirm-modal');
 
-    // 1. 삭제 팝업 열기
-    function openDeletePrompt(client, user) {
-        deleteTargetClient = client;
-        deleteTargetUser = user;
-        
-        document.getElementById('delete-target-name').textContent = client.name;
-        
-        // 애니메이션 스르륵
-        deleteModal.classList.remove('translate-y-full');
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
     }
 
-    // 2. 삭제 팝업 닫기
-    function closeDeletePrompt() {
-        deleteModal.classList.add('translate-y-full');
-        deleteTargetClient = null;
-    }
-
-    // 3. '삭제하기' 버튼 클릭 시 실행
-    async function executeDelete() {
-        if (!deleteTargetClient || !deleteTargetUser) return;
-
-        const name = deleteTargetClient.name;
-        const user = deleteTargetUser;
-
-        // 팝업 닫고 로딩 표시
-        closeDeletePrompt();
-        showLoader("삭제 중입니다...");
-
-        try {
-            // 백엔드 호출 (deleteClient)
-            const result = await callAppsScript('deleteClient', { 
-                user: user, 
-                name: name 
-            });
-
-            if (result.status === 'success') {
-                alert("삭제되었습니다.");
-                
-                // 목록 새로고침
-                loadedClientData[user] = null; 
-                // 해당 탭 버튼 찾아서 클릭 효과(새로고침)
-                const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
-                toggleClientList(user, document.getElementById(btnId));
-                
-                // 지도에 찍힌 마커도 있으면 지우기
-                if(currentMarker) {
-                    currentMarker.setMap(null);
-                    currentMarker = null;
-                }
-
-            } else {
-                alert("삭제 실패: " + result.message);
-            }
-        } catch (e) {
-            alert("오류 발생: " + e.message);
-        } finally {
-            hideLoader();
-        }
-    }
-
-    // ---------------------------------------------------
-    // 하단 팝업(Bottom Sheet) 제어 변수 및 함수
-    // ---------------------------------------------------
-    
-    let currentNavClient = null;
-    let currentNavUser = null;
-
-    // 2. 팝업 열기 (애니메이션 작동)
-    function openNavPrompt(client, user) {
-        currentNavClient = client;
-        currentNavUser = user;
-        
-        document.getElementById('nav-target-name').textContent = client.name;
-        
-        const modal = document.getElementById('nav-confirm-modal');
-        // 'translate-y-full'(화면 아래 숨김) 클래스를 제거하면 -> 스르륵 올라옴
-        modal.classList.remove('translate-y-full');
-    }
-
-    // 3. 팝업 닫기 (애니메이션 작동)
-    function closeNavPrompt() {
-        const modal = document.getElementById('nav-confirm-modal');
-        // 'translate-y-full' 클래스를 추가하면 -> 스르륵 내려감
-        modal.classList.add('translate-y-full');
-        
-        currentNavClient = null;
-    }
-
-    // 4. '예' 버튼 클릭 시 실행
-    function executeNavigation() {
-        if (currentNavClient && currentNavUser) {
-            launchTMapApp(currentNavClient, currentNavUser);
-            closeNavPrompt();
-        }
-    }
-
-    // ---------------------------------------------------
-    // T맵 앱 실행 로직
-    // ---------------------------------------------------
-
-    /**
-     * 5. T맵 앱 실행 함수
-     */
-    async function launchTMapApp(client, user) {
-        let lat, lon;
-
-        if (client.coords) {
-            lat = client.coords.lat();
-            lon = client.coords.lng();
-        } else {
-            try {
-                // 좌표가 없으면 찾아서 가져옴
-                const markerPos = await geocodeAndSetMarker(client.address, user);
-                lat = markerPos.lat();
-                lon = markerPos.lng();
-                
-                const userData = loadedClientData[user].find(c => c.name === client.name);
-                if (userData) userData.coords = markerPos;
-
-            } catch (e) {
-                alert(`[오류] 주소를 찾을 수 없어 길안내를 시작할 수 없습니다.\n주소: ${client.address}`);
-                return;
-            }
-        }
-
-        // T맵 실행 URL (안드로이드/아이폰 공통 스키마)
-        const tmapUrl = `tmap://route?goalname=${encodeURIComponent(client.name)}&goalx=${lon}&goaly=${lat}`;
-        
-        // 앱 실행
-        window.location.href = tmapUrl;
-    }
-
-    // ===============================================
-    // [신규] 바텀 시트 드래그(Swipe Down) 제스처 처리
-    // ===============================================
-    
-    const modal = document.getElementById('nav-confirm-modal');
-    const handle = document.getElementById('drag-handle');
-    
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    // 1. 터치 시작 (손가락 댔을 때)
-    modal.addEventListener('touchstart', (e) => {
-        startY = e.touches[0].clientY;
-        isDragging = true;
-        
-        // 드래그 중에는 애니메이션(딜레이)을 잠시 끕니다. (손가락에 딱 붙어 다니게)
-        modal.style.transition = 'none';
-    }, { passive: true });
-
-    // 2. 터치 이동 (손가락 움직일 때)
-    modal.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
-        
-        currentY = e.touches[0].clientY;
-        const diff = currentY - startY;
-
-        // 아래로 내릴 때만(diff > 0) 팝업을 이동시킵니다.
-        if (diff > 0) {
-            modal.style.transform = `translateY(${diff}px)`;
-        }
-    }, { passive: true });
-
-    // 3. 터치 끝 (손가락 뗐을 때)
-    modal.addEventListener('touchend', (e) => {
-        isDragging = false;
-        modal.style.transition = 'transform 0.3s ease-out'; // 애니메이션 다시 켜기
-        
-        const diff = currentY - startY;
-        
-        // [판단] 100px 이상 내렸으면 -> "닫기"로 간주
-        if (diff > 100) {
-            closeNavPrompt();
-        } else {
-            // 조금만 내렸으면 -> 다시 원래 위치로 "팅~" 하고 복귀
-            // (단, 팝업이 열려있는 상태일 때만 복귀)
-            if (!modal.classList.contains('translate-y-full')) {
-                modal.style.transform = 'translateY(0)';
-            }
-        }
-        
-        // 변수 초기화
-        startY = 0;
-        currentY = 0;
-    });
-
-    // [기존 함수 수정] 팝업 열 때 transform 스타일 초기화가 필요함
-    const originalOpenNavPrompt = openNavPrompt; // 기존 함수 백업 (혹시 몰라서)
-    
-    // 덮어쓰기
-    openNavPrompt = function(client, user) {
-        currentNavClient = client;
-        currentNavUser = user;
-        
-        document.getElementById('nav-target-name').textContent = client.name;
-        
-        const modal = document.getElementById('nav-confirm-modal');
-        
-        // 드래그로 인해 변경된 인라인 스타일을 제거하고 클래스로 제어
-        modal.style.transform = ''; 
-        modal.style.transition = ''; // CSS에 정의된 transition 사용
-        
-        // 스르륵 올라오게 함
-        requestAnimationFrame(() => {
-            modal.classList.remove('translate-y-full');
-        });
-    }
-    
-    // [기존 함수 수정] 닫을 때도 확실하게
-    closeNavPrompt = function() {
-        const modal = document.getElementById('nav-confirm-modal');
-        modal.classList.add('translate-y-full');
-        modal.style.transform = ''; // 혹시 남아있을지 모를 인라인 스타일 제거
-        currentNavClient = null;
-    }
-    // ===============================================
-    // [신규] 지도 클릭해서 거래처 등록하기 로직
-    // ===============================================
-
-    let tempMarker = null; // 등록용 임시 마커
-
-// [최종 수정] 지도 클릭 이벤트 (담당자 체크 완전 제거)
-function onMapClick(e) {
-    const lat = e.latLng.lat();
-    const lon = e.latLng.lng();
-
-    // 담당자 체크 없이 바로 핀 찍는 함수 호출
-    onMapLongPressTrigger(lat, lon);
-}
-
-    // 2. 좌표로 주소 따오기 (T맵 API)
-    async function findAddressFromCoords(lat, lon) {
-        // 로딩 표시와 함께 모달 열기
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').textContent = '주소를 불러오는 중...';
-        document.getElementById('add-client-modal').classList.remove('hidden');
-
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님의 키
-        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
-
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data.addressInfo && data.addressInfo.fullAddress) {
-                document.getElementById('new-client-address').textContent = data.addressInfo.fullAddress;
-            } else {
-                document.getElementById('new-client-address').textContent = "주소를 찾을 수 없는 위치입니다.";
-            }
-        } catch (e) {
-            console.error(e);
-            document.getElementById('new-client-address').textContent = "주소 변환 오류";
-        }
-    }
-
-// [최종] 저장 버튼 누를 때 (여기서만 엄격하게 검사!)
-async function saveNewClient() {
-    // 1. 여기서 담당자 확인!
-    if (!activeClientUser) { 
-        showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error"); 
-        
-        // (센스) 사이드바가 닫혀있으면 열어서 선택 유도
-        const panel = document.getElementById('client-list-panel');
-        const restoreBtn = document.getElementById('btn-restore-sidebar');
-        if (panel.classList.contains('hidden')) {
-            panel.classList.remove('hidden');
-            if(restoreBtn) restoreBtn.classList.add('hidden');
-        }
-        return; 
-    }
-
-    const name = document.getElementById('new-client-name').value.trim();
-    const addressInput = document.getElementById('new-client-address');
-    const address = addressInput.value.trim() || addressInput.textContent; 
-    const user = activeClientUser;
-
-    if (!name) { showToast("상호명을 입력해주세요.", "error"); return; }
-    if (!address) { showToast("주소를 입력해주세요.", "error"); return; }
-
-    showLoader("등록 중...");
-    closeAddClientModal(); 
-
-    try {
-        const result = await callAppsScript('addNewClient', { user, name, address });
-        
-        if (result.status === 'success') {
-            showToast("등록 완료!", "success");
-            loadedClientData[user] = null; 
-            const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
-            toggleClientList(user, document.getElementById(btnId));
-            if(tempMarker) tempMarker.setMap(null); 
-        } else {
-            showToast("등록 실패: " + result.message, "error");
-        }
-    } catch(e) { 
-        showToast("오류: " + e.message, "error"); 
-    } finally { 
-        hideLoader(); 
-    }
-}
-
-// [수정] 등록 취소 (지도 위 핀/말풍선은 건드리지 않음)
-    function closeAddClientModal() {
-        // 팝업창만 숨김
-        document.getElementById('add-client-modal').classList.add('hidden');
-        
-        // [중요] tempMarker, tempInfoWindow를 지우는 코드를 모두 뺐습니다.
-        // 이제 취소해도 지도에 파란 핀과 "이 위치 등록" 말풍선이 살아있습니다.
-    }
-    // ===============================================
-    // [신규] 예쁜 토스트 알림 함수 (Alert 대체)
-    // ===============================================
-    let toastTimer;
-
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        const iconEl = document.getElementById('toast-icon');
-        const msgEl = document.getElementById('toast-message');
-
-        // 1. 메시지 설정
-        msgEl.textContent = message;
-
-        // 2. 아이콘 설정 (성공: 초록 체크 / 실패: 빨간 느낌표)
-        if (type === 'success') {
-            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
-        } else {
-            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
-        }
-
-        // 3. 애니메이션: 위에서 아래로 톡! 등장
-        container.classList.remove('opacity-0', '-translate-y-10'); 
-        
-        // 4. 기존 타이머 취소 (연타 방지)
-        if (toastTimer) clearTimeout(toastTimer);
-
-        // 5. 2.5초 뒤에 스르륵 사라짐
-        toastTimer = setTimeout(() => {
-            container.classList.add('opacity-0', '-translate-y-10');
-        }, 2500);
-    }
-    // ==================================================
-    // [신규] 지도 롱프레스(꾹 누르기) 감지 -> 거래처 등록
-    // ==================================================
-    
-    // 1. openMapOverlay 함수 안에서 호출하거나, 스크립트 로드 시 실행
-    // (하지만 map div가 생성된 뒤에 걸어야 하므로, openMapOverlay 안에 넣는 게 좋습니다.)
-    
-    // 👇 이 함수를 openMapOverlay 함수 맨 끝(닫는 괄호 앞)에 실행되게 넣으세요.
-    // ==================================================
-    // [최종] 지도 롱프레스 (강제 캡처링 + 지도 고정)
-    // ==================================================
-    // ==================================================
-    // [오류 수정] 지도 롱프레스 (screenToMap 사용)
-    // ==================================================
-    
-     function enableMapLongPress() {
-        // 설정
-        const LONG_PRESS_DURATION = 500; // 0.5초
-        const MOVE_THRESHOLD = 20; // 20px (손떨림 허용 범위)
-        
+    // [최신] 롱프레스 활성화 함수
+    function enableMapLongPress() {
+        const LONG_PRESS_DURATION = 500;
+        const MOVE_THRESHOLD = 20;
         let pressTimer;
         let startPixel = null;
         let startLatLng = null;
 
-        // 타이머 취소 함수
-        const stopTimer = () => {
-            if (pressTimer) {
-                clearTimeout(pressTimer);
-                pressTimer = null;
-            }
-        };
+        const stopTimer = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
 
-        // [1] 터치/클릭 시작
         const onStart = (e) => {
-            // TMap 이벤트(e)에는 이미 좌표가 들어있습니다! (변환 불필요)
             if (!e.pixel || !e.latLng) return;
-
-            // 초기화
             stopTimer();
-            startPixel = e.pixel;     // 시작 화면 좌표 (손떨림 계산용)
-            startLatLng = e.latLng;   // 시작 지도 좌표 (등록용)
-            
-            // 타이머 시작
+            startPixel = e.pixel;
+            startLatLng = e.latLng;
             pressTimer = setTimeout(() => {
-                // 진동 피드백
                 if (navigator.vibrate) navigator.vibrate(50);
-                
-                // ★ 저장해둔 좌표로 바로 실행! (함수 호출 안 함) ★
+                // 좌표만 넘겨서 처리 (중복 호출 방지)
                 onMapLongPressTrigger(startLatLng.lat(), startLatLng.lng());
-                
             }, LONG_PRESS_DURATION);
         };
 
-        // [2] 움직임 (손떨림 계산)
         const onMove = (e) => {
             if (!pressTimer || !startPixel || !e.pixel) return;
-
-            // 시작점과 현재점의 거리 계산
-            if (Math.abs(e.pixel.x - startPixel.x) > MOVE_THRESHOLD || 
-                Math.abs(e.pixel.y - startPixel.y) > MOVE_THRESHOLD) {
-                stopTimer(); // 20px 이상 움직이면 취소
+            if (Math.abs(e.pixel.x - startPixel.x) > MOVE_THRESHOLD || Math.abs(e.pixel.y - startPixel.y) > MOVE_THRESHOLD) {
+                stopTimer();
             }
         };
 
-        // [3] 끝남 (손 뗌)
-        const onEnd = () => {
-            stopTimer();
-        };
+        const onEnd = () => stopTimer();
 
-        // -------------------------------------------------
-        // TMap 자체 리스너 연결 (좌표를 받기 위함)
-        // -------------------------------------------------
-        
-        // 모바일 터치
+        // TMap 이벤트 연결
         currentMapInstance.addListener("touchstart", onStart);
         currentMapInstance.addListener("touchmove", onMove);
         currentMapInstance.addListener("touchend", onEnd);
-        
-        // PC 마우스
         currentMapInstance.addListener("mousedown", onStart);
         currentMapInstance.addListener("mousemove", onMove);
         currentMapInstance.addListener("mouseup", onEnd);
-        
-        // 지도가 드래그되면 즉시 취소 (안전장치)
         currentMapInstance.addListener("dragstart", onEnd);
     }
-    // [실행 로직]
-    function triggerLongPressAction(clientX, clientY, mapElement) {
-        if (!activeClientUser) {
-            showToast("담당자(김원대/정병준)를 먼저 선택해주세요.", "error");
-            return;
-        }
 
-        const rect = mapElement.getBoundingClientRect();
-        const relativeX = clientX - rect.left;
-        const relativeY = clientY - rect.top;
+    // [최신] 롱프레스/클릭/검색 시 실행되는 트리거 (담당자 체크 로직 제거됨)
+    function onMapLongPressTrigger(lat, lon) {
+        // 기존 마커/말풍선 안전하게 정리
+        if (tempMarker) { try { tempMarker.setMap(null); } catch (e) {} tempMarker = null; }
+        if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch (e) {} tempInfoWindow = null; }
         
-        const pixel = new Tmapv2.Point(relativeX, relativeY);
-        const latLng = currentMapInstance.fromPixelToLatLng(pixel);
-        
-        if (tempMarker) tempMarker.setMap(null);
-        
-        tempMarker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(latLng.lat(), latLng.lng()),
-            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-            map: currentMapInstance
-        });
-
-        findAddressFromCoords(latLng.lat(), latLng.lng());
-    }
-    // =========================================================
-    // [업그레이드] 롱프레스 -> 핀+말풍선 -> 등록 팝업
-    // =========================================================
-
-    let tempInfoWindow = null; // 말풍선 변수
-
-
-// [최종 수정] 롱프레스/검색 결과 트리거 (담당자 체크 완전 제거)
-function onMapLongPressTrigger(lat, lon) {
-    // 1. 기존 마커/말풍선 정리 (변수 초기화 포함)
-    if (tempMarker) {
-        try { tempMarker.setMap(null); } catch (e) {}
-        tempMarker = null;
-    }
-    if (tempInfoWindow) {
-        try { tempInfoWindow.setMap(null); } catch (e) {}
-        tempInfoWindow = null;
-    }
-    
-    // 2. 파란 핀 찍기 (담당자 선택 안 해도 찍힘!)
-    tempMarker = new Tmapv2.Marker({
-        position: new Tmapv2.LatLng(lat, lon),
-        icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
-        map: currentMapInstance
-    });
-    
-    currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
-
-    // 3. 주소 찾고 말풍선 띄우기
-    // 여기서 'register' 모드로 띄우지만, 버튼 누르기 전까진 아무 검사도 안 함
-    findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
-}
-
-    // 2. 주소 찾아서 말풍선 띄우기 (핵심 기능!)
-    async function findAddressAndShowBubble(lat, lon) {
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // 님 API 키
-        const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
-
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            let fullAddress = "주소 미상";
-
-            if (data.addressInfo && data.addressInfo.fullAddress) {
-                fullAddress = data.addressInfo.fullAddress;
-            }
-
-            // ---------------------------------------------------------
-            // [디자인] 말풍선 안에 들어갈 HTML을 여기서 만듭니다.
-            // ---------------------------------------------------------
-            const content = `
-                <div style="
-                    padding: 12px 16px; 
-                    background: white; 
-                    border-radius: 12px; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                    text-align: center; 
-                    min-width: 200px;
-                    font-family: 'Inter', sans-serif;">
-                    
-                    <p style="
-                        font-size: 13px; 
-                        color: #4b5563; 
-                        margin: 0 0 8px 0; 
-                        font-weight: 600;
-                        word-break: keep-all;">
-                        ${fullAddress}
-                    </p>
-                    
-                    <button onclick="openRegistrationModal('${fullAddress}')" style="
-                        background: #10b981; 
-                        color: white; 
-                        border: none; 
-                        padding: 8px 16px; 
-                        border-radius: 8px; 
-                        font-size: 13px; 
-                        font-weight: bold; 
-                        cursor: pointer; 
-                        width: 100%;
-                        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
-                        이 위치 등록하기
-                    </button>
-                </div>
-            `;
-
-            // T맵 InfoWindow 생성
-            tempInfoWindow = new Tmapv2.InfoWindow({
-                position: new Tmapv2.LatLng(lat, lon),
-                content: content, // 위에서 만든 예쁜 HTML
-                type: 2, // 2번 타입 (커스텀 팝업)
-                map: currentMapInstance,
-                border: '0px solid white', // 기본 테두리 제거 (우리가 만든 div가 테두리 역할)
-                background: false // 투명 배경
-            });
-
-        } catch (e) {
-            console.error(e);
-            showToast("주소를 불러오지 못했습니다.", "error");
-        }
-    }
-
-    // 3. 진짜 등록 팝업 열기 (말풍선의 버튼을 눌렀을 때 실행됨)
-    function openRegistrationModal(address) {
-        // 말풍선은 이제 닫아도 됨
-        if (tempInfoWindow) tempInfoWindow.setMap(null);
-
-        // 입력창 초기화 및 열기
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').textContent = address;
-        
-        document.getElementById('add-client-modal').classList.remove('hidden');
-        
-        // 이름 입력창에 바로 포커스 줌 (편의성)
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
-// [최종 완성] 말풍선 띄우기 (터치/클릭 완벽 제어 + 에러 방지)
-async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
-    const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-    
-    let markerPoint;
-    try {
-        markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon));
-    } catch (e) { return; }
-    
-    const mapDiv = document.getElementById("map_overlay_content");
-    const isTop = markerPoint.y < 220;
-    const isLeft = markerPoint.x < 160;
-    const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
-
-    let displayName = title || "위치 정보"; 
-    let displayAddress = address; 
-
-    // 주소 미상일 때 검색
-    if (!displayAddress) {
-        try {
-            const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${appKey}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data.addressInfo) {
-                const info = data.addressInfo;
-                if (info.roadName) displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
-                else displayAddress = info.fullAddress.split(",")[0];
-            }
-        } catch (e) { displayAddress = "주소 정보 없음"; }
-    }
-
-    // -----------------------------------------------------------
-    // 🔘 [버튼 로직] 이벤트 전파 차단(stopPropagation) 풀세트 적용
-    // -----------------------------------------------------------
-    let buttonHtml = "";
-    
-    if (mode === 'navigate') {
-        const safeName = displayName.replace(/'/g, "").replace(/"/g, "");
-        buttonHtml = `
-            <div style="margin-top: 8px;">
-                <button 
-                    onclick="startDirectNav('${safeName}', ${lat}, ${lon})" 
-                    ontouchstart="event.stopPropagation();" 
-                    ontouchend="event.stopPropagation();"
-                    onmousedown="event.stopPropagation();"
-                    onmouseup="event.stopPropagation();"
-                    style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-                    T맵 길안내
-                </button>
-            </div>
-        `;
-    } 
-    else if (mode === 'register') {
-        buttonHtml = `
-            <div style="margin-top: 8px;">
-                <button 
-                    onclick="openRegistrationModal('${displayAddress}')" 
-                    ontouchstart="event.stopPropagation();" 
-                    ontouchend="event.stopPropagation();"
-                    onmousedown="event.stopPropagation();"
-                    onmouseup="event.stopPropagation();"
-                    style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">
-                    이 위치 등록
-                </button>
-            </div>
-        `;
-    }
-
-    // 말풍선 위치 스타일
-    let boxStyle = ""; let tailStyle = ""; 
-    if (isTop) {
-        boxStyle += "top: 10px; "; 
-        tailStyle += "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
-    } else {
-        boxStyle += "bottom: 45px; "; 
-        tailStyle += "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
-    }
-
-    if (isLeft) { boxStyle += "left: 0px; transform: none;"; tailStyle += "left: 22px; transform: translateX(-50%);"; }
-    else if (isRight) { boxStyle += "right: 0px; transform: none;"; tailStyle += "right: 22px; transform: translateX(50%);"; }
-    else { boxStyle += "left: 50%; transform: translateX(-50%);"; tailStyle += "left: 50%; transform: translateX(-50%);"; }
-
-    const content = `
-        <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
-            <div style="background: white; border-radius: 12px; padding: 12px 14px; text-align: center; min-width: 160px; max-width: 240px;">
-                <p style="font-size: 14px; color: #111827; margin: 0 0 2px 0; font-weight: 800; word-break: keep-all; line-height: 1.4;">${displayName}</p>
-                <p style="font-size: 12px; color: #6b7280; margin: 0; font-weight: 500; word-break: keep-all;">${displayAddress}</p>
-                ${buttonHtml}
-            </div>
-            <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
-        </div>`;
-
-    if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch(e) {} }
-    
-    tempInfoWindow = new Tmapv2.InfoWindow({
-        position: new Tmapv2.LatLng(lat, lon),
-        content: content, 
-        type: 2, 
-        map: currentMapInstance, 
-        border: '0px solid white', 
-        background: false 
-    });
-}
-
-    // ===============================================
-    // [신규] 수동 거래처 추가 (플로팅 버튼용)
-    // ===============================================
-
-   // [최종 수정] 수동 추가 버튼 (일단 팝업은 열리게 허용)
-  function openManualAddModal() {
-    // 입력창 초기화
-    document.getElementById('new-client-name').value = '';
-    document.getElementById('new-client-address').value = ''; 
-    
-    // 팝업 열기
-    document.getElementById('add-client-modal').classList.remove('hidden');
-    
-    // 상호명에 포커스
-    setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-}
-  
-    // 2. [목록 클릭용] 지도 이동 + 말풍선 띄우기
-   async function showClientOnMapWithBubble(client, user) {
-    openMapOverlay();
-    
-    try {
-        // 주소 -> 좌표 변환
-        const markerPos = await geocodeAndSetMarker(client.address, user);
-        const lat = parseFloat(markerPos.lat());
-        const lon = parseFloat(markerPos.lng());
-
-        // 지도 이동 & 중앙 보정 (사이드바 고려하여 살짝 옆으로 이동)
-        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
-        currentMapInstance.setZoom(16); 
-        currentMapInstance.panBy(120, 0); 
-
-        // 마커 찍기 (기존 임시 마커 제거 후)
-        if (tempMarker) tempMarker.setMap(null);
-        
+        // 파란 핀 찍기
         tempMarker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(lat, lon),
             icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
             map: currentMapInstance
         });
-
-        // ★ [핵심 수정] 인자 순서: (위도, 경도, 상호명, 주소, 버튼표시여부=false)
-        // 상호명(client.name)과 주소(client.address)를 그대로 넘기고, 버튼은 숨깁니다.
-        findAddressAndShowBubble(lat, lon, client.name, client.address, 'navigate');
         
-    } catch (e) {
-        console.error("지도 이동 오류:", e);
-        showToast("위치 정보를 불러오는데 실패했습니다.", "error");
+        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+        // 등록 모드로 말풍선 띄우기
+        findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
     }
-}
-    // =========================================================
-    // [신규] 지도 상단 검색바 기능
-    // =========================================================
+
+    // 지도 클릭 시에도 롱프레스와 동일하게 작동
+    function onMapClick(e) {
+        onMapLongPressTrigger(e.latLng.lat(), e.latLng.lng());
+    }
+
+    // ===============================================
+    // 4. 주소 검색 및 말풍선 (등록/길안내)
+    // ===============================================
+
+    // [최신] 말풍선 띄우기 (인자 5개, 버튼 터치 씹힘 방지 적용됨)
+    async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
+        let markerPoint;
+        try { markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon)); } catch (e) { return; }
+        
+        const mapDiv = document.getElementById("map_overlay_content");
+        const isTop = markerPoint.y < 220;
+        const isLeft = markerPoint.x < 160;
+        const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
+
+        let displayName = title || "위치 정보"; 
+        let displayAddress = address; 
+
+        if (!displayAddress) {
+            try {
+                const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${APP_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.addressInfo) {
+                    const info = data.addressInfo;
+                    if (info.roadName) displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
+                    else displayAddress = info.fullAddress.split(",")[0];
+                }
+            } catch (e) { displayAddress = "주소 정보 없음"; }
+        }
+
+        let buttonHtml = "";
+        // [중요] 모바일 터치 이벤트 전파 방지(stopPropagation) 적용
+        if (mode === 'navigate') {
+            const safeName = displayName.replace(/'/g, "").replace(/"/g, "");
+            buttonHtml = `
+                <div style="margin-top: 8px;">
+                    <button onclick="startDirectNav('${safeName}', ${lat}, ${lon})" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();" onmousedown="event.stopPropagation();" onmouseup="event.stopPropagation();" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>T맵 길안내
+                    </button>
+                </div>`;
+        } else if (mode === 'register') {
+            buttonHtml = `
+                <div style="margin-top: 8px;">
+                    <button onclick="openRegistrationModal('${displayAddress}')" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();" onmousedown="event.stopPropagation();" onmouseup="event.stopPropagation();" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">이 위치 등록</button>
+                </div>`;
+        }
+
+        let boxStyle = isTop ? "top: 10px;" : "bottom: 45px;";
+        let tailStyle = isTop ? "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;" : "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+        
+        if (isLeft) { boxStyle += " left: 0px;"; tailStyle += " left: 22px; transform: translateX(-50%);"; }
+        else if (isRight) { boxStyle += " right: 0px;"; tailStyle += " right: 22px; transform: translateX(50%);"; }
+        else { boxStyle += " left: 50%; transform: translateX(-50%);"; tailStyle += " left: 50%; transform: translateX(-50%);"; }
+
+        const content = `
+            <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
+                <div style="background: white; border-radius: 12px; padding: 12px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                    <p style="font-size: 14px; color: #111827; margin: 0 0 2px 0; font-weight: 800; word-break: keep-all; line-height: 1.4;">${displayName}</p>
+                    <p style="font-size: 12px; color: #6b7280; margin: 0; font-weight: 500; word-break: keep-all;">${displayAddress}</p>
+                    ${buttonHtml}
+                </div>
+                <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
+            </div>`;
+
+        if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch(e) {} }
+        
+        tempInfoWindow = new Tmapv2.InfoWindow({
+            position: new Tmapv2.LatLng(lat, lon),
+            content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
+        });
+    }
+
+    // ===============================================
+    // 5. 사이드바 및 거래처 목록 제어
+    // ===============================================
+
+    // [최신] 아이콘 회전 기능 포함
+    function togglePanelMinimize() {
+        const panel = document.getElementById('client-list-panel');
+        const iconSvg = document.getElementById('toggle-icon-svg');
+        panel.classList.toggle('client-list-minimized');
+        isPanelMinimized = !isPanelMinimized;
+        iconSvg.style.transform = isPanelMinimized ? "rotate(180deg)" : "rotate(0deg)";
+    }
+
+    // [최신] 사이드바 숨김 공통 함수
+    function hideSidebarMode() {
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        if (panel && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+            if (restoreBtn) restoreBtn.classList.remove('hidden');
+        }
+    }
+
+    // [최신] 사이드바 복구 함수
+    function restoreSidebar() {
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        panel.classList.remove('hidden');
+        restoreBtn.classList.add('hidden');
+    }
+
+    async function toggleClientList(user, buttonElement) {
+        if (typeof closeNavPrompt === 'function') closeNavPrompt();
+        
+        const container = document.getElementById('client-list-container');
+        const allButtons = document.querySelectorAll('#client-list-panel button');
+        allButtons.forEach(btn => { if (btn.id !== 'btn-toggle') btn.classList.remove('toggle-active'); });
+        
+        if (activeClientUser === user) {
+            activeClientUser = null;
+            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+            if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+            return;
+        }
+        
+        buttonElement.classList.add('toggle-active');
+        activeClientUser = user;
+        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
+        
+        if (!loadedClientData[user]) await fetchClientList(user);
+        displayClientList(user, loadedClientData[user]);
+        if (isPanelMinimized) togglePanelMinimize();
+    }
+
+    async function fetchClientList(user) {
+        try {
+            const result = await callAppsScript('getClients', { user: user });
+            if (result.status === 'success' && result.clients.length > 0) {
+                loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
+            } else { loadedClientData[user] = []; }
+        } catch (e) { loadedClientData[user] = []; }
+    }
+
+    function displayClientList(user, clients) {
+        const container = document.getElementById('client-list-container');
+        container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
+        
+        if (clients.length === 0) { container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다.</p>`; return; }
+
+        const listUl = document.createElement('ul');
+        listUl.className = "w-full p-0 m-0 list-none block"; 
+        
+        for (const client of clients) {
+            const li = document.createElement('li');
+            li.className = 'w-full pl-5 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
+            
+            // 흐르는 텍스트 (marquee) 로직
+            const isLongText = client.name.length > 7;
+            const nameHtml = isLongText ? 
+                `<div class="marquee-container pointer-events-none"><div class="marquee-content do-scroll"><span class="text-sm font-bold text-gray-900">${client.name}</span><span class="inline-block w-8"></span><span class="text-sm font-bold text-gray-900">${client.name}</span></div></div>` :
+                `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
+
+            li.innerHTML = `
+                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">${nameHtml}</div>
+                <div class="nav-icon-target flex-shrink-0 w-9 h-9 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" /></svg>
+                </div>`;
+            
+            // 터치 이벤트 연결
+            let listTouchTimer, isLongPress = false, startX = 0, startY = 0, isMoved = false; 
+            li.addEventListener('touchstart', (e) => { isLongPress = false; isMoved = false; startX = e.touches[0].clientX; startY = e.touches[0].clientY; li.classList.add('bg-white/30'); listTouchTimer = setTimeout(() => { if (!isMoved) { isLongPress = true; navigator.vibrate(50); closeNavPrompt(); openDeletePrompt(client, user); li.classList.remove('bg-white/30'); } }, 800); }, { passive: true });
+            li.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) { isMoved = true; clearTimeout(listTouchTimer); li.classList.remove('bg-white/30'); } }, { passive: true });
+            li.addEventListener('touchend', (e) => { clearTimeout(listTouchTimer); li.classList.remove('bg-white/30'); if (isMoved || isLongPress) return; if (e.target.closest('.nav-icon-target')) openNavPrompt(client, user); else showClientOnMapWithBubble(client, user); }, { passive: true });
+            listUl.appendChild(li);
+        }
+        container.innerHTML = ''; container.appendChild(listUl);
+    }
+
+    async function showClientOnMapWithBubble(client, user) {
+        openMapOverlay();
+        try {
+            const markerPos = await geocodeAndSetMarker(client.address, user);
+            const lat = parseFloat(markerPos.lat());
+            const lon = parseFloat(markerPos.lng());
+            currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+            currentMapInstance.setZoom(16); 
+            currentMapInstance.panBy(120, 0); 
+            if (tempMarker) tempMarker.setMap(null);
+            tempMarker = new Tmapv2.Marker({ position: new Tmapv2.LatLng(lat, lon), icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", map: currentMapInstance });
+            findAddressAndShowBubble(lat, lon, client.name, client.address, 'navigate');
+        } catch (e) { showToast("위치 정보 로드 실패", "error"); }
+    }
+
+    // ===============================================
+    // 6. 거래처 추가 / 삭제 / 길안내 (모달 로직)
+    // ===============================================
+
+    // [최신] 플로팅 버튼용
+    function openManualAddModal() {
+        // 일단 열리게 허용 (등록할 때만 체크함)
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = ''; 
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
+
+    // [최신] 말풍선 등록 버튼용 (말풍선 유지)
+    function openRegistrationModal(address) {
+        if (!activeClientUser) { 
+            showToast("담당자를 선택해주세요.", "error"); 
+            const panel = document.getElementById('client-list-panel');
+            if (panel.classList.contains('hidden')) restoreSidebar();
+            return; 
+        }
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = address; 
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
+
+    function closeAddClientModal() {
+        document.getElementById('add-client-modal').classList.add('hidden');
+    }
+
+    // [최신] 저장 버튼 (여기서 담당자 필수 체크)
+    async function saveNewClient() {
+        if (!activeClientUser) { showToast("담당자 선택 필요", "error"); return; }
+        const name = document.getElementById('new-client-name').value.trim();
+        const address = document.getElementById('new-client-address').value.trim() || document.getElementById('new-client-address').textContent; 
+        const user = activeClientUser;
+
+        if (!name) { showToast("상호명 입력 필요", "error"); return; }
+        if (!address) { showToast("주소 입력 필요", "error"); return; }
+
+        showLoader("등록 중...");
+        closeAddClientModal(); 
+
+        try {
+            const result = await callAppsScript('addNewClient', { user, name, address });
+            if (result.status === 'success') {
+                showToast("등록 완료!", "success");
+                loadedClientData[user] = null; 
+                toggleClientList(user, user === '김원대' ? document.getElementById('btn-kim') : document.getElementById('btn-jung'));
+                if(tempMarker) tempMarker.setMap(null); 
+            } else { showToast("등록 실패: " + result.message, "error"); }
+        } catch(e) { showToast("오류: " + e.message, "error"); } finally { hideLoader(); }
+    }
+
+    // [최신] 길안내 실행 함수
+    function startDirectNav(name, lat, lon) {
+        const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
+        window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
+    }
+
+    function executeNavigation() {
+        if (currentNavClient && currentNavUser) {
+            startDirectNav(currentNavClient.name, currentNavClient.coords.lat(), currentNavClient.coords.lng());
+            closeNavPrompt();
+        }
+    }
+
+    // 팝업 변수 및 함수
+    let currentNavClient = null, currentNavUser = null;
+    let deleteTargetClient = null, deleteTargetUser = null;
+
+    function openNavPrompt(client, user) {
+        currentNavClient = client; currentNavUser = user;
+        document.getElementById('nav-target-name').textContent = client.name;
+        document.getElementById('nav-confirm-modal').classList.remove('translate-y-full');
+    }
+    function closeNavPrompt() {
+        document.getElementById('nav-confirm-modal').classList.add('translate-y-full');
+        currentNavClient = null;
+    }
+    
+    function openDeletePrompt(client, user) {
+        deleteTargetClient = client; deleteTargetUser = user;
+        document.getElementById('delete-target-name').textContent = client.name;
+        document.getElementById('delete-confirm-modal').classList.remove('translate-y-full');
+    }
+    function closeDeletePrompt() {
+        document.getElementById('delete-confirm-modal').classList.add('translate-y-full');
+        deleteTargetClient = null;
+    }
+
+    async function executeDelete() {
+        if (!deleteTargetClient || !deleteTargetUser) return;
+        const name = deleteTargetClient.name, user = deleteTargetUser;
+        closeDeletePrompt(); showLoader("삭제 중...");
+        try {
+            const result = await callAppsScript('deleteClient', { user, name });
+            if (result.status === 'success') {
+                showToast("삭제되었습니다.", "success");
+                loadedClientData[user] = null; 
+                toggleClientList(user, user === '김원대' ? document.getElementById('btn-kim') : document.getElementById('btn-jung'));
+                if(currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+            } else { showToast("삭제 실패", "error"); }
+        } catch (e) { showToast("오류 발생", "error"); } finally { hideLoader(); }
+    }
+
+    // ===============================================
+    // 7. 검색 및 지오코딩 API
+    // ===============================================
+
     async function searchMapLocation() {
         const searchInput = document.getElementById('map-search-input');
         const query = searchInput.value.trim();
-        
-        if (!query) {
-            showToast("검색어를 입력해주세요.", "error");
-            return;
-        }
+        if (!query) { showToast("검색어 입력 필요", "error"); return; }
+        searchInput.blur(); showToast("검색 중...", "success");
 
-        searchInput.blur(); // 키보드 내리기
-        showToast("위치 검색 중...", "success"); // 잠시 로딩 느낌
-
-        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; 
-        
         try {
-            // T맵 통합 검색 (명칭, 주소 모두 가능)
             const encodedQuery = encodeURIComponent(query);
-            const url = `https://apis.openapi.sk.com/tmap/pois?version=1&format=json&callback=result&appKey=${appKey}&searchKeyword=${encodedQuery}&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1`;
-            
+            const url = `https://apis.openapi.sk.com/tmap/pois?version=1&format=json&callback=result&appKey=${APP_KEY}&searchKeyword=${encodedQuery}&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1`;
             const response = await fetch(url);
             const data = await response.json();
             
@@ -2054,170 +976,150 @@ async function findAddressAndShowBubble(lat, lon, title, address, mode = 'regist
                 const poi = data.searchPoiInfo.pois.poi[0];
                 const lat = parseFloat(poi.noorLat);
                 const lon = parseFloat(poi.noorLon);
-                
-                // 1. 지도 이동
-                const position = new Tmapv2.LatLng(lat, lon);
-                currentMapInstance.setCenter(position);
-                currentMapInstance.setZoom(16);
-                
-                // 2. 핀 찍고 말풍선 띄우기 (기존 로직 재활용!)
-                // 이게 실행되면 파란 핀과 함께 "이 위치 등록하기" 말풍선이 뜹니다.
                 onMapLongPressTrigger(lat, lon);
-                
-                // 입력창 비우기 (선택사항)
-                // searchInput.value = ''; 
-                
-            } else {
-                showToast("검색 결과를 찾을 수 없습니다.", "error");
-            }
-        } catch (e) {
-            console.error(e);
-            showToast("검색 중 오류가 발생했습니다.", "error");
-        }
-    }
-   
-    // ==========================================================================
-    // 4. [데이터 처리] 등록, 삭제, 수동 추가 (이게 없어서 에러 났음!)
-    // ==========================================================================
-    
-    // 1. [+ 거래처 추가] 플로팅 버튼용
-    function openManualAddModal() {
-        if (!activeClientUser) { showToast("담당자를 선택해주세요.", "error"); return; }
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').value = ''; 
-        document.getElementById('add-client-modal').classList.remove('hidden');
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+            } else { showToast("결과 없음", "error"); }
+        } catch (e) { showToast("검색 오류", "error"); }
     }
 
-    // ==========================================================================
-    // 4. [필수] 말풍선 버튼이 찾는 함수들 (이게 없어서 오류 난 겁니다!)
-    // ==========================================================================
-
-    // [1] 말풍선 안의 "이 위치 등록" 버튼을 누르면 실행되는 함수
-// [수정] 등록 팝업 열기 (말풍선 유지)
-    function openRegistrationModal(address) {
-        // [삭제됨] if (tempInfoWindow) tempInfoWindow.setMap(null); 
-        // 👆 이제 팝업이 열려도 뒤에 말풍선이 그대로 남아있습니다.
-
-        document.getElementById('new-client-name').value = '';
-        document.getElementById('new-client-address').value = address; 
-        document.getElementById('add-client-modal').classList.remove('hidden');
+    async function geocodeAndSetMarker(address, user) {
+        if (!currentMapInstance) return;
+        if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
         
-        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
-    }
-    // [2] 팝업창의 "등록하기" 버튼을 누르면 실행되는 함수 (저장 로직)
-    async function saveNewClient() {
-        const name = document.getElementById('new-client-name').value.trim();
-        const addressInput = document.getElementById('new-client-address');
-        const address = addressInput.value.trim() || addressInput.textContent; 
-        const user = activeClientUser;
-
-        if (!name) { showToast("상호명을 입력해주세요.", "error"); return; }
-        if (!address) { showToast("주소를 입력해주세요.", "error"); return; }
-
-        showLoader("등록 중...");
-        closeAddClientModal(); // 팝업 닫기
-
+        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${APP_KEY}`;
         try {
-            // 여기서 Google Apps Script로 데이터를 보냅니다
-            const result = await callAppsScript('addNewClient', { user, name, address });
+            const response = await fetch(url);
+            const data = await response.json();
+            const info = data.coordinateInfo;
+            if (!info || !info.coordinate || info.coordinate.length === 0) throw new Error("좌표 없음");
             
-            if (result.status === 'success') {
-                showToast("등록 완료!", "success");
-                
-                // 목록 새로고침
-                loadedClientData[user] = null; 
-                const btnId = (user === '김원대') ? 'btn-kim' : 'btn-jung';
-                toggleClientList(user, document.getElementById(btnId));
-                
-                // 지도에 임시로 찍은 핀 제거
-                if(tempMarker) tempMarker.setMap(null); 
-            } else {
-                showToast("등록 실패: " + result.message, "error");
-            }
-        } catch(e) { 
-            showToast("오류: " + e.message, "error"); 
-        } finally { 
-            hideLoader(); 
-        }
-    }
-    // 4. [삭제하기] 최종 삭제
-    async function executeDelete() {
-        if (!deleteTargetClient || !deleteTargetUser) return;
-        const name = deleteTargetClient.name;
-        const user = deleteTargetUser;
-        
-        closeDeletePrompt();
-        showLoader("삭제 중...");
+            let lat, lon;
+            if (info.coordinate[0].lat) { lat = info.coordinate[0].lat; lon = info.coordinate[0].lon; }
+            else { lat = info.coordinate[0].newLat; lon = info.coordinate[0].newLon; }
 
+            const pos = new Tmapv2.LatLng(Number(lat), Number(lon));
+            const iconUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+            currentMarker = new Tmapv2.Marker({ position: pos, icon: iconUrl, map: currentMapInstance });
+            currentMapInstance.setCenter(pos);
+            return pos;
+        } catch (e) { throw e; }
+    }
+
+    // ===============================================
+    // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
+    // ===============================================
+
+    async function callAppsScript(action, params = {}) {
+        const url = new URL(API_URL);
+        url.searchParams.set('action', action);
+        for (const key in params) url.searchParams.set(key, params[key]);
+        const response = await fetch(url.toString());
+        return await response.json();
+    }
+
+    async function generateTodayReport() {
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        showLoader('일보 생성 중...');
         try {
-            const result = await callAppsScript('deleteClient', { user, name });
+            const result = await callAppsScript('generate'); 
+            if (result.status === 'success' && result.url) {
+                openSheetApp(result.url, newWindow); 
+                if (new Date().getMonth() + 1 === currentMonth) fetchReportsForMonth(currentYear, currentMonth, true);
+            } else { if(newWindow) newWindow.close(); alert('실패: ' + result.message); }
+        } catch (e) { if(newWindow) newWindow.close(); alert('오류: ' + e.message); } finally { hideLoader(); }
+    }
+
+    async function createMonthlySummary() {
+        showLoader('월별 통계 생성 중...');
+        try {
+            const result = await callAppsScript('createSummary', { year: currentYear, month: currentMonth });
+            if (result.status === 'success' && result.url) openSheetApp(result.url);
+            else alert('실패');
+        } catch (e) { alert('오류'); } finally { hideLoader(); }
+    }
+
+    async function confirmGenerateReport() {
+        if (!selectedDateForGeneration) { closeModal(); return; }
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        const [year, month, day] = selectedDateForGeneration.split('-').map(Number);
+        closeModal(); showLoader('보고서 생성 중...');
+        try {
+            const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
             if (result.status === 'success') {
-                showToast("삭제되었습니다.", "success");
-                loadedClientData[user] = null; 
-                toggleClientList(user, document.getElementById(user === '김원대' ? 'btn-kim' : 'btn-jung'));
-                if(currentMarker) { currentMarker.setMap(null); currentMarker = null; }
-            } else {
-                showToast("삭제 실패: " + result.message, "error");
-            }
-        } catch (e) { showToast("오류: " + e.message, "error"); } finally { hideLoader(); }
+                if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
+                renderCalendar();
+                openSheetApp(result.url, newWindow);
+            } else { if(newWindow) newWindow.close(); alert('실패'); }
+        } catch (e) { if(newWindow) newWindow.close(); alert('오류'); } finally { hideLoader(); }
     }
 
-// [필수] T맵 길안내 실행 함수 (전역 함수)
-function startDirectNav(name, lat, lon) {
-    console.log("길안내 버튼 클릭됨:", name); // 로그 확인용
-    
-    // 따옴표 제거 (에러 방지)
-    const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
-    
-    // URL 스키마 실행
-    const tmapUrl = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
-    window.location.href = tmapUrl;
-}
-
-    // =========================================================
-    // [신규] 검색창 포커스 시 사이드바 숨김 & 아이콘 표시
-    // =========================================================
-    
-    // 1. 사이드바 다시 불러오는 함수
-    function restoreSidebar() {
-        const panel = document.getElementById('client-list-panel');
-        const restoreBtn = document.getElementById('btn-restore-sidebar');
+    // 캘린더 렌더링 관련
+    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
+        const key = year + '-' + month;
+        if (reportsMap[key] === 'completed') { renderCalendar(); return; }
+        if (!isInitialLoad) showLoader('로딩 중...');
+        try {
+            const result = await callAppsScript('getReportFilesByMonth', { year, month });
+            if (Array.isArray(result)) { result.forEach(r => reportsMap[r.date] = r); reportsMap[key] = 'completed'; }
+        } finally { hideLoader(); renderCalendar(); }
+    }
+    function renderCalendar() {
+        const container = document.getElementById('calendar-days');
+        if (!container) return;
+        container.innerHTML = '';
+        document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
+        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성';
         
-        // 사이드바 보이기
-        panel.classList.remove('hidden');
-        // 복구 버튼 숨기기
-        restoreBtn.classList.add('hidden');
+        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        
+        for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+            const hasReport = reportsMap[dateKey];
+            let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
+            container.innerHTML += `<div class="p-2 flex justify-center"><div class="${cls}" onclick="${!isSunday ? `onDateClick(${day})` : ''}">${day}</div></div>`;
+        }
+    }
+    function onDateClick(day) {
+        const dateStr = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        if (reportsMap[dateStr]) openSheetApp(reportsMap[dateStr].url);
+        else { selectedDateForGeneration = dateStr; document.getElementById('modal-message').innerHTML = `${dateStr} 보고서 없음. 생성할까요?`; openModal(); }
+    }
+    async function changeMonth(d) {
+        const dt = new Date(currentYear, currentMonth - 1 + d, 1);
+        currentYear = dt.getFullYear(); currentMonth = dt.getMonth() + 1;
+        fetchReportsForMonth(currentYear, currentMonth);
     }
 
-    // 2. 검색창 누르면 사이드바 숨기는 이벤트
+    // ===============================================
+    // 9. 초기화 및 이벤트 리스너
+    // ===============================================
+
     document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('map-search-input');
-        const panel = document.getElementById('client-list-panel');
-        const restoreBtn = document.getElementById('btn-restore-sidebar');
-        
-        if (searchInput) {
-            searchInput.addEventListener('focus', function() {
-                // 검색창을 누르면 -> 사이드바를 아예 숨김 (hidden 클래스 추가)
-                panel.classList.add('hidden');
-                
-                // 대신 '목록 아이콘' 버튼을 보여줌
-                restoreBtn.classList.remove('hidden');
-            });
-        }
-    });
+        const today = new Date();
+        currentYear = today.getFullYear();
+        currentMonth = today.getMonth() + 1;
+        document.getElementById('current-date').textContent = formatDate(today);
+        document.getElementById('generate-button').disabled = false;
+        document.getElementById('app-status').textContent = '상태: 준비 완료.';
+        fetchReportsForMonth(currentYear, currentMonth, true);
 
-    // [신규] 사이드바를 숨기고 플로팅 버튼을 보여주는 함수 (공통 사용)
-    function hideSidebarMode() {
-        const panel = document.getElementById('client-list-panel');
-        const restoreBtn = document.getElementById('btn-restore-sidebar');
-        
-        // 패널이 열려있다면 -> 닫고 아이콘 보여주기
-        if (panel && !panel.classList.contains('hidden')) {
-            panel.classList.add('hidden');
-            if (restoreBtn) restoreBtn.classList.remove('hidden');
-        }
-    }
-  </script>
+        // 검색창 이벤트
+        const searchInput = document.getElementById('map-search-input');
+        if (searchInput) searchInput.addEventListener('focus', () => {
+            document.getElementById('client-list-panel').classList.add('hidden');
+            document.getElementById('btn-restore-sidebar').classList.remove('hidden');
+        });
+
+        // 하단 모달 드래그
+        const modal = document.getElementById('nav-confirm-modal');
+        let startY = 0, currentY = 0, isDragging = false;
+        modal.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; isDragging = true; modal.style.transition = 'none'; }, { passive: true });
+        modal.addEventListener('touchmove', (e) => { if (!isDragging) return; currentY = e.touches[0].clientY; if (currentY - startY > 0) modal.style.transform = `translateY(${currentY - startY}px)`; }, { passive: true });
+        modal.addEventListener('touchend', () => { isDragging = false; modal.style.transition = 'transform 0.3s ease-out'; if (currentY - startY > 100) closeNavPrompt(); else if (!modal.classList.contains('translate-y-full')) modal.style.transform = 'translateY(0)'; startY=0; currentY=0; });
+    });
+</script>
 </body>
 </html>
+
