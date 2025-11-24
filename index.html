@@ -58,17 +58,31 @@
       background-color: #10b981;
       color: white;
     }
-    #client-list-panel {
+     #client-list-panel {
       position: absolute; 
       top: 0;
       left: 0;
+      
+      /* 너비 및 높이 설정 */
       width: 45%; 
-      max-height: 100%;
-      background-color: rgba(247, 249, 252, 0.7); 
+      min-width: 170px;
+      max-height: 100%; /* 내용은 많으면 스크롤 */
+      
+      /* [신규] 배경 및 디자인 다듬기 */
+      background-color: rgba(247, 249, 252, 0.95); /* 배경색 좀 더 진하게 (가독성 UP) */
       backdrop-filter: blur(4px); 
       z-index: 10; 
-      transition: width 0.3s ease-in-out; 
+      
+      /* [신규] 펼쳐졌을 때도 우측 하단 둥글게 + 패딩 추가 */
+      border-bottom-right-radius: 15px; 
+      padding-bottom: 20px; 
+      
+      /* 애니메이션 및 스크롤바 숨김 */
+      transition: width 0.3s ease-in-out, height 0.3s ease-in-out; 
       overflow-x: hidden;
+      
+      /* 그림자 살짝 추가 (입체감) */
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
     #client-list-panel::-webkit-scrollbar { display: none; }
     #client-list-panel { scrollbar-width: none; }
@@ -84,7 +98,7 @@
         overflow: hidden !important;
         
         /* 우측 하단 둥글게 */
-        border-bottom-right-radius: 24px !important;
+        border-bottom-right-radius: 15px !important;
         
         /* 하단 여백 강제 확보 */
         padding-bottom: 20px !important;
@@ -1001,28 +1015,76 @@
         } catch (e) { showToast("검색 오류", "error"); }
     }
 
+    // ===============================================
+    // 3. T맵 통신 및 데이터 처리 함수 (Fetch API 사용)
+    // ===============================================
+
+    /**
+     * ✅ [수정] T맵 지오코딩 함수 (jQuery/$.ajax 제거, Fetch API 사용)
+     */
     async function geocodeAndSetMarker(address, user) {
         if (!currentMapInstance) return;
-        if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+
+        if (currentMarker) {
+            currentMarker.setMap(null);
+            currentMarker = null;
+        }
+
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+        const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
         
-        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${APP_KEY}`;
+        // TMAP API URL (Fetch용)
+        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
+
         try {
             const response = await fetch(url);
-            const data = await response.json();
-            const info = data.coordinateInfo;
-            if (!info || !info.coordinate || info.coordinate.length === 0) throw new Error("좌표 없음");
             
-            let lat, lon;
-            if (info.coordinate[0].lat) { lat = info.coordinate[0].lat; lon = info.coordinate[0].lon; }
-            else { lat = info.coordinate[0].newLat; lon = info.coordinate[0].newLon; }
+            if (!response.ok) {
+                 throw new Error(`API 호출 실패 (${response.status})`);
+            }
+            
+            const data = await response.json();
+            
+            const resultInfo = data.coordinateInfo;
+            if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
+                throw new Error("요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다.");
+            }
+            
+            let lon, lat;
+            const resultCoordinate = resultInfo.coordinate[0];
+            
+            if (resultCoordinate.lon && resultCoordinate.lon.length > 0) {
+                lon = resultCoordinate.lon;
+                lat = resultCoordinate.lat;
+            } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) {
+                lon = resultCoordinate.newLon;
+                lat = resultCoordinate.newLat;
+            } else {
+                throw new Error("좌표를 찾을 수 없습니다.");
+            }
 
-            const pos = new Tmapv2.LatLng(Number(lat), Number(lon));
-            const iconUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
-            currentMarker = new Tmapv2.Marker({ position: pos, icon: iconUrl, map: currentMapInstance });
-            currentMapInstance.setCenter(pos);
-            return pos;
-        } catch (e) { throw e; }
+            const markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
+            
+            currentMarker = new Tmapv2.Marker({
+                position: markerPosition,
+                icon: markerImageUrl,
+                iconSize: new Tmapv2.Size(24, 38),
+                map: currentMapInstance,
+                title: address
+            });
+            
+            currentMapInstance.setCenter(markerPosition);
+            currentMapInstance.setZoom(15);
+            
+            console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
+            return markerPosition; // Promise<LatLng> 반환
+
+        } catch (error) {
+            console.error("Geocoding API 오류:", error);
+            throw new Error(`API 호출 실패 (${error.message})`);
+        }
     }
+
 
     // ===============================================
     // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
@@ -1049,14 +1111,25 @@
     }
 
     async function createMonthlySummary() {
-        showLoader('월별 통계 생성 중...');
-        try {
-            const result = await callAppsScript('createSummary', { year: currentYear, month: currentMonth });
-            if (result.status === 'success' && result.url) openSheetApp(result.url);
-            else alert('실패');
-        } catch (e) { alert('오류'); } finally { hideLoader(); }
+      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
+      try {
+        const result = await callAppsScript('createSummary', {
+          year: currentYear,
+          month: currentMonth
+        });
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url);
+        } else {
+          hideLoader();
+          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        hideLoader();
+        alert('월별 통계 생성 오류: ' + error.message);
+      }
     }
-
+  
     async function confirmGenerateReport() {
         if (!selectedDateForGeneration) { closeModal(); return; }
         const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
@@ -1101,15 +1174,46 @@
             container.innerHTML += `<div class="p-2 flex justify-center"><div class="${cls}" onclick="${!isSunday ? `onDateClick(${day})` : ''}">${day}</div></div>`;
         }
     }
-    function onDateClick(day) {
-        const dateStr = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        if (reportsMap[dateStr]) openSheetApp(reportsMap[dateStr].url);
-        else { selectedDateForGeneration = dateStr; document.getElementById('modal-message').innerHTML = `${dateStr} 보고서 없음. 생성할까요?`; openModal(); }
+
+    function preloadAdjacentMonths(year, month) {
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMonthKey = prevYear + '-' + prevMonth;
+        const nextDate = new Date(year, month, 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = nextDate.getMonth() + 1;
+        const nextMonthKey = nextYear + '-' + nextMonth;
+        if (!reportsMap[prevMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+                if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[prevMonthKey] = 'completed';
+                }
+            });
+        }
+        if (!reportsMap[nextMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+                 if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[nextMonthKey] = 'completed';
+                }
+            });
+        }
     }
-    async function changeMonth(d) {
-        const dt = new Date(currentYear, currentMonth - 1 + d, 1);
-        currentYear = dt.getFullYear(); currentMonth = dt.getMonth() + 1;
-        fetchReportsForMonth(currentYear, currentMonth);
+  
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url);
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
     }
 
     // ===============================================
@@ -1142,6 +1246,7 @@
 </script>
 </body>
 </html>
+
 
 
 
