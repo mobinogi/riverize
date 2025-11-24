@@ -955,13 +955,23 @@
     let currentNavClient = null, currentNavUser = null;
     let deleteTargetClient = null, deleteTargetUser = null;
 
+    // 2. 팝업 열기 (애니메이션 작동)
     function openNavPrompt(client, user) {
-        currentNavClient = client; currentNavUser = user;
+        currentNavClient = client;
+        currentNavUser = user;
+        
         document.getElementById('nav-target-name').textContent = client.name;
-        document.getElementById('nav-confirm-modal').classList.remove('translate-y-full');
+        
+        const modal = document.getElementById('nav-confirm-modal');
+        // 'translate-y-full'(화면 아래 숨김) 클래스를 제거하면 -> 스르륵 올라옴
+        modal.classList.remove('translate-y-full');
     }
+    // 3. 팝업 닫기 (애니메이션 작동)
     function closeNavPrompt() {
-        document.getElementById('nav-confirm-modal').classList.add('translate-y-full');
+        const modal = document.getElementById('nav-confirm-modal');
+        // 'translate-y-full' 클래스를 추가하면 -> 스르륵 내려감
+        modal.classList.add('translate-y-full');
+        
         currentNavClient = null;
     }
     
@@ -1246,6 +1256,7 @@
 </script>
 </body>
 </html>
+
 
 
 
