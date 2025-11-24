@@ -233,7 +233,7 @@
       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
         <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
       </div>
-      <button onclick="openMapOverlay()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+      <button onclick="()" class="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
         거래처 현황 지도 보기
       </button>
 
@@ -902,10 +902,12 @@ async function confirmGenerateReport() {
     /**
      * '오버레이 열기' 버튼
      */
-     function openMapOverlay() {
+    // [최종 통합] 지도 열기 + 롱프레스 활성화 + 사이드바 숨김 감지
+    function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
       
+      // 지도가 아직 안 만들어졌을 때만 실행
       if (!isMapInitialized) {
         console.log("맵 생성 시작...");
         try {
@@ -917,13 +919,16 @@ async function confirmGenerateReport() {
             zoom: 12
           });
           
-          // 2. 롱프레스 기능 활성화
-          enableMapLongPress(); 
+          // 2. 롱프레스(꾹 누르기) 기능 활성화
+          if (typeof enableMapLongPress === 'function') {
+              enableMapLongPress(); 
+          }
 
           // -----------------------------------------------------------
-          // ✋ [최종 수정] 지도를 만지면 사이드바 숨기기 (DOM 직접 제어)
+          // ✋ [핵심] 지도를 만지면 사이드바 숨기기 (DOM 직접 제어)
           // -----------------------------------------------------------
           // TMap 리스너 대신 HTML 엘리먼트에 직접 이벤트를 겁니다.
+          // 이게 있어야 줌/이동 시 사이드바가 사라집니다.
           
           const mapDiv = document.getElementById("map_overlay_content");
 
@@ -942,7 +947,7 @@ async function confirmGenerateReport() {
           mapDiv.addEventListener("wheel", function() {
               hideSidebarMode();
           }, { passive: true });
-          
+
           isMapInitialized = true; 
 
         } catch (e) {
@@ -1200,101 +1205,7 @@ function onMapLongPressTrigger(lat, lon) {
       
       fetchReportsForMonth(currentYear, currentMonth, true);
     });
-
-function openMapOverlay() {
-      console.log("지도 열기 버튼 클릭.");
-      document.getElementById('map-overlay').classList.remove('hidden');
-      
-      if (!isMapInitialized) {
-        console.log("맵 생성 시작...");
-        try {
-          // 1. 지도 생성
-          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          // =========================================================
-          // 🖱️ [지도 롱프레스 구현 - T맵 내장 이벤트 사용] 
-          // =========================================================
-          
-          let pressTimer;
-          let isLongPress = false;
-          
-          // 1. 누르기 시작 (터치 or 마우스 클릭)
-          // T맵은 'touchstart', 'mousedown' 이벤트를 따로 지원합니다.
-          const startHandler = function(e) {
-              isLongPress = false;
-              
-              // 기존 타이머 제거
-              clearTimeout(pressTimer);
-              
-              // 1초 뒤에 발동 예약
-              pressTimer = setTimeout(() => {
-                  isLongPress = true;
-                  if (navigator.vibrate) navigator.vibrate(50); // 징~
-                  
-                  // T맵이 이미 e.latLng에 정확한 좌표를 담아서 줍니다! (계산 불필요)
-                  const lat = e.latLng.lat();
-                  const lon = e.latLng.lng();
-                  
-                  // 등록 함수 호출
-                  enableMapLongPress(); 
-
-                  isMapInitialized = true;
-                  
-              }, 500); // 1초 (너무 길면 800으로 수정)
-          };
-
-          // 2. 떼거나 움직임 (취소 조건)
-          const cancelHandler = function() {
-              clearTimeout(pressTimer);
-          };
-
-          // 이벤트 연결
-          currentMapInstance.addListener("touchstart", startHandler); // 모바일 터치 시작
-          currentMapInstance.addListener("mousedown", startHandler);  // PC 클릭 시작
-          
-          currentMapInstance.addListener("touchend", cancelHandler);  // 모바일 뗌
-          currentMapInstance.addListener("mouseup", cancelHandler);   // PC 뗌
-          currentMapInstance.addListener("dragstart", cancelHandler); // 지도 드래그 시작하면 즉시 취소!
-
-          isMapInitialized = true; 
-
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
-        }
-      }
-    }
     
-    function openMapOverlay() {
-      console.log("지도 열기 버튼 클릭.");
-      document.getElementById('map-overlay').classList.remove('hidden');
-      
-      if (!isMapInitialized) {
-        console.log("맵 생성 시작...");
-        try {
-          // 1. 지도 생성
-          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
-            center: new Tmapv2.LatLng(35.2128, 128.9806),
-            width: "100%",
-            height: "100%",
-            zoom: 12
-          });
-          
-          // 👇 롱프레스 기능 활성화 (이거 한 줄이면 끝!)
-          //  enableMapLongPress(); 
-
-          isMapInitialized = true; 
-
-        } catch (e) {
-          console.error("지도 생성 실패:", e);
-        }
-      }
-    }
     // ---------------------------------------------------
     // [신규] 삭제 팝업(Delete Sheet) 제어 로직
     // ---------------------------------------------------
@@ -2221,5 +2132,6 @@ function startDirectNav(name, lat, lon) {
   </script>
 </body>
 </html>
+
 
 
