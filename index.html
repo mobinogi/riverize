@@ -69,7 +69,7 @@
       max-height: 100%; /* 내용은 많으면 스크롤 */
       
       /* [신규] 배경 및 디자인 다듬기 */
-      background-color: rgba(247, 249, 252, 0.7); /* 배경색 좀 더 진하게 (가독성 UP) */
+      background-color: rgba(247, 249, 252, 0.5); /* 배경색 좀 더 진하게 (가독성 UP) */
       backdrop-filter: blur(15px); 
       z-index: 10; 
       
@@ -107,10 +107,8 @@
         /* 그림자 제거 */
         box-shadow: none !important;
         
-        /* [핵심] 접혔을 때도 투명하고 뿌옇게 유지 */
-        background-color: rgba(255, 255, 255, 0.7) !important; 
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px) !important;
+        /* (선택사항) 접혔을 때 배경색을 확실하게 잡아줌 */
+        background-color: rgba(247, 249, 252, 0.95) !important;
     }
     /* 1. 공통 디자인 및 기본 위치 (모바일 기준) */
     .map-close-button-new {
@@ -146,7 +144,7 @@
     list-style: none !important;
 }
 
-    /*#client-list-container li {
+/*#client-list-container li {
     padding-left: 2px !important; /* 왼쪽 벽에서 16px 떨어짐 */
    /* padding-right: 16px !important;
     text-align: left !important;   /* 무조건 왼쪽 정렬 */
@@ -376,10 +374,14 @@
               정병준
             </button>
         </div>
-              <div id="client-list-container">
+        
       </div>
- </div>
+
+      <div id="client-list-container">
+        <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
       </div>
+
+    </div>
     
   </div>
 </div>
@@ -809,7 +811,7 @@
         
         if (activeClientUser === user) {
             activeClientUser = null;
-           
+            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
             if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
             return;
         }
