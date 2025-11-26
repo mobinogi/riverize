@@ -834,39 +834,130 @@
         } catch (e) { loadedClientData[user] = []; }
     }
 
+// [최종 수정] 왼쪽 여백 확보 + 폰트 축소 + ...삭제
     function displayClientList(user, clients) {
         const container = document.getElementById('client-list-container');
+        
+        // 부모 여백 무시하고 배경은 꽉 채우기
         container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
         
-        if (clients.length === 0) { container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다.</p>`; return; }
+        if (clients.length === 0) {
+            container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
+            return;
+        }
 
         const listUl = document.createElement('ul');
+        listUl.id = `list-${user}`;
         listUl.className = "w-full p-0 m-0 list-none block"; 
         
         for (const client of clients) {
             const li = document.createElement('li');
+            
+            // [디자인 수정]
+            // pl-7: 왼쪽 여백을 넉넉하게 줘서(약 28px) 글자가 짤리지 않게 함
+            // pr-4: 오른쪽 여백
             li.className = 'w-full pl-5 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
             
-            // 흐르는 텍스트 (marquee) 로직
+            // --- 이름 영역 (6자 이상이면 흐름 - 기준 낮춤) ---
             const isLongText = client.name.length > 7;
-            const nameHtml = isLongText ? 
-                `<div class="marquee-container pointer-events-none"><div class="marquee-content do-scroll"><span class="text-sm font-bold text-gray-900">${client.name}</span><span class="inline-block w-8"></span><span class="text-sm font-bold text-gray-900">${client.name}</span></div></div>` :
-                `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
+            let nameHtml = '';
+            
+            if (isLongText) {
+                nameHtml = `
+                    <div class="marquee-container pointer-events-none">
+                        <div class="marquee-content do-scroll">
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
+                            <span class="inline-block w-8"></span>
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
+                        </div>
+                    </div>`;
+            } else {
+                // [수정] truncate 제거 -> ... 안 찍히고 다 나옴
+                nameHtml = `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
+            }
 
             li.innerHTML = `
-                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">${nameHtml}</div>
+                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
+                    ${nameHtml}
+                </div>
+
                 <div class="nav-icon-target flex-shrink-0 w-9 h-9 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" /></svg>
-                </div>`;
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
+                    </svg>
+                </div>
+            `;
             
-            // 터치 이벤트 연결
-            let listTouchTimer, isLongPress = false, startX = 0, startY = 0, isMoved = false; 
-            li.addEventListener('touchstart', (e) => { isLongPress = false; isMoved = false; startX = e.touches[0].clientX; startY = e.touches[0].clientY; li.classList.add('bg-white/30'); listTouchTimer = setTimeout(() => { if (!isMoved) { isLongPress = true; navigator.vibrate(50); closeNavPrompt(); openDeletePrompt(client, user); li.classList.remove('bg-white/30'); } }, 800); }, { passive: true });
-            li.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) { isMoved = true; clearTimeout(listTouchTimer); li.classList.remove('bg-white/30'); } }, { passive: true });
-            li.addEventListener('touchend', (e) => { clearTimeout(listTouchTimer); li.classList.remove('bg-white/30'); if (isMoved || isLongPress) return; if (e.target.closest('.nav-icon-target')) openNavPrompt(client, user); else showClientOnMapWithBubble(client, user); }, { passive: true });
+            // --- 터치 로직 ---
+            let listTouchTimer;
+            let isLongPress = false;
+            let startX = 0;
+            let startY = 0;
+            let isMoved = false; 
+            // ---------------------------------------------------------
+            // 1. [핵심 추가] 클릭(Click) 이벤트 (PC & 모바일 공용)
+            // ---------------------------------------------------------
+         
+          li.addEventListener('click', (e) => {
+                // 파란색 화살표 아이콘을 눌렀을 때 -> 하단 팝업(길안내)
+                if (e.target.closest('.nav-icon-target')) {
+                    openNavPrompt(client, user);
+                } 
+                // 그 외 영역(이름 등)을 눌렀을 때 -> 지도 이동 + 말풍선
+                else {
+                    showClientOnMapWithBubble(client, user);
+                }
+            });
+        
+          li.addEventListener('touchstart', (e) => {
+                isLongPress = false;
+                isMoved = false; 
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                li.classList.add('bg-white/30');
+
+                listTouchTimer = setTimeout(() => {
+                    if (!isMoved) { 
+                        isLongPress = true;
+                        navigator.vibrate(50); 
+                        closeNavPrompt(); 
+                        openDeletePrompt(client, user); 
+                        li.classList.remove('bg-white/30');
+                    }
+                }, 800); 
+            }, { passive: true });
+
+            li.addEventListener('touchmove', (e) => {
+                if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
+                    isMoved = true;        
+                    clearTimeout(listTouchTimer); 
+                    li.classList.remove('bg-white/30');
+                }
+            }, { passive: true });
+
+            li.addEventListener('touchend', (e) => {
+                clearTimeout(listTouchTimer);
+                li.classList.remove('bg-white/30');
+                
+                if (isMoved || isLongPress) return;
+
+                if (e.target.closest('.nav-icon-target')) {
+                    openNavPrompt(client, user);
+                } else {
+                    showClientOnMapWithBubble(client, user);
+                }
+            }, { passive: true });
+            
+            li.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                closeNavPrompt();
+                openDeletePrompt(client, user);
+            });
+
             listUl.appendChild(li);
         }
-        container.innerHTML = ''; container.appendChild(listUl);
+        container.innerHTML = ''; 
+        container.appendChild(listUl);
     }
 
     async function showClientOnMapWithBubble(client, user) {
@@ -1378,6 +1469,7 @@
 </script>
 </body>
 </html>
+
 
 
 
