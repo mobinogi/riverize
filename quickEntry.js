@@ -4,6 +4,15 @@
 
 // 1. 모달 열기
 function openQuickEntryModal() {
+    const modalWrapper = document.getElementById('quick-entry-modal');
+    
+    // [핵심 수정] 열 때마다 무조건 '중앙 정렬'로 강제 초기화!
+    // 아까 올라가 있던 상태라도 다시 끌어내립니다.
+    if (modalWrapper) {
+        modalWrapper.style.alignItems = ''; // CSS 기본값(center) 복구
+        modalWrapper.style.paddingTop = ''; // 상단 여백 제거
+    }
+
     // 화면 초기화
     const formContent = document.getElementById('qe-form-content');
     const resultContent = document.getElementById('qe-result-content');
@@ -20,7 +29,7 @@ function openQuickEntryModal() {
     if(document.getElementById('qe-btn-kim')) document.getElementById('qe-btn-kim').className = baseClass;
     if(document.getElementById('qe-btn-jung')) document.getElementById('qe-btn-jung').className = baseClass;
 
-    document.getElementById('quick-entry-modal').classList.remove('hidden');
+    modalWrapper.classList.remove('hidden');
 
     // 백그라운드 생성 요청
     if (typeof callAppsScript === 'function') {
@@ -90,7 +99,7 @@ async function submitQuickDailyReport() {
     }
 }
 
-// 5. 결과 화면 보여주기
+// 5. 결과 화면
 function showResultScreen(data) {
     document.getElementById('qe-form-content').classList.add('hidden');
     document.getElementById('qe-result-content').classList.remove('hidden');
@@ -108,7 +117,7 @@ function showResultScreen(data) {
 }
 
 // ====================================================================
-// 📱 [핵심] 모바일 키보드 대응 (중복 실행 방지 + 닫기 씹힘 방지)
+// 📱 [핵심] 모바일 키보드 대응 (위치 고정 및 떨림 방지 최적화)
 // ====================================================================
 let keyboardBlurTimer = null;
 
@@ -126,22 +135,25 @@ function attachMobileKeyboardFix() {
     
     const modalWrapper = document.getElementById('quick-entry-modal');
 
-    // 1. 입력창 이벤트
+    // 1. 입력창 이벤트 (여기가 창을 올리는 유일한 곳!)
     inputs.forEach(input => {
         if(!input) return;
 
-        // 올리기
+        // 🚀 [올리기] 입력창을 터치했을 때만!
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
                 if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
+                
+                // 위로 올리기
                 modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '40px'; 
+                modalWrapper.style.paddingTop = '40px'; // 높이 조절 (40px 추천)
             }
         });
 
-        // 내리기
+        // 🛬 [내리기] 손 뗐을 때
         input.addEventListener('blur', () => {
             if (window.innerWidth <= 768) {
+                // 0.2초 뒤에 내림 (다른 버튼 누를 시간 벌기)
                 keyboardBlurTimer = setTimeout(() => {
                     modalWrapper.style.alignItems = '';
                     modalWrapper.style.paddingTop = '';
@@ -150,22 +162,23 @@ function attachMobileKeyboardFix() {
         });
     });
 
-    // 2. 버튼 누르면 내려가지 않게 방어
+    // 2. 담당자 버튼 이벤트 (얘는 창을 움직이지 않음!)
     managerBtns.forEach(btn => {
         if(!btn) return;
+        
         const preventDrop = () => {
+            // ★ 핵심: 입력창에서 손을 떼고 이 버튼을 눌렀을 때,
+            // 창이 내려가지 않도록 타이머만 취소합니다.
+            // 창을 위로 올리는 코드는 삭제했습니다!
             if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
-            if (window.innerWidth <= 768) {
-                modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '40px'; 
-            }
         };
+        
         btn.addEventListener('click', preventDrop);
         btn.addEventListener('touchstart', preventDrop, { passive: true });
     });
 }
 
-// 🚨 [필수] 스크립트 로드 시 실행
+// 스크립트 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
     attachMobileKeyboardFix();
 });
