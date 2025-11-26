@@ -116,23 +116,25 @@ function showResultScreen(data) {
     document.getElementById('res-balance').textContent = data.finalBalance;
 }
 // ===============================================
-// 📱 [모바일 전용] 키보드 올라올 때 창 위로 밀기
+// 📱 [모바일 전용] 키보드 올라올 때 창 위로 붙이기
 // ===============================================
 function liftModal(up) {
-    const modalBody = document.getElementById('qe-card-body');
-    if (!modalBody) return;
+    const modalWrapper = document.getElementById('quick-entry-modal'); // 전체 껍데기
+    if (!modalWrapper) return;
 
     // 모바일인지 확인
     if (window.innerWidth <= 768) {
         if (up) {
-            // 🚨 [수정] 기존 -120px -> -220px로 변경!
-            // 창을 화면 천장 가까이 바짝 들어 올려서, 
-            // 아래쪽 키보드 공간을 최대한 확보합니다.
-            modalBody.style.transform = "translateY(-250px)";
+            // 🚀 [올리기] "가운데 정렬"을 끄고, "위쪽 정렬"로 바꿉니다.
+            // pt-16: 맨 위에서 살짝(약 60px) 띄워줍니다.
+            modalWrapper.classList.remove('items-center');
+            modalWrapper.classList.add('items-start', 'pt-16');
         } else {
-            // 원위치 복귀
-            modalBody.style.transform = "translateY(0)";
+            // 🔽 [복귀] 다시 "가운데 정렬"로 돌아옵니다.
+            modalWrapper.classList.remove('items-start', 'pt-16');
+            modalWrapper.classList.add('items-center');
         }
     }
 }
+
 
