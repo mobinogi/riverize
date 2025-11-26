@@ -23,9 +23,12 @@ function openQuickEntryModal() {
     }
 }
 
-// 2. 모달 닫기
+// [누락된 기능] 닫기 버튼(X) 기능
 function closeQuickEntryModal() {
-    document.getElementById('quick-entry-modal').classList.add('hidden');
+    const modal = document.getElementById('quick-entry-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 // 3. 담당자 선택 (버튼 스타일 변경)
@@ -94,4 +97,5 @@ async function submitQuickDailyReport() {
     } finally {
         if(typeof hideLoader === 'function') hideLoader();
     }
+
 }
