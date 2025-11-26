@@ -1215,6 +1215,13 @@
     // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
     // ===============================================
 
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
+    }
+  
     async function callAppsScript(action, params = {}) {
         const url = new URL(API_URL);
         url.searchParams.set('action', action);
@@ -1371,6 +1378,7 @@
 </script>
 </body>
 </html>
+
 
 
 
