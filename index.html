@@ -250,8 +250,31 @@
     
     <div id="content-write" class="space-y-6 bg-white p-6 rounded-xl shadow-lg">
       <h2 class="text-2xl font-semibold text-gray-700">1.일일 보고서 생성 및 작업</h2>
-      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
-        <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
+        <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
+        
+        <div class="flex justify-between items-center">
+            <p class="font-semibold text-lg flex items-center gap-2">
+                📅 <span id="current-date">로딩 중...</span>
+            </p>
+            
+            <button onclick="updateFactoryStatus()" class="text-xs text-blue-400 hover:text-blue-600 p-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+
+        <div class="my-2 border-t border-blue-200/60"></div>
+
+        <div class="flex justify-around items-center pt-1">
+            <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f26">-</span>
+            
+            <span class="text-blue-200 text-xl">|</span>
+            
+            <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f27">-</span>
+            
+            <span class="text-blue-200 text-xl">|</span>
+            
+            <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f28">-</span>
+        </div>
       </div>
       <div class="flex w-full rounded-xl shadow-md overflow-hidden mt-4">
           <button onclick="generateTodayReport()" class="flex-1 py-3 bg-green-500 text-white font-bold hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
@@ -1489,6 +1512,37 @@
         modal.addEventListener('touchmove', (e) => { if (!isDragging) return; currentY = e.touches[0].clientY; if (currentY - startY > 0) modal.style.transform = `translateY(${currentY - startY}px)`; }, { passive: true });
         modal.addEventListener('touchend', () => { isDragging = false; modal.style.transition = 'transform 0.3s ease-out'; if (currentY - startY > 100) closeNavPrompt(); else if (!modal.classList.contains('translate-y-full')) modal.style.transform = 'translateY(0)'; startY=0; currentY=0; });
     });
+
+  // ===============================================
+    // 🏭 공장 합계 데이터 가져오기 (숫자만 표시)
+    // ===============================================
+    async function updateFactoryStatus() {
+        // 로딩 중 표시
+        document.getElementById('val-f26').textContent = '...';
+        document.getElementById('val-f27').textContent = '...';
+        document.getElementById('val-f28').textContent = '...';
+
+        try {
+            const result = await callAppsScript('getFactoryStatus');
+            
+            if (result.status === 'success') {
+                // 가져온 숫자 집어넣기
+                document.getElementById('val-f26').textContent = result.totals.f26;
+                document.getElementById('val-f27').textContent = result.totals.f27;
+                document.getElementById('val-f28').textContent = result.totals.f28;
+            } else {
+                // 실패 시 물음표
+                document.getElementById('val-f26').textContent = '?';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // [필수] 앱 켜지자마자 실행
+    document.addEventListener('DOMContentLoaded', () => {
+        updateFactoryStatus();
+    });
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1617,6 +1671,7 @@
 </div>
 </body>
 </html>
+
 
 
 
