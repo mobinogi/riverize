@@ -4,7 +4,6 @@
 
 // 1. 모달 열기
 function openQuickEntryModal() {
-    // 화면 초기화
     document.getElementById('qe-form-content').classList.remove('hidden');
     document.getElementById('qe-result-content').classList.add('hidden');
 
@@ -18,9 +17,6 @@ function openQuickEntryModal() {
     document.getElementById('qe-btn-jung').className = baseClass;
 
     document.getElementById('quick-entry-modal').classList.remove('hidden');
-
-    // 🚨 [수정] 여기서 attachMobileKeyboardFix()를 실행하던 코드를 삭제했습니다!
-    // (이제 맨 아래에서 딱 한 번만 실행됩니다)
 
     if (typeof callAppsScript === 'function') {
         callAppsScript('generate').catch(e => console.log("Pre-warm error:", e));
@@ -125,7 +121,7 @@ function attachMobileKeyboardFix() {
         // 1. 🚀 [올리기]
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
-                if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer); // 내려가기 취소!
+                if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
                 
                 modalWrapper.style.alignItems = 'flex-start';
                 modalWrapper.style.paddingTop = '40px'; 
@@ -135,7 +131,6 @@ function attachMobileKeyboardFix() {
         // 2. 🛬 [내리기]
         input.addEventListener('blur', () => {
             if (window.innerWidth <= 768) {
-                // 0.2초만 기다렸다가 내림 (그 사이에 다른 폼 누르면 위에서 취소됨)
                 keyboardBlurTimer = setTimeout(() => {
                     modalWrapper.style.alignItems = '';
                     modalWrapper.style.paddingTop = '';
@@ -146,9 +141,6 @@ function attachMobileKeyboardFix() {
 }
 
 // 🚨 [중요] 스크립트가 로드되자마자 딱 한 번만 실행합니다!
-// (이 코드가 함수 밖에 나와있어야 합니다)
 document.addEventListener('DOMContentLoaded', () => {
     attachMobileKeyboardFix();
 });
-}
-
