@@ -1517,18 +1517,24 @@
                 <input type="hidden" id="qe-manager">
             </div>
 
-            <div class="space-y-4">
+             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">1. 생탁 금일 출고</label>
-                    <input type="number" id="qe-input-1" placeholder="0" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-xl outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <label class="block text-xs font-bold text-white mb-1 ml-1 drop-shadow-sm">1. 생탁 금일 출고</label>
+                    <input type="number" id="qe-input-1" placeholder="0" 
+                           onfocus="liftModal(true)" onblur="liftModal(false)"
+                           class="w-full bg-black/30 border border-white/30 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/50 focus:border-white/60 transition text-right placeholder-gray-300 backdrop-blur-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">2. 국산쌀 생탁 출고</label>
-                    <input type="number" id="qe-input-2" placeholder="0" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-xl outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <label class="block text-xs font-bold text-white mb-1 ml-1 drop-shadow-sm">2. 국산쌀 생탁 출고</label>
+                    <input type="number" id="qe-input-2" placeholder="0" 
+                           onfocus="liftModal(true)" onblur="liftModal(false)"
+                           class="w-full bg-black/30 border border-white/30 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/50 focus:border-white/60 transition text-right placeholder-gray-300 backdrop-blur-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">3. 미출고 잔량</label>
-                    <input type="number" id="qe-input-3" placeholder="0" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-xl outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <label class="block text-xs font-bold text-white mb-1 ml-1 drop-shadow-sm">3. 미출고 잔량</label>
+                    <input type="number" id="qe-input-3" placeholder="0" 
+                           onfocus="liftModal(true)" onblur="liftModal(false)"
+                           class="w-full bg-black/30 border border-white/30 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/50 focus:border-white/60 transition text-right placeholder-gray-300 backdrop-blur-sm">
                 </div>
             </div>
 
@@ -1580,6 +1586,7 @@
   <script src="quickEntry.js"></script>
 </body>
 </html>
+
 
 
 
