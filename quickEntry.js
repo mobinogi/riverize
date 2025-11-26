@@ -105,11 +105,9 @@ function showResultScreen(data) {
 }
 
 // ====================================================================
-// 📱 [핵심] 모바일 키보드 대응 함수 (HTML 수정 필요 없음!)
-// 이 함수가 자동으로 모든 입력창을 찾아서 감시합니다.
+// 📱 [핵심] 모바일 키보드 대응 함수 (수정됨: 닫기 버튼 씹힘 방지)
 // ====================================================================
 function attachMobileKeyboardFix() {
-    // 1. 입력창 3개를 다 찾습니다.
     const inputs = [
         document.getElementById('qe-input-1'),
         document.getElementById('qe-input-2'),
@@ -121,22 +119,23 @@ function attachMobileKeyboardFix() {
     inputs.forEach(input => {
         if(!input) return;
 
-        // 2. 터치(focus) 했을 때 -> 강제로 위로 붙이기 (스타일 직접 변경)
+        // 1. 터치(focus) 시 -> 위로 올리기 (즉시 실행)
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
-                // Flex 정렬을 '위쪽(start)'으로 강제 변경
                 modalWrapper.style.alignItems = 'flex-start';
-                // 위쪽 여백을 줘서 너무 딱 붙지는 않게 함
-                modalWrapper.style.paddingTop = '40px'; 
+                modalWrapper.style.paddingTop = '10px'; 
             }
         });
 
-        // 3. 터치 해제(blur) 했을 때 -> 다시 중앙 정렬 복귀
+        // 2. 터치 해제(blur) 시 -> 원위치 복귀 (딜레이 추가!)
         input.addEventListener('blur', () => {
             if (window.innerWidth <= 768) {
-                // 스타일을 비워서 원래 CSS(중앙 정렬)로 돌아가게 함
-                modalWrapper.style.alignItems = '';
-                modalWrapper.style.paddingTop = '';
+                // ⚡ [핵심] 0.2초 기다렸다가 내려오게 함
+                // 그래야 X버튼을 눌렀을 때 도망가지 않고 클릭이 됩니다.
+                setTimeout(() => {
+                    modalWrapper.style.alignItems = '';
+                    modalWrapper.style.paddingTop = '';
+                }, 200);
             }
         });
     });
