@@ -115,3 +115,23 @@ function showResultScreen(data) {
     document.getElementById('res-balance-label').textContent = balanceLabel;
     document.getElementById('res-balance').textContent = data.finalBalance;
 }
+// ===============================================
+// 📱 [모바일 전용] 키보드 올라올 때 창 위로 밀기
+// ===============================================
+function liftModal(up) {
+    const modalBody = document.getElementById('qe-card-body');
+    if (!modalBody) return;
+
+    // 모바일인지 확인
+    if (window.innerWidth <= 768) {
+        if (up) {
+            // 🚨 [수정] 기존 -120px -> -220px로 변경!
+            // 창을 화면 천장 가까이 바짝 들어 올려서, 
+            // 아래쪽 키보드 공간을 최대한 확보합니다.
+            modalBody.style.transform = "translateY(-220px)";
+        } else {
+            // 원위치 복귀
+            modalBody.style.transform = "translateY(0)";
+        }
+    }
+}
