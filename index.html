@@ -1513,31 +1513,70 @@
         modal.addEventListener('touchend', () => { isDragging = false; modal.style.transition = 'transform 0.3s ease-out'; if (currentY - startY > 100) closeNavPrompt(); else if (!modal.classList.contains('translate-y-full')) modal.style.transform = 'translateY(0)'; startY=0; currentY=0; });
     });
 
-  // ===============================================
-    // 🏭 공장 합계 데이터 가져오기 (숫자만 표시)
-    // ===============================================
-    async function updateFactoryStatus() {
-        // 로딩 중 표시
-        document.getElementById('val-f26').textContent = '...';
-        document.getElementById('val-f27').textContent = '...';
-        document.getElementById('val-f28').textContent = '...';
+/**
+ * [수정] 공장 장부용 합계 조회 (현재 좌표 F26~28 유지 + 오늘 파일만 확인)
+ */
+function getFactoryLedgerStatus(e) {
+  try {
+    const today = new Date();
+    const scriptTimeZone = Session.getScriptTimeZone();
+    
+    // 1. 오늘 날짜 파일명 (예: "2025년 11월 27일 일보")
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const dateString = Utilities.formatDate(today, scriptTimeZone, 'yyyy년 MM월 dd일');
+    const fileName = dateString + ' 일보';
+    
+    // 2. 파일 찾기
+    const folder = getOrCreateMonthlyFolder(year, month);
+    const files = folder.getFilesByName(fileName);
 
-        try {
-            const result = await callAppsScript('getFactoryStatus');
-            
-            if (result.status === 'success') {
-                // 가져온 숫자 집어넣기
-                document.getElementById('val-f26').textContent = result.totals.f26;
-                document.getElementById('val-f27').textContent = result.totals.f27;
-                document.getElementById('val-f28').textContent = result.totals.f28;
-            } else {
-                // 실패 시 물음표
-                document.getElementById('val-f26').textContent = '?';
-            }
-        } catch (e) {
-            console.error(e);
-        }
+    // 🚨 파일 없으면 0 리턴 (과거 조회 X)
+    if (!files.hasNext()) {
+      return {
+        status: 'success',
+        isKimDone: false,
+        isJungDone: false,
+        isAllDone: false,
+        totals: { f26: 0, f27: 0, f28: 0 }
+      };
     }
+
+    // 3. 파일 열기
+    const file = files.next();
+    const sheet = SpreadsheetApp.openById(file.getId()).getSheets()[0];
+
+    // --- [좌표 설정: 현재 버전] ---
+    // 김원대: D5 (그대로)
+    // 정병준: D19 (현재 위치)
+    
+    const kimVal = sheet.getRange('D5').getValue();
+    const jungVal = sheet.getRange('D19').getValue(); 
+
+    const isKimDone = (kimVal !== "" && kimVal !== null);
+    const isJungDone = (jungVal !== "" && jungVal !== null);
+
+    // --- [공장 합계: 현재 버전 F26~F28] ---
+    const totalF26 = sheet.getRange('F26').getValue() || 0; 
+    const totalF27 = sheet.getRange('F27').getValue() || 0; 
+    const totalF28 = sheet.getRange('F28').getValue() || 0; 
+
+    return {
+      status: 'success',
+      isKimDone: isKimDone,
+      isJungDone: isJungDone,
+      isAllDone: (isKimDone && isJungDone),
+      totals: {
+        f26: totalF26, 
+        f27: totalF27,
+        f28: totalF28
+      }
+    };
+
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
 
     // [필수] 앱 켜지자마자 실행
     document.addEventListener('DOMContentLoaded', () => {
@@ -1671,6 +1710,7 @@
 </div>
 </body>
 </html>
+
 
 
 
