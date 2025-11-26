@@ -105,8 +105,10 @@ function showResultScreen(data) {
 }
 
 // ====================================================================
-// 📱 [핵심] 모바일 키보드 대응 함수 (수정됨: 닫기 버튼 씹힘 방지)
+// 📱 [핵심] 모바일 키보드 대응 (폼 전환 시 덜컹거림 방지)
 // ====================================================================
+let keyboardBlurTimer = null; // 타이머를 기억할 변수 (함수 밖에 선언!)
+
 function attachMobileKeyboardFix() {
     const inputs = [
         document.getElementById('qe-input-1'),
@@ -119,20 +121,23 @@ function attachMobileKeyboardFix() {
     inputs.forEach(input => {
         if(!input) return;
 
-        // 1. 터치(focus) 시 -> 위로 올리기 (즉시 실행)
+        // 1. 🚀 [올리기] 터치했을 때
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
+                // ★ 핵심: 혹시 내려가려고 카운트다운 중이었다면? "취소해!"
+                if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
+
+                // 강제로 위로 올림
                 modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '5px'; 
+                modalWrapper.style.paddingTop = '40px'; // 높이는 취향껏 조절 (40px 추천)
             }
         });
 
-        // 2. 터치 해제(blur) 시 -> 원위치 복귀 (딜레이 추가!)
+        // 2. 🛬 [내리기] 다른 곳 눌렀을 때
         input.addEventListener('blur', () => {
             if (window.innerWidth <= 768) {
-                // ⚡ [핵심] 0.2초 기다렸다가 내려오게 함
-                // 그래야 X버튼을 눌렀을 때 도망가지 않고 클릭이 됩니다.
-                setTimeout(() => {
+                // 바로 내리지 말고 0.2초만 기다려봄 (그 사이에 다른 칸 누르면 취소됨)
+                keyboardBlurTimer = setTimeout(() => {
                     modalWrapper.style.alignItems = '';
                     modalWrapper.style.paddingTop = '';
                 }, 200);
@@ -140,5 +145,3 @@ function attachMobileKeyboardFix() {
         });
     });
 }
-
-
