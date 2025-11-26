@@ -1,9 +1,10 @@
 // ===============================================
-// ⚡ 간편 일보 작성 (quickEntry.js) - 모바일 키보드 완벽 대응
+// ⚡ 간편 일보 작성 (quickEntry.js) - 완벽 버전
 // ===============================================
 
 // 1. 모달 열기
 function openQuickEntryModal() {
+    // 화면 초기화
     document.getElementById('qe-form-content').classList.remove('hidden');
     document.getElementById('qe-result-content').classList.add('hidden');
 
@@ -18,8 +19,8 @@ function openQuickEntryModal() {
 
     document.getElementById('quick-entry-modal').classList.remove('hidden');
 
-    // [중요] 모달 열릴 때 키보드 감지 기능 장착!
-    attachMobileKeyboardFix();
+    // 🚨 [수정] 여기서 attachMobileKeyboardFix()를 실행하던 코드를 삭제했습니다!
+    // (이제 맨 아래에서 딱 한 번만 실행됩니다)
 
     if (typeof callAppsScript === 'function') {
         callAppsScript('generate').catch(e => console.log("Pre-warm error:", e));
@@ -105,9 +106,9 @@ function showResultScreen(data) {
 }
 
 // ====================================================================
-// 📱 [핵심] 모바일 키보드 대응 (폼 전환 시 덜컹거림 방지)
+// 📱 [핵심] 모바일 키보드 대응 (중복 실행 방지 적용)
 // ====================================================================
-let keyboardBlurTimer = null; // 타이머를 기억할 변수 (함수 밖에 선언!)
+let keyboardBlurTimer = null;
 
 function attachMobileKeyboardFix() {
     const inputs = [
@@ -121,22 +122,20 @@ function attachMobileKeyboardFix() {
     inputs.forEach(input => {
         if(!input) return;
 
-        // 1. 🚀 [올리기] 터치했을 때
+        // 1. 🚀 [올리기]
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
-                // ★ 핵심: 혹시 내려가려고 카운트다운 중이었다면? "취소해!"
-                if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
-
-                // 강제로 위로 올림
+                if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer); // 내려가기 취소!
+                
                 modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '40px'; // 높이는 취향껏 조절 (40px 추천)
+                modalWrapper.style.paddingTop = '40px'; 
             }
         });
 
-        // 2. 🛬 [내리기] 다른 곳 눌렀을 때
+        // 2. 🛬 [내리기]
         input.addEventListener('blur', () => {
             if (window.innerWidth <= 768) {
-                // 바로 내리지 말고 0.2초만 기다려봄 (그 사이에 다른 칸 누르면 취소됨)
+                // 0.2초만 기다렸다가 내림 (그 사이에 다른 폼 누르면 위에서 취소됨)
                 keyboardBlurTimer = setTimeout(() => {
                     modalWrapper.style.alignItems = '';
                     modalWrapper.style.paddingTop = '';
@@ -145,3 +144,11 @@ function attachMobileKeyboardFix() {
         });
     });
 }
+
+// 🚨 [중요] 스크립트가 로드되자마자 딱 한 번만 실행합니다!
+// (이 코드가 함수 밖에 나와있어야 합니다)
+document.addEventListener('DOMContentLoaded', () => {
+    attachMobileKeyboardFix();
+});
+}
+
