@@ -127,7 +127,7 @@ function attachMobileKeyboardFix() {
                 // Flex 정렬을 '위쪽(start)'으로 강제 변경
                 modalWrapper.style.alignItems = 'flex-start';
                 // 위쪽 여백을 줘서 너무 딱 붙지는 않게 함
-                modalWrapper.style.paddingTop = '60px'; 
+                modalWrapper.style.paddingTop = '40px'; 
             }
         });
 
@@ -141,3 +141,4 @@ function attachMobileKeyboardFix() {
         });
     });
 }
+
