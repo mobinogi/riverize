@@ -218,6 +218,23 @@
     .rotate-180-icon {
         transform: rotate(180deg);
     }
+
+    /* 글래스모피즘 배경 애니메이션 (Blob Animation) */
+    @keyframes blob {
+        0% { transform: translate(0px, 0px) scale(1); }
+        33% { transform: translate(30px, -50px) scale(1.1); }
+        66% { transform: translate(-20px, 20px) scale(0.9); }
+        100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-blob {
+        animation: blob 7s infinite;
+    }
+    .animation-delay-2000 {
+        animation-delay: 2s;
+    }
+    .animation-delay-4000 {
+        animation-delay: 4s;
+    }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1479,85 +1496,100 @@
         modal.addEventListener('touchend', () => { isDragging = false; modal.style.transition = 'transform 0.3s ease-out'; if (currentY - startY > 100) closeNavPrompt(); else if (!modal.classList.contains('translate-y-full')) modal.style.transform = 'translateY(0)'; startY=0; currentY=0; });
     });
 </script>
-<div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
+<div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center overflow-hidden">
     
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeQuickEntryModal()"></div>
+    <div class="absolute inset-0 bg-black/60 transition-opacity" onclick="closeQuickEntryModal()"></div>
 
-    <div class="relative w-full max-w-sm mx-4 bg-white/10 border border-white/20 shadow-2xl backdrop-blur-xl rounded-3xl p-6 text-white overflow-hidden animate-fade-in-up">
+    <div class="absolute w-72 h-72 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl opacity-40 animate-blob top-1/4 left-1/4 z-0"></div>
+    <div class="absolute w-72 h-72 bg-yellow-300 rounded-full mix-blend-screen filter blur-3xl opacity-40 animate-blob animation-delay-2000 bottom-1/4 right-1/4 z-0"></div>
+    <div class="absolute w-72 h-72 bg-pink-500 rounded-full mix-blend-screen filter blur-3xl opacity-40 animate-blob animation-delay-4000 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0"></div>
+
+    <div class="relative z-10 w-full max-w-sm mx-4 p-6 text-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up"
+         style="
+            /* 배경은 아주 투명하게 (흰색 10%) */
+            background: rgba(255, 255, 255, 0.05); 
+            
+            /* [핵심] 오직 이 카드 뒤에 있는 것들만 흐리게 만듭니다 */
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px); 
+            
+            /* 테두리로 유리 질감 표현 */
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+         ">
         
-        <button onclick="closeQuickEntryModal()" class="absolute top-4 right-4 z-50 p-2 bg-red-500/50 hover:bg-red-500/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg cursor-pointer border border-white/20">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button onclick="closeQuickEntryModal()" class="absolute top-4 right-4 z-50 p-2 bg-red-500 hover:bg-red-600 rounded-full transition shadow-lg cursor-pointer border border-white/20">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
 
         <div id="qe-form-content">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-white drop-shadow-md">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-white drop-shadow-lg">
                 <span>🔥</span> 간편 일보 작성
             </h2>
 
             <div class="mb-6">
-                <label class="block text-xs font-medium text-gray-300 mb-2 ml-1">담당자 선택 (필수)</label>
+                <label class="block text-xs font-bold text-gray-300 mb-2 ml-1 tracking-wide">담당자 선택 (필수)</label>
                 <div class="flex gap-3">
-                    <button id="qe-btn-kim" onclick="selectQuickManager('김원대')" class="flex-1 py-3 rounded-xl border border-white/30 bg-white/5 text-gray-200 font-bold hover:bg-white/20 transition-all">김원대</button>
-                    <button id="qe-btn-jung" onclick="selectQuickManager('정병준')" class="flex-1 py-3 rounded-xl border border-white/30 bg-white/5 text-gray-200 font-bold hover:bg-white/20 transition-all">정병준</button>
+                    <button id="qe-btn-kim" onclick="selectQuickManager('김원대')" class="flex-1 py-3 rounded-xl border border-white/20 bg-white/5 text-white font-bold hover:bg-white/10 transition-all backdrop-blur-sm">김원대</button>
+                    <button id="qe-btn-jung" onclick="selectQuickManager('정병준')" class="flex-1 py-3 rounded-xl border border-white/20 bg-white/5 text-white font-bold hover:bg-white/10 transition-all backdrop-blur-sm">정병준</button>
                 </div>
                 <input type="hidden" id="qe-manager">
             </div>
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">1. 생탁 금일 출고</label>
-                    <input type="number" id="qe-input-1" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-red-400 transition text-right">
+                    <label class="block text-xs font-bold text-gray-300 mb-1 ml-1">1. 생탁 금일 출고</label>
+                    <input type="number" id="qe-input-1" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/40 focus:border-white/30 transition text-right placeholder-gray-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">2. 국산쌀 생탁 출고</label>
-                    <input type="number" id="qe-input-2" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-red-400 transition text-right">
+                    <label class="block text-xs font-bold text-gray-300 mb-1 ml-1">2. 국산쌀 생탁 출고</label>
+                    <input type="number" id="qe-input-2" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/40 focus:border-white/30 transition text-right placeholder-gray-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">3. 미출고 잔량</label>
-                    <input type="number" id="qe-input-3" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-red-400 transition text-right">
+                    <label class="block text-xs font-bold text-gray-300 mb-1 ml-1">3. 미출고 잔량</label>
+                    <input type="number" id="qe-input-3" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:bg-black/40 focus:border-white/30 transition text-right placeholder-gray-500">
                 </div>
             </div>
 
-            <button id="qe-submit-btn" onclick="submitQuickDailyReport()" class="w-full mt-8 py-4 bg-red-600/70 hover:bg-red-600/90 backdrop-blur-md border border-red-500/30 text-white font-bold text-xl rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-            🚀 입력 완료
+            <button id="qe-submit-btn" onclick="submitQuickDailyReport()" class="w-full mt-8 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-red-500/50 active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/20">
+                🚀 입력 완료
             </button>
         </div>
 
         <div id="qe-result-content" class="hidden text-center py-2">
             <div class="mb-4 flex justify-center">
-                <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-bounce border-4 border-white/20">
                     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                 </div>
             </div>
             
-            <h3 class="text-2xl font-bold text-white mb-1">입력 성공!</h3>
-            <p class="text-sm text-gray-300 mb-6">데이터가 정상적으로 반영되었습니다.</p>
+            <h3 class="text-2xl font-bold text-white mb-1 drop-shadow-md">입력 성공!</h3>
+            <p class="text-sm text-gray-200 mb-6">데이터가 안전하게 저장되었습니다.</p>
 
-            <div class="bg-white/10 rounded-2xl p-5 mb-6 border border-white/10 text-left space-y-3">
+            <div class="bg-black/20 rounded-2xl p-5 mb-6 border border-white/10 text-left space-y-3 shadow-inner">
                 <div class="flex justify-between border-b border-white/10 pb-2">
                     <span class="text-gray-300">담당자</span>
-                    <span class="font-bold" id="res-manager">-</span>
+                    <span class="font-bold text-white" id="res-manager">-</span>
                 </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-400">생탁 출고</span>
+                <div class="flex justify-between text-sm text-gray-100">
+                    <span>생탁 출고</span>
                     <span class="font-mono font-bold" id="res-val1">0</span>
                 </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-400">국산쌀 출고</span>
+                <div class="flex justify-between text-sm text-gray-100">
+                    <span>국산쌀 출고</span>
                     <span class="font-mono font-bold" id="res-val2">0</span>
                 </div>
-                <div class="flex justify-between text-sm border-b border-white/10 pb-2">
-                    <span class="text-gray-400">미출고 잔량</span>
+                <div class="flex justify-between text-sm border-b border-white/10 pb-2 text-gray-100">
+                    <span>미출고 잔량</span>
                     <span class="font-mono font-bold" id="res-val3">0</span>
                 </div>
-                
                 <div class="flex justify-between items-center pt-1">
                     <span class="text-green-400 font-bold text-sm" id="res-balance-label">최종 잔량</span>
-                    <span class="text-3xl font-bold text-white font-mono" id="res-balance">0</span>
+                    <span class="text-3xl font-bold text-white font-mono drop-shadow-sm" id="res-balance">0</span>
                 </div>
             </div>
 
-            <button onclick="closeQuickEntryModal()" class="w-full py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl transition">
+            <button onclick="closeQuickEntryModal()" class="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition border border-white/20">
                 확인 (닫기)
             </button>
         </div>
@@ -1567,6 +1599,7 @@
   <script src="quickEntry.js"></script>
 </body>
 </html>
+
 
 
 
