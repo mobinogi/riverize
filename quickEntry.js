@@ -128,10 +128,11 @@ function liftModal(up) {
             // 🚨 [수정] 기존 -120px -> -220px로 변경!
             // 창을 화면 천장 가까이 바짝 들어 올려서, 
             // 아래쪽 키보드 공간을 최대한 확보합니다.
-            modalBody.style.transform = "translateY(-220px)";
+            modalBody.style.transform = "translateY(-250px)";
         } else {
             // 원위치 복귀
             modalBody.style.transform = "translateY(0)";
         }
     }
 }
+
