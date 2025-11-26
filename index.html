@@ -1460,7 +1460,7 @@
         currentYear = today.getFullYear();
         currentMonth = today.getMonth() + 1;
         document.getElementById('current-date').textContent = formatDate(today);
-        document.getElementById('generate-button').disabled = false;
+        //document.getElementById('generate-button').disabled = false;
         document.getElementById('app-status').textContent = '상태: 준비 완료.';
         fetchReportsForMonth(currentYear, currentMonth, true);
 
@@ -1567,6 +1567,7 @@
   <script src="quickEntry.js"></script>
 </body>
 </html>
+
 
 
 
