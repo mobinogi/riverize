@@ -243,9 +243,18 @@
       <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
         <p class="font-semibold">현재 날짜: <span id="current-date">로딩 중...</span></p>
       </div>
-      <button id="generate-button" onclick="generateTodayReport()" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400" disabled>
-        오늘 일보 생성 & 열기
-      </button>
+      <div class="flex w-full rounded-xl shadow-md overflow-hidden mt-4">
+          <button onclick="generateTodayReport()" class="flex-1 py-3 bg-green-500 text-white font-bold hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+              <span>📄 생성&열기</span>
+          </button>
+          
+          <div class="w-px bg-green-700/20"></div>
+          
+          <button onclick="openQuickEntryModal()" class="flex-1 py-3 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              <span>⚡ 간편 작성</span>
+          </button>
+      </div>
       
       <h2 class="text-2xl font-semibold text-gray-700 pt-4">3. 거래처 현황 지도</h2>
       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
@@ -1470,8 +1479,62 @@
         modal.addEventListener('touchend', () => { isDragging = false; modal.style.transition = 'transform 0.3s ease-out'; if (currentY - startY > 100) closeNavPrompt(); else if (!modal.classList.contains('translate-y-full')) modal.style.transform = 'translateY(0)'; startY=0; currentY=0; });
     });
 </script>
+<div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
+    
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeQuickEntryModal()"></div>
+
+    <div class="relative w-full max-w-sm mx-4 bg-white/10 border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] backdrop-blur-xl rounded-3xl p-6 text-white overflow-hidden animate-fade-in-up">
+        
+        <button onclick="closeQuickEntryModal()" class="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-white drop-shadow-md">
+            📝 간편 일보 작성
+        </h2>
+
+        <div class="mb-6">
+            <label class="block text-xs font-medium text-gray-300 mb-2 ml-1">담당자 선택 (필수)</label>
+            <div class="flex gap-3">
+                <button id="qe-btn-kim" onclick="selectQuickManager('김원대')" class="flex-1 py-3 rounded-xl border border-white/30 bg-white/5 text-gray-200 font-bold hover:bg-white/20 transition-all active:scale-95">
+                    김원대
+                </button>
+                <button id="qe-btn-jung" onclick="selectQuickManager('정병준')" class="flex-1 py-3 rounded-xl border border-white/30 bg-white/5 text-gray-200 font-bold hover:bg-white/20 transition-all active:scale-95">
+                    정병준
+                </button>
+            </div>
+            <input type="hidden" id="qe-manager" value="">
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">1. 생탁 금일 출고 (박스)</label>
+                <input type="number" id="qe-input-1" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-green-400 transition text-right">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">2. 국산쌀 생탁 금일 출고 (박스)</label>
+                <input type="number" id="qe-input-2" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-green-400 transition text-right">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1 ml-1">3. 미출고 박스 잔량 (박스)</label>
+                <input type="number" id="qe-input-3" placeholder="0" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:ring-2 focus:ring-green-400 transition text-right">
+            </div>
+        </div>
+
+        <button onclick="submitQuickDailyReport()" class="w-full mt-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+            🚀 입력 완료
+        </button>
+        
+        <p class="text-center text-[10px] text-gray-400 mt-3">
+            * 파일이 없으면 자동으로 생성 후 저장됩니다.
+        </p>
+    </div>
+</div>
 </body>
 </html>
+
 
 
 
