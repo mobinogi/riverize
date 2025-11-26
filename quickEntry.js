@@ -123,7 +123,7 @@ function attachMobileKeyboardFix() {
         input.addEventListener('focus', () => {
             if (window.innerWidth <= 768) {
                 modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '10px'; 
+                modalWrapper.style.paddingTop = '5px'; 
             }
         });
 
@@ -140,4 +140,5 @@ function attachMobileKeyboardFix() {
         });
     });
 }
+
 
