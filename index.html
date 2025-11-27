@@ -1565,8 +1565,14 @@ function renderCalendar() {
                     <div class="${cls}" ${clickHandler}>${day}</div>
                 </div>
             `;
+      } finally { 
+            hideLoader(); 
+            renderCalendar(); 
+            // ✅ [추가된 코드] 로딩 완료 시 상태 메시지를 갱신합니다.
+            document.getElementById('review-status').textContent = '상태: 월별 보고서 정보 로딩 완료.';
         }
     }
+  
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
         const prevYear = prevDate.getFullYear();
@@ -1959,6 +1965,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
