@@ -1687,6 +1687,42 @@ function getFactoryLedgerStatus(e) {
         }, 10);
     }
 
+/**
+     * 캘린더 날짜를 꾹 누르기 시작할 때 실행됩니다.
+     */
+    let reportPressTimer; // 타이머 변수
+    let isLongPressed = false; // 롱프레스 성공 여부 플래그
+
+    function startPressReport(el, id, url, dateStr) {
+        // 롱프레스 시작 시 초기화
+        isLongPressed = false;
+        
+        // 눌렸을 때 살짝 작아지는 효과
+        el.style.transform = "scale(0.9)"; 
+
+        // 🚨 [타이머 시작] 0.8초 뒤에 팝업을 띄우도록 예약
+        reportPressTimer = setTimeout(() => {
+            isLongPressed = true; // 플래그를 true로 변경
+            if (navigator.vibrate) navigator.vibrate(50); // 진동 피드백
+            
+            // 옵션 팝업창 띄우기
+            openReportOptionModal(id, url, dateStr);
+            
+            // 팝업이 뜨면 스타일 복귀 (손 떼는 로직 대신 여기서 처리)
+            el.style.transform = "scale(1)";
+        }, 800); // 0.8초 (안정적인 롱프레스 감지 시간)
+    }
+
+    /**
+     * 손가락을 떼거나 마우스를 뗄 때 타이머를 취소합니다.
+     */
+    function endPressReport() {
+        clearTimeout(reportPressTimer);
+        // 눌렀을 때 변했던 스타일 복귀
+        const activeEls = document.querySelectorAll('.date-box');
+        activeEls.forEach(el => el.style.transform = "scale(1)");
+    }
+  
     function closeReportOptionModal() {
         const modal = document.getElementById('report-option-modal');
         const sheet = document.getElementById('ro-sheet');
@@ -1832,6 +1868,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
