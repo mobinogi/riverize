@@ -516,6 +516,39 @@
     </div>
   <span id="toast-message" class="text-sm font-bold text-gray-800 whitespace-nowrap">알림 메시지</span>
 </div>
+  <div id="report-option-modal" class="fixed inset-0 z-[9999] hidden">
+    
+    <div id="ro-backdrop" class="absolute inset-0 bg-black/40 transition-opacity opacity-0" onclick="closeReportOptionModal()"></div>
+
+    <div id="ro-sheet" class="absolute bottom-0 left-0 w-full bg-white rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform translate-y-full transition-transform duration-300 ease-out flex flex-col pb-10">
+        
+        <div class="w-full flex justify-center pt-3 pb-2">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <div class="px-6 pt-2">
+            <h3 id="option-date-title" class="text-xl font-bold text-center mb-6 text-gray-900 border-b border-gray-100 pb-4">
+                2025년 11월 27일
+            </h3>
+
+            <div class="space-y-3">
+                <button id="btn-open-report" class="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg rounded-2xl transition shadow-md flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+                    <span>열기</span>
+                </button>
+
+                <button id="btn-delete-report" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold text-lg rounded-2xl transition shadow-md flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>삭제</span>
+                </button>
+            </div>
+
+            <button onclick="closeReportOptionModal()" class="w-full mt-4 py-4 bg-gray-100 text-gray-600 font-bold text-lg rounded-2xl hover:bg-gray-200 transition">
+                취소
+            </button>
+        </div>
+    </div>
+</div>
 <script src="quickEntry.js"></script>
 <script>
     // ===============================================
@@ -1617,6 +1650,60 @@ function getFactoryLedgerStatus(e) {
     document.addEventListener('DOMContentLoaded', () => {
         updateFactoryStatus();
     });
+
+// ===============================================
+    // 🗂️ 보고서 옵션 팝업 제어 (바텀 시트 애니메이션 적용)
+    // ===============================================
+    let selectedReportId = null;
+
+    function openReportOptionModal(id, url, dateStr) {
+        selectedReportId = id;
+        document.getElementById('option-date-title').textContent = dateStr;
+        
+        // 버튼 이벤트 연결
+        document.getElementById('btn-open-report').onclick = function() {
+            openSheetApp(url);
+            closeReportOptionModal();
+        };
+        
+        document.getElementById('btn-delete-report').onclick = function() {
+            // 삭제 확인 (시스템 confirm 사용)
+            if (confirm("정말 삭제하시겠습니까? (휴지통으로 이동)")) {
+                deleteReportAction(id, dateStr);
+            }
+        };
+
+        const modal = document.getElementById('report-option-modal');
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+
+        // 1. 껍데기 보이기
+        modal.classList.remove('hidden');
+
+        // 2. 애니메이션 (스르륵 올라옴)
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            sheet.classList.remove('translate-y-full');
+        }, 10);
+    }
+
+    function closeReportOptionModal() {
+        const modal = document.getElementById('report-option-modal');
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+
+        if (!modal) return;
+
+        // 1. 애니메이션 역재생 (내려감)
+        sheet.classList.add('translate-y-full');
+        backdrop.classList.add('opacity-0');
+
+        // 2. 애니메이션 끝난 뒤 숨김
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+  
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1745,6 +1832,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
