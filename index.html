@@ -1651,7 +1651,7 @@ function getFactoryLedgerStatus(e) {
         updateFactoryStatus();
     });
 
-// ===============================================
+    // ===============================================
     // 🗂️ 보고서 옵션 팝업 제어 (바텀 시트 애니메이션 적용)
     // ===============================================
     let selectedReportId = null;
@@ -1687,34 +1687,40 @@ function getFactoryLedgerStatus(e) {
         }, 10);
     }
 
-/**
-     * 캘린더 날짜를 꾹 누르기 시작할 때 실행됩니다.
-     */
-    let reportPressTimer; // 타이머 변수
-    let isLongPressed = false; // 롱프레스 성공 여부 플래그
+    // ===============================================
+    // 🖱️ [복구] 달력 꾹 누르기 (Long Press) 로직
+    // ===============================================
+    let reportPressTimer;
+    let isLongPressed = false; // 꾹 누르기 성공 여부 플래그
 
+    /**
+     * 1. 누르기 시작 (타이머 시작)
+     */
     function startPressReport(el, id, url, dateStr) {
-        // 롱프레스 시작 시 초기화
+        // 이전 타이머 취소 (안전장치)
+        clearTimeout(reportPressTimer);
+        
+        // 꾹 누르기 시작
         isLongPressed = false;
         
-        // 눌렸을 때 살짝 작아지는 효과
+        // 눌렸을 때 살짝 작아지는 효과 (눌리는 모션)
         el.style.transform = "scale(0.9)"; 
 
         // 🚨 [타이머 시작] 0.8초 뒤에 팝업을 띄우도록 예약
         reportPressTimer = setTimeout(() => {
-            isLongPressed = true; // 플래그를 true로 변경
-            if (navigator.vibrate) navigator.vibrate(50); // 진동 피드백
+            isLongPressed = true; // 롱프레스 성공!
+            if (navigator.vibrate) navigator.vibrate(50); 
             
             // 옵션 팝업창 띄우기
             openReportOptionModal(id, url, dateStr);
             
-            // 팝업이 뜨면 스타일 복귀 (손 떼는 로직 대신 여기서 처리)
+            // 팝업이 뜨면 스타일 복귀 (다음 동작을 위해)
             el.style.transform = "scale(1)";
-        }, 800); // 0.8초 (안정적인 롱프레스 감지 시간)
+        }, 800); // 0.8초 설정
     }
 
     /**
-     * 손가락을 떼거나 마우스를 뗄 때 타이머를 취소합니다.
+     * 2. 손 뗌 (타이머 취소)
      */
     function endPressReport() {
         clearTimeout(reportPressTimer);
@@ -1722,24 +1728,19 @@ function getFactoryLedgerStatus(e) {
         const activeEls = document.querySelectorAll('.date-box');
         activeEls.forEach(el => el.style.transform = "scale(1)");
     }
-  
-    function closeReportOptionModal() {
-        const modal = document.getElementById('report-option-modal');
-        const sheet = document.getElementById('ro-sheet');
-        const backdrop = document.getElementById('ro-backdrop');
 
-        if (!modal) return;
-
-        // 1. 애니메이션 역재생 (내려감)
-        sheet.classList.add('translate-y-full');
-        backdrop.classList.add('opacity-0');
-
-        // 2. 애니메이션 끝난 뒤 숨김
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
+    /**
+     * 3. 짧은 클릭 처리 (롱프레스가 성공했으면 클릭 무시)
+     */
+    function handleReportClick(url) {
+        // 롱프레스 플래그가 참이면 (이미 팝업이 떴으면)
+        if (isLongPressed) {
+            isLongPressed = false; // 플래그 리셋 후
+            return; // 클릭 무시
+        }
+        // 짧은 클릭 액션
+        openSheetApp(url); 
     }
-  
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1868,4 +1869,5 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
