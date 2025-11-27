@@ -1512,9 +1512,15 @@
         try {
             const result = await callAppsScript('getReportFilesByMonth', { year, month });
             if (Array.isArray(result)) { result.forEach(r => reportsMap[r.date] = r); reportsMap[key] = 'completed'; }
-        } finally { hideLoader(); renderCalendar(); }
+        } finally { 
+            hideLoader(); 
+            renderCalendar(); 
+            // ✅ [추가된 코드] 로딩 완료 시 상태 메시지를 갱신합니다.
+            document.getElementById('review-status').textContent = '상태: 월별 보고서 정보 로딩 완료.';
+        }
     }
-function renderCalendar() {
+  
+     function renderCalendar() {
         const container = document.getElementById('calendar-days');
         if (!container) return;
         container.innerHTML = '';
@@ -1565,13 +1571,8 @@ function renderCalendar() {
                     <div class="${cls}" ${clickHandler}>${day}</div>
                 </div>
             `;
-      } finally { 
-            hideLoader(); 
-            renderCalendar(); 
-            // ✅ [추가된 코드] 로딩 완료 시 상태 메시지를 갱신합니다.
-            document.getElementById('review-status').textContent = '상태: 월별 보고서 정보 로딩 완료.';
         }
-    }
+   }
   
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
@@ -1965,6 +1966,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
