@@ -1223,6 +1223,16 @@
         let currentY = 0;
         let isDragging = false;
 
+        // ----------------------------------------------------
+        // 1. 보고서 옵션 모달 (ro-sheet) 제스처 로직 추가
+        // ----------------------------------------------------
+        const optionSheet = document.getElementById('ro-sheet');
+        if (!optionSheet) return;
+
+        let startY_ro = 0;
+        let currentY_ro = 0;
+        let isDragging_ro = false;
+      
         // 터치 시작
         modal.addEventListener('touchstart', (e) => {
             // 내용물이 아니라 헤더(손잡이) 부분을 잡았을 때만 드래그 추천 (선택사항)
@@ -1949,6 +1959,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
