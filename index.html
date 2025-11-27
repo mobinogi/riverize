@@ -1446,7 +1446,54 @@
             } else { if(newWindow) newWindow.close(); alert('실패'); }
         } catch (e) { if(newWindow) newWindow.close(); alert('오류'); } finally { hideLoader(); }
     }
+ 
+    /**
+     * [추가] 보고서 삭제 실행 함수 (code.js의 deleteReportFile 호출)
+     */
+    async function deleteReportAction(fileId, dateStr) {
+        showLoader(`"${dateStr}" 보고서 삭제 중...`);
+        closeReportOptionModal(); 
+        try {
+            const result = await callAppsScript('deleteReportFile', { fileId: fileId });
+            if (result.status === 'success') {
+                showToast("보고서가 삭제되었습니다.", "success");
+                
+                // 캘린더 데이터에서 제거 (UI 업데이트)
+                const dateKey = dateStr.replace(/년 |월 |일/g, '-').slice(0, -1).replace(/-(\d{1})$/g, '-0$1'); 
+                delete reportsMap[dateKey];
+                
+                renderCalendar(); // 캘린더 UI 갱신
+            } else {
+                showToast("삭제 실패: " + result.message, "error");
+            }
+        } catch (e) {
+            showToast("서버 오류: " + e.message, "error");
+        } finally {
+            hideLoader();
+        }
+    }
 
+    /**
+     * [신규] 보고서 옵션 모달/시트 닫기
+     */
+    function closeReportOptionModal() {
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+        const modal = document.getElementById('report-option-modal');
+        
+        // 1. 애니메이션 (스르륵 내려감)
+        // TailwindCSS 트랜지션 클래스를 사용하여 애니메이션 실행
+        backdrop.classList.add('opacity-0');
+        sheet.classList.add('translate-y-full');
+
+        // 2. 애니메이션 완료 후 완전히 숨기기
+        // 300ms(0.3s)는 CSS의 duration-300과 일치해야 자연스러움
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); 
+    }
+
+  
     // 캘린더 렌더링 관련
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
         const key = year + '-' + month;
@@ -1457,7 +1504,7 @@
             if (Array.isArray(result)) { result.forEach(r => reportsMap[r.date] = r); reportsMap[key] = 'completed'; }
         } finally { hideLoader(); renderCalendar(); }
     }
-    function renderCalendar() {
+function renderCalendar() {
         const container = document.getElementById('calendar-days');
         if (!container) return;
         container.innerHTML = '';
@@ -1467,16 +1514,49 @@
         const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         
+        // 빈 공간 채우기
         for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+        
+        // 날짜 채우기
         for (let day = 1; day <= daysInMonth; day++) {
             const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
             const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
             const hasReport = reportsMap[dateKey];
             let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
-            container.innerHTML += `<div class="p-2 flex justify-center"><div class="${cls}" onclick="${!isSunday ? `onDateClick(${day})` : ''}">${day}</div></div>`;
+            
+            let clickHandler = '';
+            
+            if (hasReport) {
+                // ✅ 보고서가 있으면 롱프레스/터치 이벤트 연결
+                const reportId = hasReport.id;
+                const reportUrl = hasReport.url;
+                const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+                
+                // 롱프레스 관련 이벤트 핸들러
+                clickHandler = `
+                    onclick="handleReportClick('${reportUrl}')"
+                    onmousedown="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
+                    onmouseup="endPressReport()"
+                    onmouseleave="endPressReport()"
+                    ontouchstart="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
+                    ontouchend="endPressReport()"
+                `;
+            } else if (!isSunday) {
+                // ✅ 보고서가 없으면 기존 onDateClick 연결 (생성 모달)
+                clickHandler = `onclick="onDateClick(${day})"`;
+            } else {
+                // ✅ 일요일은 아무 것도 없음
+                clickHandler = ``;
+            }
+            
+            // 최종 HTML 생성
+            container.innerHTML += `
+                <div class="p-2 flex justify-center">
+                    <div class="${cls}" ${clickHandler}>${day}</div>
+                </div>
+            `;
         }
     }
-
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
         const prevYear = prevDate.getFullYear();
@@ -1869,5 +1949,6 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
