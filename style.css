@@ -1,8 +1,33 @@
   <style>
 /* gmarket_font.css 파일 내용 */
-@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFLight.ttf') format('truetype'); font-weight: 300; } 
-@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFMedium.ttf') format('truetype'); font-weight: 500; } /* ✅ 굵기 파일 필요! */
-@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFBold.ttf') format('truetype'); font-weight: 700; } /* ✅ 굵기 파일 필요! */
+/* Nexon Lv1 Gothic 폰트 정의 (Light, Regular, Bold) */
+
+/* Light (300) */
+@font-face {
+    font-family: 'NexonLv1Gothic';
+    /* 파일명: NEXONLv1GothicLight.ttf */
+    src: url('NEXONLv1GothicLight.ttf') format('truetype');
+    font-weight: 300; 
+    font-style: normal;
+}
+
+/* Regular (400 - 기본 굵기) */
+@font-face {
+    font-family: 'NexonLv1Gothic';
+    /* 파일명: NEXONLv1GothicRegular.ttf */
+    src: url('NEXONLv1GothicRegular.ttf') format('truetype');
+    font-weight: 400; 
+    font-style: normal;
+}
+
+/* Bold (700) */
+@font-face {
+    font-family: 'NexonLv1Gothic';
+    /* 파일명: NEXONLv1GothicBold.ttf */
+    src: url('NEXONLv1GothicBold.ttf') format('truetype');
+    font-weight: 700; 
+    font-style: normal;
+}
 
 /* (스타일은 그대로 유지) */
    html, body { 
@@ -13,7 +38,7 @@
     overscroll-behavior-y: none; 
     
     /* ✅ GmarketSans로 변경 */
-    font-family: 'GmarketSans', sans-serif !important; 
+    font-family: 'NexonLv1Gothic', sans-serif !important; 
     font-size: 15px; 
    }
 
