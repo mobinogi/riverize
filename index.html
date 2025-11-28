@@ -228,13 +228,15 @@
         animation: bounce-once 0.6s ease-out 1; /* 1번만 실행하고 끝 */
     }
 
-/* ✅ 1. 펄싱 글로우 애니메이션 키프레임: 짙은 녹색 글로우로 복구 */
+/* ✅ 1. 펄싱 글로우 애니메이션 키프레임: 퍼짐을 줄여 텍스트 주변에서만 은은하게 빛나도록 수정 */
     @keyframes pulsate {
       0% {
-        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #10b981, 0 0 45px #10b981, 0 0 55px #10b981, 0 0 70px #10b981, 0 0 80px #10b981;
+        /* [최소] 상태: 텍스트 가까이서만 빛남 (8px, 15px) */
+        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 8px #10b981, 0 0 5px #10b981; 
       }
       100% {
-        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #059669, 0 0 80px #059669, 0 0 90px #059669, 0 0 100px #059669, 0 0 150px #059669;
+        /* [최대] 상태: 텍스트에서 은은하게 퍼짐 (15px, 40px) */
+        text-shadow: 0 0 4px #fff, 0 0 10px #fff, 0 0 15px #059669, 0 0 40px #059669; 
       }
     }
     
@@ -2004,6 +2006,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
