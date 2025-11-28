@@ -255,7 +255,7 @@
 
   </div>
 </div>
-<div id="nav-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] transform translate-y-full transition-transform duration-300 z-50 pb-10 touch-none">
+<div id="nav-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl transform translate-y-full transition-transform duration-300 z-50 pb-10 touch-none">
   
   <div id="drag-handle" class="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing">
       <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
@@ -323,7 +323,7 @@
     
     <div id="ro-backdrop" class="absolute inset-0 bg-black/40 transition-opacity opacity-0" onclick="closeReportOptionModal()"></div>
 
-    <div id="ro-sheet" class="absolute bottom-0 left-0 w-full bg-white rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform translate-y-full transition-transform duration-300 ease-out flex flex-col pb-10">
+    <div id="ro-sheet" class="absolute bottom-0 left-0 w-full bg-white rounded-t-3xl transform translate-y-full transition-transform duration-300 ease-out flex flex-col pb-10">
         
         <div class="w-full flex justify-center pt-3 pb-2">
             <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
@@ -943,7 +943,10 @@
         
         const modal = document.getElementById('nav-confirm-modal');
         if (modal) {
-            // 드래그로 망가진 스타일 초기화
+           
+          modal.classList.add('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+          
+          // 드래그로 망가진 스타일 초기화
             modal.style.transform = ''; 
             modal.style.transition = ''; 
             
@@ -958,7 +961,9 @@
     function closeNavPrompt() {
         const modal = document.getElementById('nav-confirm-modal');
         if (modal) {
-            modal.classList.add('translate-y-full');
+          modal.classList.remove('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+          
+          modal.classList.add('translate-y-full');
             // 애니메이션 후 스타일 초기화
             setTimeout(() => { modal.style.transform = ''; }, 300);
         }
@@ -1293,7 +1298,10 @@
         const sheet = document.getElementById('ro-sheet');
         const backdrop = document.getElementById('ro-backdrop');
         const modal = document.getElementById('report-option-modal');
-        
+
+        // ✅ [제거] 모달이 닫힐 때 그림자 클래스를 제거합니다.
+        sheet.classList.remove('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+      
         // 1. 애니메이션 (스르륵 내려감)
         // TailwindCSS 트랜지션 클래스를 사용하여 애니메이션 실행
         backdrop.classList.add('opacity-0');
@@ -1577,6 +1585,9 @@ function getFactoryLedgerStatus(e) {
         const sheet = document.getElementById('ro-sheet');
         const backdrop = document.getElementById('ro-backdrop');
 
+        // ✅ [추가] 모달이 열릴 때 그림자 클래스를 추가합니다.
+        sheet.classList.add('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+
         // 1. 껍데기 보이기
         modal.classList.remove('hidden');
 
@@ -1769,6 +1780,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
