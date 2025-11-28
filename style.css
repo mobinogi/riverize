@@ -1,13 +1,8 @@
   <style>
 /* gmarket_font.css 파일 내용 */
-@font-face {
-    font-family: 'GmarketSans';
-    /* 깃허브에 올리신 파일명과 일치해야 합니다. */
-    src: url('GmarketSansTTFLight.ttf') format('truetype');
-    font-weight: 300; /* Light Weight */
-    font-style: normal;
-}
-
+@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFLight.ttf') format('truetype'); font-weight: 300; } 
+@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFMedium.ttf') format('truetype'); font-weight: 500; } /* ✅ 굵기 파일 필요! */
+@font-face { font-family: 'GmarketSans'; src: url('GmarketSansTTFBold.ttf') format('truetype'); font-weight: 700; } /* ✅ 굵기 파일 필요! */
 
 /* (스타일은 그대로 유지) */
    html, body { 
