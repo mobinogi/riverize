@@ -228,31 +228,33 @@
         animation: bounce-once 0.6s ease-out 1; /* 1번만 실행하고 끝 */
     }
 
-    /* 펄싱 글로우 애니메이션 키프레임 추가 */
+/* ✅ 1. 펄싱 글로우 애니메이션 키프레임: 흰색 글로우로 변경 */
     @keyframes pulsate {
       0% {
-        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #0fa, 0 0 45px #0fa, 0 0 55px #0fa, 0 0 70px #0fa, 0 0 80px #0fa;
+        /* 흰색과 밝은 회색 계열로 변경 */
+        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #eee, 0 0 45px #eee, 0 0 55px #eee, 0 0 70px #eee, 0 0 80px #eee;
       }
       100% {
-        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #0fa, 0 0 80px #0fa, 0 0 90px #0fa, 0 0 100px #0fa, 0 0 150px #0fa;
+        /* 흰색 글로우 효과 극대화 */
+        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #fff, 0 0 80px #fff, 0 0 90px #fff, 0 0 100px #fff, 0 0 150px #fff;
       }
     }
     
-/* 기존 스타일 복구: 연한 배경색 + 경계선 녹색 */
+    /* 2. 탭 활성화 클래스: 원래 모양(연한 녹색 배경, 짙은 녹색 텍스트) 유지 */
     .tab-active { 
-      border-color: #10b981; 
-      color: #059669; 
+      /* ✅ 원래의 .tab-active CSS를 유지 (배경: 연한 녹색, 텍스트: 짙은 녹색) */
       background-color: #ecfdf5; 
+      color: #059669; 
+      border-color: #10b981; 
       
-      /* ✅ 핵심: 하단에 있는 2px 녹색 선을 없애서 아래 콘텐츠 박스 경계선과 겹치지 않도록 합니다. */
-      border-bottom: 0px !important; 
+      /* 하단 선이 사라지는 것을 방지하기 위해 이전에 제거했던 border-bottom: 0px !important; 코드를 다시 추가하지 않습니다. */
     }
-
-    /* 펄싱 글로우 애니메이션 스타일 유지 */
+    
+    /* 3. 활성화된 탭 텍스트 스타일: 짙은 녹색을 유지하면서 흰색 글로우만 얹음 */
     .tab-active span { 
         animation: pulsate 1.5s ease-in-out infinite alternate;
-        color: #059669 !important; 
-        text-shadow: 0 0 5px #a7f3d0;
+        color: #059669 !important; /* ✅ 텍스트 색상은 원래의 짙은 녹색을 유지 */
+        text-shadow: 0 0 5px #fff; /* ✅ 흰색 글로우만 텍스트에 얹습니다. */
     }
     
     </style>
@@ -2007,6 +2009,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
