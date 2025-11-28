@@ -228,33 +228,28 @@
         animation: bounce-once 0.6s ease-out 1; /* 1번만 실행하고 끝 */
     }
 
-/* ✅ 1. 펄싱 글로우 애니메이션 키프레임: 흰색 글로우로 변경 */
+/* ✅ 1. 펄싱 글로우 애니메이션 키프레임: 짙은 녹색 글로우로 복구 */
     @keyframes pulsate {
       0% {
-        /* 흰색과 밝은 회색 계열로 변경 */
-        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #eee, 0 0 45px #eee, 0 0 55px #eee, 0 0 70px #eee, 0 0 80px #eee;
+        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #10b981, 0 0 45px #10b981, 0 0 55px #10b981, 0 0 70px #10b981, 0 0 80px #10b981;
       }
       100% {
-        /* 흰색 글로우 효과 극대화 */
-        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #fff, 0 0 80px #fff, 0 0 90px #fff, 0 0 100px #fff, 0 0 150px #fff;
+        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #059669, 0 0 80px #059669, 0 0 90px #059669, 0 0 100px #059669, 0 0 150px #059669;
       }
     }
     
-    /* 2. 탭 활성화 클래스: 원래 모양(연한 녹색 배경, 짙은 녹색 텍스트) 유지 */
+    /* 2. 탭 활성화 클래스: 원래 모양 유지 */
     .tab-active { 
-      /* ✅ 원래의 .tab-active CSS를 유지 (배경: 연한 녹색, 텍스트: 짙은 녹색) */
       background-color: #ecfdf5; 
       color: #059669; 
       border-color: #10b981; 
-      
-      /* 하단 선이 사라지는 것을 방지하기 위해 이전에 제거했던 border-bottom: 0px !important; 코드를 다시 추가하지 않습니다. */
     }
     
-    /* 3. 활성화된 탭 텍스트 스타일: 짙은 녹색을 유지하면서 흰색 글로우만 얹음 */
+    /* 3. 활성화된 탭 텍스트 스타일: 짙은 녹색을 유지하면서 글로우 적용 */
     .tab-active span { 
         animation: pulsate 1.5s ease-in-out infinite alternate;
-        color: #059669 !important; /* ✅ 텍스트 색상은 원래의 짙은 녹색을 유지 */
-        text-shadow: 0 0 5px #fff; /* ✅ 흰색 글로우만 텍스트에 얹습니다. */
+        color: #059669 !important; /* 텍스트 색상은 원래의 짙은 녹색 유지 */
+        text-shadow: 0 0 5px #10b981; /* 기본 글로우를 짙은 녹색으로 */
     }
     
     </style>
@@ -266,7 +261,7 @@
   강서 도매소
 </h1>
   
-<div class="flex border-b border-gray-200 mb-0"> 
+<div class="flex mb-0"> 
     <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active rounded-tl-xl rounded-tr-none">
       <span>일보 작성</span>
     </button>
@@ -2009,6 +2004,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
