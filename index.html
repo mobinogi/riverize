@@ -227,6 +227,30 @@
     .animate-bounce-once {
         animation: bounce-once 0.6s ease-out 1; /* 1번만 실행하고 끝 */
     }
+
+    /* 펄싱 글로우 애니메이션 키프레임 추가 */
+    @keyframes pulsate {
+      0% {
+        text-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #fff, 0 0 10px #0fa, 0 0 45px #0fa, 0 0 55px #0fa, 0 0 70px #0fa, 0 0 80px #0fa;
+      }
+      100% {
+        text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #0fa, 0 0 80px #0fa, 0 0 90px #0fa, 0 0 100px #0fa, 0 0 150px #0fa;
+      }
+    }
+    
+    /* 탭 활성화 클래스에 애니메이션 연결 */
+    .tab-active span { /* 탭 활성화 시 <span> 태그의 텍스트에만 적용 */
+        animation: pulsate 1.5s ease-in-out infinite alternate;
+        color: white !important; /* 빛 효과를 위해 글자색을 흰색 계열로 강제 변경 */
+        text-shadow: 0 0 5px #fff; /* 기본 네온 효과 */
+    }
+    
+    /* 주의: .tab-active 클래스의 배경색도 수정해야 합니다. */
+    .tab-active { 
+      border-color: #10b981; 
+      /* color: #059669; <- 삭제 (텍스트는 span에 별도로 적용) */
+      background-color: #059669; /* 활성화 시 배경을 짙은 녹색으로 변경 */
+    }
     
     </style>
 </head>
@@ -237,12 +261,12 @@
   강서 도매소
 </h1>
   
-  <div class="flex border-b border-gray-200 mb-6">
+<div class="flex border-b border-gray-200 mb-6">
     <button id="tab-write" onclick="changeTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active">
-      일보 작성
+      <span>일보 작성</span>
     </button>
     <button id="tab-review" onclick="changeTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600">
-      날짜 검색
+      <span>날짜 검색</span>
     </button>
   </div>
 
@@ -1978,6 +2002,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
