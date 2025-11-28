@@ -807,7 +807,7 @@
                         li.classList.remove('bg-white/30');
                     }
                 }, 800); 
-            }, { passive: true });
+            }, { passive: false });
 
             li.addEventListener('touchmove', (e) => {
                 if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
@@ -815,7 +815,7 @@
                     clearTimeout(listTouchTimer); 
                     li.classList.remove('bg-white/30');
                 }
-            }, { passive: true });
+            }, { passive: false });
 
             li.addEventListener('touchend', (e) => {
                 clearTimeout(listTouchTimer);
@@ -1780,6 +1780,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
