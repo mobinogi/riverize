@@ -6,7 +6,7 @@
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src https://fonts.gstatic.com;
+    font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr;
     frame-src 'self' blob:; 
   ">
@@ -1769,6 +1769,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
