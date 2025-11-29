@@ -1094,28 +1094,7 @@
         });
     }
 
-    // ----------------------------------------------------
-    // --- (C) 지연된 IP 로깅 ---
-    // ----------------------------------------------------
-    
-    // 5초 지연 후 IP 조회 및 로그 기록 시작
-    setTimeout(function() {
-        logClientIPAndActivity();
-    }, 5000); 
-
   }); // 👈 모든 로직이 이 단 하나의 리스너 안에서 안전하게 실행됩니다.
-
-    // ----------------------------------------------------
-    // 🟢 [신규] 지연된 IP 로그 기록 함수 (클라이언트)
-    // ----------------------------------------------------
-    async function logClientIPAndActivity() {
-        try {
-             await callAppsScript('logClientIPAndActivity', { actionType: '웹 앱 최초 접속 (IP 기록)' });
-        } catch(e) {
-            console.error("Delayed IP logging failed:", e);
-        }
-    }
-  
     
     function openDeletePrompt(client, user) {
         deleteTargetClient = client; deleteTargetUser = user;
@@ -1786,6 +1765,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
