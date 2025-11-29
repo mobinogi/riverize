@@ -17,6 +17,9 @@ function openQuickEntryModal() {
     if (formContent) formContent.classList.remove('hidden');
     if (resultContent) resultContent.classList.add('hidden');
 
+    // ✅ [추가] 모달을 열자마자 로그를 서버로 전송합니다.
+    logClientActionAsync('⚡ 간편 작성 모달 열기');
+    
     // 입력값 초기화
     document.getElementById('qe-manager').value = '';
     document.getElementById('qe-input-1').value = '';
@@ -199,3 +202,4 @@ function attachMobileKeyboardFix() {
 document.addEventListener('DOMContentLoaded', () => {
     attachMobileKeyboardFix();
 });
+
