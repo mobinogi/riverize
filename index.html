@@ -448,11 +448,15 @@
       if (tabName === 'write') {
         document.getElementById('tab-write').classList.add('tab-active');
         document.getElementById('content-write').classList.remove('hidden');
+        // ✅ [추가] 탭 변경 로그
+        logClientActionAsync('일보 작성 탭 클릭');
       } else if (tabName === 'review') {
         document.getElementById('tab-review').classList.add('tab-active');
         document.getElementById('content-review').classList.remove('hidden');
         if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
         else renderCalendar();
+        // ✅ [추가] 탭 변경 로그
+        logClientActionAsync('날짜 검색 탭 클릭');
       }
     }
 
@@ -464,6 +468,9 @@
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
       document.getElementById('map-overlay').classList.remove('hidden');
+
+      // ✅ [추가] 지도 열기 행동 로그를 비동기적으로 기록
+      logClientActionAsync('지도 화면 열기');
       
       if (!isMapInitialized) {
         console.log("맵 생성 시작...");
@@ -1637,6 +1644,16 @@ function getFactoryLedgerStatus(e) {
         // 짧은 클릭 액션
         openSheetApp(url); 
     }
+
+   /**
+ * UI 작업 로그를 서버에 비동기적으로 전송합니다. (로그 기록용)
+ */
+function logClientActionAsync(actionName) {
+    // 느린 로깅 함수가 메인 앱의 속도를 방해하지 않도록 Promise를 무시합니다.
+    callAppsScript('logUIAction', { uiActionName: actionName })
+        .catch(e => console.error("UI Log Failed", e));
+}
+  
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1765,6 +1782,7 @@ function getFactoryLedgerStatus(e) {
 </div>
 </body>
 </html>
+
 
 
 
