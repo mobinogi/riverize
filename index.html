@@ -18,9 +18,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
+  <script src="sidebar.js"></script>
 </head>
-<body class="p-4 md:p-8">
-
+<body class="min-h-screen bg-gray-50 flex font-sans">
+  <div id="sidebar" 
+         class="fixed left-0 top-0 h-full w-0 md:w-64 bg-gray-800 text-gray-200 
+                shadow-2xl md:shadow-none transition-all duration-300 z-50 
+                flex-shrink-0 flex flex-col p-4">
   <h1 class="text-3xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center">
   <img src="logo.png" alt="생탁 로고" class="h-14 w-auto mr-3 select-none pointer-events-none">
   강서 도매소
@@ -1782,6 +1786,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
