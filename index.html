@@ -1079,7 +1079,10 @@
     currentMonth = today.getMonth() + 1;
     document.getElementById('current-date').textContent = formatDate(today);
     document.getElementById('app-status').textContent = '상태: 준비 완료.';
-    
+
+    // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
+    if (typeof changeView === 'function') changeView('write');
+      
     fetchReportsForMonth(currentYear, currentMonth, true); // 캘린더 데이터 로드
     updateFactoryStatus(); // 공장 잔량 채우기
 
@@ -1089,6 +1092,7 @@
         document.getElementById('client-list-panel').classList.add('hidden');
         document.getElementById('btn-restore-sidebar').classList.remove('hidden');
     });
+      
 
     // ----------------------------------------------------
     // --- (B) 드래그 제스처 로직 통합 (단 한 번만 정의) ---
@@ -1820,6 +1824,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
