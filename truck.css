@@ -1,4 +1,26 @@
+/* =========================================
+   truck.css - 배경색 및 스타일 통합
+   ========================================= */
 
+/* [1] 로딩 오버레이: 배경색을 #009688 (청록색)으로 설정 */
+#loading-overlay:not(.hidden) {
+    /* 기존 투명 검정 삭제 -> 생탁 청록색 적용 */
+    background: #009688 !important; 
+    
+    /* 꽉 찬 화면 설정 */
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    
+    /* 전체 화면 덮기 (혹시 몰라 추가) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 /* [2] 전체 장면 (tr-scene) */
 .tr-scene {
     margin: 0 auto;
