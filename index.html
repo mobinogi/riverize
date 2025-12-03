@@ -1699,7 +1699,15 @@ function logClientActionAsync(actionName) {
     callAppsScript('logUIAction', { uiActionName: actionName })
         .catch(e => console.error("UI Log Failed", e));
 }
+ 
   
+  function openSalesSummary(url) {
+    if (typeof openSheetApp === 'function') {
+        openSheetApp(url);
+    } else {
+        window.open(url, '_blank');
+    }
+}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1828,6 +1836,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
