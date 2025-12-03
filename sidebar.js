@@ -127,7 +127,7 @@ function changeConsolidatedYear(delta) {
 }
 
 
- * 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
+ /* 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
