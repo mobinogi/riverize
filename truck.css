@@ -1,19 +1,4 @@
-/* =========================================
-   truck.css - 트럭 로딩 애니메이션 전용
-   ========================================= */
 
-/* [1] 로딩 오버레이: 반투명 검정 + 블러 효과 */
-#loading-overlay:not(.hidden) {
-    background: rgba(0, 0, 0, 0.3) !important; /* 배경 살짝 어둡게 */
-    backdrop-filter: blur(10px) !important;      /* 뒤 화면 흐리게 */
-    -webkit-backdrop-filter: blur(10px) !important;
-    
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
 
 /* 전체 장면 래퍼 */
 .tr-scene {
