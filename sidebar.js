@@ -209,3 +209,14 @@ function cleanupOverlays() {
     document.getElementById('loading-overlay').classList.add('hidden'); // 로딩 오버레이 닫기
     document.getElementById('confirm-modal').classList.add('hidden');
 }
+/**
+ * showLoader (loading-message-display ID 참조 버전)
+ */
+function showLoader(message) { 
+    // ID가 loading-message-display로 복구되어야 함
+    const msgEl = document.getElementById('loading-message-display'); 
+    if (msgEl) {
+        msgEl.textContent = message;
+    } 
+    document.getElementById('loading-overlay').classList.remove('hidden'); 
+}
