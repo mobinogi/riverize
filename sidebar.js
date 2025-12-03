@@ -178,7 +178,7 @@ function renderConsolidatedList() {
                         w-full max-w-[120px] active:bg-blue-100/70 active:border-blue-500 group">
                 <img src="${iconUrl}" 
                      alt="통합본 아이콘" 
-                     class="w-16 h-16 mb-2 select-none group-hover:scale-120 transition-transform" 
+                     class="w-16 h-16 mb-2 select-none group-hover:scale-120 transition-transform **object-contain**" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
                 <span class="text-xl font-bold text-gray-800 text-center leading-tight">
                     ${displayMonth}월
