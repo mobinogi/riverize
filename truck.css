@@ -116,8 +116,7 @@
     background: url('image_1d0097.png') no-repeat center center;
     background-size: contain;
     
-    opacity: 0.7;
-    mix-blend-mode: multiply; /* 음각 효과 */
+    
 }
 
 
