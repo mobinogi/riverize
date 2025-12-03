@@ -6,8 +6,8 @@
 #loading-overlay:not(.hidden) {
     /* 1. 기본 설정 (모바일 기준) */
     background: rgba(0, 0, 0, 0.4) !important; 
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
     
     display: flex !important;
     flex-direction: column;
