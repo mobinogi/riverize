@@ -77,7 +77,7 @@
                       <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
                         <div class="flex justify-between items-center">
                             <p class="font-semibold text-lg flex items-center gap-2">
-                                📅 <span id="current-date">로딩 중...</span>
+                                📅 <span id="current-date">불러오는 중...</span>
                             </p>
                             <button onclick="updateFactoryStatus()" class="text-xs text-blue-400 hover:text-blue-600 p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -124,7 +124,7 @@
                                  거래처 현황 지도 보기
                        </button>
 
-                      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
+                      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
                     </div>
 
                     <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
@@ -134,7 +134,7 @@
                           <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                           </button>
-                          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
+                          <div id="current-month-display" class="text-2xl font-bold text-green-700">불러오는 중...</div>
                           <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                           </button>
@@ -154,7 +154,7 @@
                         <span id="summary-button-text">XX월 매출현황표 생성</span>
                       </button>
 
-                      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
+                      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 불러오는 중...</p>
                     </div>
                 </div> 
             </div> 
@@ -178,7 +178,7 @@
                   <p class="text-gray-500 col-span-full">통합본 목록을 불러오는 중...</p>
               </div>
               
-              <p id="consolidated-status" class="text-sm text-gray-400 mt-8 py-3 text-center border-t border-gray-100/70">상태: 로딩 중...</p>
+              <p id="consolidated-status" class="text-sm text-gray-400 mt-8 py-3 text-center border-t border-gray-100/70">상태: 불러오는 중...</p>
           
           </div> 
           <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
@@ -799,7 +799,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         
         buttonElement.classList.add('toggle-active');
         activeClientUser = user;
-        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 로딩 중... (${user})</p>`;
+        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 불러오는 중... (${user})</p>`;
         
         if (!loadedClientData[user]) await fetchClientList(user);
         displayClientList(user, loadedClientData[user]);
@@ -1437,7 +1437,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     async function fetchReportsForMonth(year, month, isInitialLoad = false) {
         const key = year + '-' + month;
         if (reportsMap[key] === 'completed') { renderCalendar(); return; }
-        if (!isInitialLoad) showLoader('로딩 중...');
+        if (!isInitialLoad) showLoader('불러오는 중...');
         try {
             const result = await callAppsScript('getReportFilesByMonth', { year, month });
             if (Array.isArray(result)) { result.forEach(r => reportsMap[r.date] = r); reportsMap[key] = 'completed'; }
@@ -1883,6 +1883,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
