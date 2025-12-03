@@ -27,8 +27,14 @@
      class="fixed left-0 top-0 h-full hidden md:flex w-64 flex-shrink-0 flex-col p-4 z-50
             transition-all duration-300
             bg-gradient-to-b from-gray-700 to-gray-900 text-gray-200
+            
+            /* 📱 모바일: 평면 (그림자X, 선X) */
             shadow-none border-none
-            md:shadow-2xl md:border-r md:border-gray-600/30">
+            
+            /* 💻 PC: 진한 그림자 + 선명한 경계선 */
+            /* 설명: x축으로 5px 이동, 검은색 50% 진하기로 그림자 생성 */
+            md:shadow-[5px_0_25px_rgba(0,0,0,0.5)] 
+            md:border-r md:border-gray-500/50">
         
         <div onclick="changeView('write')"
              class="text-2xl font-bold text-white mb-8 border-b border-gray-700 pb-4 select-none cursor-pointer hover:text-gray-300 transition-colors">
@@ -1885,6 +1891,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
