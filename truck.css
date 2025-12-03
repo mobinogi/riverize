@@ -48,7 +48,7 @@
     overflow: hidden;
     border-bottom: 3px solid #fff;
     color: #fff;
-    background: #009688;;
+    background: transparent !important;
 }
 
 /* 배경 요소 (산, 언덕, 나무, 바위) - 원본 유지 */
