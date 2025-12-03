@@ -24,9 +24,11 @@
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
     
     <div id="sidebar" 
-     class="fixed left-0 top-0 h-full hidden md:flex w-64 bg-gray-800 text-gray-200 
-            shadow-2xl md:shadow-none transition-all duration-300 z-50 
-            flex-shrink-0 flex-col p-4">
+     class="fixed left-0 top-0 h-full hidden md:flex w-64 flex-shrink-0 flex-col p-4 z-50
+            transition-all duration-300
+            bg-gradient-to-b from-gray-700 to-gray-900 text-gray-200
+            shadow-none border-none
+            md:shadow-2xl md:border-r md:border-gray-600/30">
         
         <div onclick="changeView('write')"
              class="text-2xl font-bold text-white mb-8 border-b border-gray-700 pb-4 select-none cursor-pointer hover:text-gray-300 transition-colors">
@@ -1883,6 +1885,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
