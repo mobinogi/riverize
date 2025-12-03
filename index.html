@@ -34,7 +34,7 @@
 
         <nav class="space-y-2">
             <a onclick="changeView('consolidated')" id="menu-consolidated"
-               class="flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors hover:bg-gray-700 view-active">
+               class="flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors hover:bg-gray-700">
                 <span class="font-medium text-lg">일보 통합본</span>
             </a>
             <a onclick="openSalesSheet()" id="menu-sales"
@@ -43,9 +43,8 @@
             </a>
         </nav>
     </div>
-
     <div id="main-content-wrapper" 
-     class="flex-grow pt-4 ml-0 md:ml-64 transition-all duration-300 w-full">
+         class="flex-grow pt-4 ml-0 md:ml-64 transition-all duration-300 w-full">
         
         <div class="max-w-4xl mx-auto p-4">
 
@@ -65,118 +64,123 @@
                     </button>
                 </div>
               
-              <div id="tab-content">
-              
-                <div id="content-write" 
-                     class="sub-tab-content space-y-6 p-6 rounded-xl 
-                            bg-[#f7f9fc] text-gray-700 
-                            shadow-[0px_-8px_15px_rgba(255,255,255,0.8),0px_8px_15px_rgba(204,204,204,0.5)]">
-                  <h2 class="text-2xl font-semibold text-gray-700">일일 보고서 생성 및 작업</h2>
-                    <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
+                <div id="tab-content">
                     
-                    <div class="flex justify-between items-center">
-                        <p class="font-semibold text-lg flex items-center gap-2">
-                            📅 <span id="current-date">로딩 중...</span>
-                        </p>
-                        
-                        <button onclick="updateFactoryStatus()" class="text-xs text-blue-400 hover:text-blue-600 p-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        </button>
-                    </div>
-
-                    <div class="my-2 border-t border-blue-200/60"></div>
-
-                    <div class="flex justify-around items-center pt-1">
-                        <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f26">-</span>
-                        
-                        <span class="text-blue-200 text-xl">|</span>
-                        
-                        <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f27">-</span>
-                        
-                        <span class="text-blue-200 text-xl">|</span>
-                        
-                        <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f28">-</span>
-                    </div>
-                  </div>
-              <div class="flex w-full rounded-xl shadow-xl overflow-hidden mt-4">
-                  <button onclick="generateTodayReport()" 
-                          class="flex-1 py-5 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold 
-                                 hover:from-green-600 hover:to-green-700 transition-all flex items-center justify-center gap-2 text-2xl
-                                 shadow-[0_4px_10px_rgba(0,0,0,0.1),_0_0_0_1px_rgba(255,255,255,0.4)]
-                                 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] active:scale-[0.99]"> 
-                      <span> 생성&열기</span>
-                  </button>
-                  
-                  <button onclick="openQuickEntryModal()" 
-                          class="flex-1 py-5 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold 
-                                 hover:from-red-600 hover:to-red-700 transition-all flex items-center justify-center gap-2 text-2xl 
-                                 shadow-[0_4px_10px_rgba(0,0,0,0.1),_0_0_0_1px_rgba(255,255,255,0.4)]
-                                 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] active:scale-[0.99]">
-                      <span>⚡ 간편 작성</span>
-                  </button>
-              </div>
-                  <h2 class="text-2xl font-light text-gray-700 pt-4">거래처 현황 지도</h2>
-                  <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
-                    <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
-                  </div>
-                  <button onclick="openMapOverlay()" 
-                    class="w-full mt-4 py-4 
-                           bg-blue-600 text-white font-bold text-lg 
-                           rounded-xl 
-                           hover:bg-blue-700 transition-colors shadow-xl 
-                           active:scale-[0.98]">
-                             거래처 현황 지도 보기
-                   </button>
-
-                  <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
-                </div>
-
-                <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
-                  <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
-                  
-                  <div class="flex justify-between items-center mb-4">
-                      <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                      </button>
-                      <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
-                      <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                      </button>
-                  </div>
-
-                  <div class="calendar-grid text-center text-sm font-medium">
-                      <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
-                        <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
-                        <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
-                        <div class="p-2">토</div>
+                    <div id="content-write" 
+                         class="sub-tab-content space-y-6 p-6 rounded-xl 
+                                bg-[#f7f9fc] text-gray-700 
+                                shadow-[0px_-8px_15px_rgba(255,255,255,0.8),0px_8px_15px_rgba(204,204,204,0.5)]">
+                      
+                      <h2 class="text-2xl font-semibold text-gray-700">일일 보고서 생성 및 작업</h2>
+                      
+                      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <p class="font-semibold text-lg flex items-center gap-2">
+                                📅 <span id="current-date">로딩 중...</span>
+                            </p>
+                            <button onclick="updateFactoryStatus()" class="text-xs text-blue-400 hover:text-blue-600 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            </button>
+                        </div>
+                        <div class="my-2 border-t border-blue-200/60"></div>
+                        <div class="flex justify-around items-center pt-1">
+                            <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f26">-</span>
+                            <span class="text-blue-200 text-xl">|</span>
+                            <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f27">-</span>
+                            <span class="text-blue-200 text-xl">|</span>
+                            <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f28">-</span>
+                        </div>
                       </div>
-                      <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
-                          </div>
-                  </div>
-                  
-                  <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
-                    <span id="summary-button-text">XX월 매출현황표 생성</span>
-                  </button>
 
-                  <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
+                      <div class="flex w-full rounded-xl shadow-xl overflow-hidden mt-4">
+                          <button onclick="generateTodayReport()" 
+                                  class="flex-1 py-5 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold 
+                                         hover:from-green-600 hover:to-green-700 transition-all flex items-center justify-center gap-2 text-2xl
+                                         shadow-[0_4px_10px_rgba(0,0,0,0.1),_0_0_0_1px_rgba(255,255,255,0.4)]
+                                         shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] active:scale-[0.99]"> 
+                              <span> 생성&열기</span>
+                          </button>
+                          
+                          <button onclick="openQuickEntryModal()" 
+                                  class="flex-1 py-5 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold 
+                                         hover:from-red-600 hover:to-red-700 transition-all flex items-center justify-center gap-2 text-2xl 
+                                         shadow-[0_4px_10px_rgba(0,0,0,0.1),_0_0_0_1px_rgba(255,255,255,0.4)]
+                                         shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] active:scale-[0.99]">
+                              <span>⚡ 간편 작성</span>
+                          </button>
+                      </div>
+
+                      <h2 class="text-2xl font-light text-gray-700 pt-4">거래처 현황 지도</h2>
+                      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+                        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
+                      </div>
+                      <button onclick="openMapOverlay()" 
+                        class="w-full mt-4 py-4 
+                               bg-blue-600 text-white font-bold text-lg 
+                               rounded-xl 
+                               hover:bg-blue-700 transition-colors shadow-xl 
+                               active:scale-[0.98]">
+                                 거래처 현황 지도 보기
+                       </button>
+
+                      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 로딩 중...</p>
+                    </div>
+
+                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg">
+                      <h2 class="text-2xl font-semibold text-gray-700">보고서 날짜 검색 및 검토</h2>
+                      
+                      <div class="flex justify-between items-center mb-4">
+                          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                          </button>
+                          <div id="current-month-display" class="text-2xl font-bold text-green-700">로딩 중...</div>
+                          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                      </div>
+
+                      <div class="calendar-grid text-center text-sm font-medium">
+                          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
+                            <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
+                            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
+                            <div class="p-2">토</div>
+                          </div>
+                          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
+                          </div>
+                      </div>
+                      
+                      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
+                        <span id="summary-button-text">XX월 매출현황표 생성</span>
+                      </button>
+
+                      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 로딩 중...</p>
+                    </div>
+                </div> 
+            </div> 
+          <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
+                 
+                 <div class="flex justify-center items-center mb-10 pt-4 border-b-2 border-gray-100 pb-6">
+                    <button onclick="changeConsolidatedYear(-1)" 
+                            class="p-2 text-gray-500 hover:text-gray-700 transition-colors active:scale-95 flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    
+                    <h2 id="consolidated-header-year" class="text-2xl md:text-3xl font-extrabold text-gray-800 mx-4 text-center break-keep leading-tight">
+                        </h2>
+                    
+                    <button onclick="changeConsolidatedYear(1)" 
+                            class="p-2 text-gray-500 hover:text-gray-700 transition-colors active:scale-95 flex-shrink-0">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
-                
-              </div> 
-              </div>
-            <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
-                 <h2 id="consolidated-header" 
-                    class="text-3xl font-extrabold text-gray-800 text-center mb-10 pb-4 border-b-2 border-gray-100">
-                    2025년 통합본
-                </h2>
+
                 <div id="consolidated-list" 
-                     class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
+                     class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-6 justify-items-center">
                     <p class="text-gray-500 col-span-full">통합본 목록을 불러오는 중...</p>
                 </div>
                 <p id="consolidated-status" class="text-sm text-gray-400 mt-10 text-center">상태: 로딩 중...</p>
-            </div>
-            </div>
-        
-        <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4">Made with ☕ by Byungjun & Gemini</p>
+            </div> 
+            </div> <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
   
   <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
       <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
@@ -1824,6 +1828,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
