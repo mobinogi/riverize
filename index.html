@@ -17,6 +17,7 @@
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="truck.css">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="sidebar.js"></script>
 </head>
@@ -193,14 +194,24 @@
       </div>
   </div>
 
- <div id="loading-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-modal="true">
-    <div class="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center space-y-4"> 
-        
-        <div class="w-10 h-10 border-4 border-green-500 border-t-transparent border-solid rounded-full animate-spin"></div>
-        
-        <p id="loading-message-display" class="text-lg font-semibold text-gray-700">처리 중...</p>
-      </div>
+ <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center w-full h-full transition-opacity duration-300">
+    
+    <div class="tr-scene transform scale-75 md:scale-100"> 
+        <div class="tr-mountain"></div>
+        <div class="tr-hill"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-rock"></div>
+        <div class="tr-truck"></div>
+        <div class="tr-wheels"></div>
+    </div>
+
+    <div id="loading-message-display" style="margin-top: 30px; text-align: center; min-height: 30px;">
+        </div>
+
 </div>
+          
 <div id="map-overlay" class="fixed inset-0 z-40 flex flex-col hidden bg-white" aria-modal="true">
   <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[50]">
         <button onclick="openManualAddModal()" class="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg active:scale-95 transition-transform">
@@ -436,7 +447,38 @@
       return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
     }
     
-    function showLoader(message) { document.getElementById('loading-message').textContent = message; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    /**
+ * [업그레이드] 트럭 애니메이션에 맞춰 텍스트를 쪼개서 보여주는 로딩 함수
+ */
+function showLoader(message) {
+    const overlay = document.getElementById('loading-overlay');
+    const loadingTextContainer = document.getElementById('loading-message-display');
+    
+    if (!overlay) return; // 안전장치
+
+    // 1. 오버레이 보이기
+    overlay.classList.remove('hidden');
+    
+    // 2. 텍스트 애니메이션 세팅 (매출현황표, 일보 등 모든 텍스트 대응)
+    if (loadingTextContainer) {
+        // 기존 내용 초기화
+        loadingTextContainer.innerHTML = '';
+        loadingTextContainer.classList.add('flowing-text'); // truck.css 클래스
+
+        // 3. 글자를 한 글자씩 쪼개서 <span>으로 포장
+        [...message].forEach((char, index) => {
+            const span = document.createElement('span');
+            // 띄어쓰기 유지
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            
+            // ⭐ 핵심: 글자마다 0.12초씩 딜레이 (파도타기 효과)
+            const delay = index * 0.12; 
+            span.style.animationDelay = `${delay}s`;
+            
+            loadingTextContainer.appendChild(span);
+        });
+    }
+}
     function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
@@ -1837,6 +1879,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
