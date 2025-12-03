@@ -275,5 +275,94 @@
         color: #059669 !important; /* 텍스트 색상은 원래의 짙은 녹색 유지 */
         text-shadow: 0 0 5px #10b981; /* 기본 글로우를 짙은 녹색으로 */
     }
+
+
+/* 트럭 수평 이동 애니메이션 */
+@keyframes truck-move {
+    0% { transform: translateX(-100%); } /* 왼쪽 밖에서 시작 */
+    100% { transform: translateX(100%); } /* 오른쪽 밖으로 이동 */
+}
+
+/* 트럭 애니메이션을 포함할 배경 스타일 */
+.truck-loader-bg {
+    /* 트럭이 지나갈 레일 영역 */
+    width: 200px; /* 로딩 바의 폭 */
+    height: 30px; /* 로딩 바의 높이 */
+    overflow: hidden; /* 트럭이 밖으로 나갈 때 숨기기 */
+    background-color: #f0f0f0; /* 레일 배경색 (밝게) */
+    border-radius: 5px;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* 트럭 요소 (가상 요소로 만들 수도 있지만, 간단히 클래스로 정의) */
+.loading-truck {
+    width: 200px; /* 트럭이 레일 폭과 같게 설정 */
+    height: 100%;
+    /* 트럭 색상 및 그림자 */
+    background-color: #4CAF50; /* 트럭 색상 (녹색) */
+    border-radius: 5px;
+    position: absolute;
+    animation: truck-move 1.5s linear infinite; /* 애니메이션 적용 */
+}
+
+/* 짐칸 글씨 스타일 (음각 효과) */
+.loading-text-inset {
+    font-size: 1.5rem; /* 글씨 크기 조정 */
+    font-weight: 800;
+    color: transparent; /* 폰트 색상을 투명하게 */
+    text-shadow: 
+        0 0 1px #000,   /* 어두운 그림자 (음각 깊이) */
+        0 1px 1px #888; /* 밝은 그림자 (음각 하이라이트) */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+}
+
+/* 1. 애니메이션 키프레임 정의 */
+@keyframes text-reveal {
+    0% { background-position: -200px 0; } /* 왼쪽 바깥에서 시작 */
+    50% { background-position: 200px 0; }  /* 오른쪽 끝까지 이동 */
+    100% { background-position: -200px 0; } /* 루프를 위해 다시 시작 위치로 */
+}
+
+/* 2. 메시지 컨테이너 및 텍스트 스타일 */
+#loading-message-display {
+    /* 텍스트의 크기 및 색상을 기본으로 설정 */
+    font-size: 1.5rem; /* text-xl 보다 조금 더 크게 */
+    font-weight: 800;
+    color: #4b5563; /* 기본 회색 */
+    
+    /* 텍스트 위에 움직이는 그라데이션 적용 (★ 핵심 ★) */
+    
+    /* 배경 클립을 텍스트로 설정하여 텍스트만 배경을 보여주도록 함 */
+    -webkit-background-clip: text;
+    background-clip: text;
+    
+    /* 배경은 투명하게 설정 */
+    color: transparent; 
+
+    /* 배경으로 사용할 그라데이션 정의 (나타나는 색상: 초록색 계열) */
+    background-image: linear-gradient(
+        to right,
+        #4CAF50 0%,         /* 시작점 (쌓이는 부분 색상) */
+        #c8e6c9 20%,        /* 중간점 (부드럽게 밝아지는 부분) */
+        #4CAF50 40%,         /* 끝점 (다시 쌓이는 부분 색상) */
+        #4b5563 100%       /* 바깥쪽은 숨김 */
+    );
+    background-size: 200% 100%; /* 배경 크기를 200%로 설정하여 애니메이션 영역 확보 */
+    
+    /* 애니메이션 적용: 텍스트를 따라 배경이 움직임 */
+    animation: text-reveal 4s linear infinite; /* 4초 동안 부드럽게 반복 */
+}
+
+/* 3. 메시지 컨테이너에 overflow: hidden 설정 (선택 사항) */
+#message-flow-container {
+    overflow: hidden;
+    width: fit-content;
+    height: 30px; /* 애니메이션이 텍스트 높이만 따라가도록 제한 */
+}
     
     </style>
