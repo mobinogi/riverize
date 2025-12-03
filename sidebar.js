@@ -126,26 +126,28 @@ function changeConsolidatedYear(delta) {
     renderConsolidatedList();
 }
 
-/**
- * 통합본 아이콘 목록 렌더링 (최종 깔끔 버전)
+
+ * 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
     const headerYearEl = document.getElementById('consolidated-header-year');
     const statusEl = document.getElementById('consolidated-status');
 
+    // 1. 헤더 연도 업데이트
     if(headerYearEl) {
         headerYearEl.textContent = `${currentConsolidatedYear}년`; 
     }
 
+    // 2. 현재 연도에 맞는 파일만 필터링
     const filteredFiles = allConsolidatedFiles.filter(file => 
         file.name.includes(currentConsolidatedYear + '년')
     );
     
-    // 월별 오름차순 (1월 -> 12월) 정렬
+    // 3. 월별 오름차순 (1월 -> 12월) 정렬
     filteredFiles.sort((a, b) => {
         const getMonthNum = (name) => {
-            const match = name.match(/(\d{1,2})월/);
+            const match = name.match(/(\d{1,2})월/); 
             return match ? parseInt(match[1], 10) : 0;
         };
         return getMonthNum(a.name) - getMonthNum(b.name); 
@@ -153,19 +155,21 @@ function renderConsolidatedList() {
     
     listContainer.innerHTML = '';
 
+    // 4. 파일 없음 처리
     if (filteredFiles.length === 0) {
          listContainer.innerHTML = `<p class="text-gray-400 text-center col-span-full py-10">${currentConsolidatedYear}년도 통합본 파일이 없습니다.</p>`;
          statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 없음.`;
          return;
     }
     
+    // 5. 링크 연결 함수 정의
     const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
 
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 4. 아이콘 생성 및 텍스트 수정
+    // 6. 아이콘 생성 및 텍스트 수정 (폰트 크기 안정화)
     filteredFiles.forEach(file => {
-        const match = file.name.match(/(\d{1,2})월/); // 💡 월(MM)만 추출
+        const match = file.name.match(/(\d{1,2})월/); 
         const displayMonth = match ? match[1] : '??';
 
         const itemHtml = `
@@ -177,16 +181,13 @@ function renderConsolidatedList() {
                      alt="통합본 아이콘" 
                      class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-xl font-bold text-gray-800 text-center leading-tight">
-                    ${displayMonth}월 // 💡 '통합본' 글자 최종 제거 및 폰트 'text-xl'로 키움
+                <span class="text-lg font-bold text-gray-800 text-center leading-tight">
+                    ${displayMonth}월
                 </span>
             </div>
         `;
         listContainer.innerHTML += itemHtml;
     });
-    
-    statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
-}
     
     statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
 }
