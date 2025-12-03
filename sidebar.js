@@ -127,7 +127,7 @@ function changeConsolidatedYear(delta) {
 }
 
 /**
- * 통합본 아이콘 목록 렌더링 (최종 수정판)
+ * 통합본 아이콘 목록 렌더링 (최종 깔끔 버전)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
@@ -142,14 +142,13 @@ function renderConsolidatedList() {
         file.name.includes(currentConsolidatedYear + '년')
     );
     
-    // 💡 [수정] 오름차순 (1월 -> 12월) 정렬을 위한 로직 추가
+    // 월별 오름차순 (1월 -> 12월) 정렬
     filteredFiles.sort((a, b) => {
-        // 이름에서 "MM월" 부분만 추출하여 숫자로 비교 (예: "10월" -> 10, "1월" -> 1)
         const getMonthNum = (name) => {
             const match = name.match(/(\d{1,2})월/);
             return match ? parseInt(match[1], 10) : 0;
         };
-        return getMonthNum(a.name) - getMonthNum(b.name); // 오름차순 정렬
+        return getMonthNum(a.name) - getMonthNum(b.name); 
     });
     
     listContainer.innerHTML = '';
@@ -160,18 +159,14 @@ function renderConsolidatedList() {
          return;
     }
     
-    // openSalesSummary(url) 함수는 openSheetApp(url)로 대체될 수 있습니다.
-    // 만약 openSalesSummary 함수가 index1.html에 없다면, 아래 함수가 필요합니다.
-    // ⚠️ openSalesSummary 함수가 없으므로 임시로 openSheetApp를 사용합니다. 
     const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
 
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 4. 아이콘 생성 및 폰트 크기 조정
+    // 4. 아이콘 생성 및 텍스트 수정
     filteredFiles.forEach(file => {
-        const match = file.name.match(/(\d{4})년\s*(\d{1,2})월/);
-        // const displayYear = match ? match[1] : ''; // 💡 년도 제거
-        const displayMonth = match ? match[2] : '';
+        const match = file.name.match(/(\d{1,2})월/); // 💡 월(MM)만 추출
+        const displayMonth = match ? match[1] : '??';
 
         const itemHtml = `
             <div onclick="${openFunc}('${file.url}')" 
@@ -182,13 +177,16 @@ function renderConsolidatedList() {
                      alt="통합본 아이콘" 
                      class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-base font-semibold text-gray-700 text-center leading-tight">
-                    ${displayMonth}월 통합본
+                <span class="text-xl font-bold text-gray-800 text-center leading-tight">
+                    ${displayMonth}월 // 💡 '통합본' 글자 최종 제거 및 폰트 'text-xl'로 키움
                 </span>
             </div>
         `;
         listContainer.innerHTML += itemHtml;
     });
+    
+    statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
+}
     
     statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
 }
