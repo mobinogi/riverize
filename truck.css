@@ -154,7 +154,7 @@
 }
 
 /* =========================================
-   [텍스트 애니메이션] 가속도(Acceleration) 버전
+   [텍스트 애니메이션] 가속도 + 리셋 대기 시간 추가
    ========================================= */
 
 .flowing-text {
@@ -163,45 +163,48 @@
     font-weight: 800;
     letter-spacing: 2px;
     color: white;
-    white-space: nowrap; /* 줄바꿈 방지 */
+    white-space: nowrap;
 }
 
 .flowing-text span {
     display: inline-block;
     opacity: 0;
-    
-    /* 시작 위치: 오른쪽으로 좀 더 멀리 보냄 (가속감 위해) */
     transform: translateX(80px); 
 
-    /* 핵심: cubic-bezier로 가속도 구현 
-       (앞부분은 꿀렁~ 하다가 뒷부분에 챡! 붙는 느낌)
+    /* 🚨 시간 수정: 3.5s -> 6s 
+       전체 시간을 길게 잡아서 '나가고 나서 기다리는 시간'을 확보했습니다.
     */
-    animation: accel-flow 3.5s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+    animation: accel-flow 6s cubic-bezier(0.7, 0, 0.3, 1) infinite;
 }
 
 @keyframes accel-flow {
-    /* [1] 등장 (오른쪽 -> 중앙) */
+    /* [1] 등장 (아주 빠르게 챡!) */
     0% {
         opacity: 0;
-        transform: translateX(80px); /* 멀리서 시작 */
+        transform: translateX(80px);
     }
-    15% {
+    5% {
         opacity: 1;
-        transform: translateX(-5px); /* 관성으로 살짝 더 갔다가 */
-    }
-    20% {
-        transform: translateX(0);    /* 제자리 정착 */
+        transform: translateX(0); /* 5% 구간만에 도착 (속도감 UP) */
     }
     
-    /* [2] 대기 (중앙 유지) */
-    80% {
+    /* [2] 대기 (글 읽을 시간) */
+    50% {
         opacity: 1;
         transform: translateX(0);
     }
     
-    /* [3] 퇴장 (중앙 -> 왼쪽) - 가속도 붙으며 사라짐 */
+    /* [3] 퇴장 (가속도 붙으며 왼쪽으로 슝!) */
+    60% {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+    
+    /* [4] ⭐ 핵심: 휴식 시간 (리셋 대기) */
+    /* 60%부터 100%까지는 투명한 상태로 왼쪽 구석에서 대기합니다.
+       이 시간 덕분에 뒷 글자들이 다 나갈 때까지 첫 글자가 다시 안 나옵니다. */
     100% {
         opacity: 0;
-        transform: translateX(-100px); /* 왼쪽으로 슝! */
+        transform: translateX(-100px);
     }
 }
