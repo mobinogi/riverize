@@ -154,38 +154,54 @@
 }
 
 /* =========================================
-   [텍스트 애니메이션] 오른쪽 등장 -> 정지 -> 왼쪽 퇴장
+   [텍스트 애니메이션] 가속도(Acceleration) 버전
    ========================================= */
 
-/* 1. 글자 하나하나를 감싸는 span 스타일 */
-.flowing-text span {
-    display: inline-block; /* 움직이려면 블록이어야 함 */
-    opacity: 0;            /* 처음엔 안 보임 */
-    font-weight: 800;      /* 두껍게 */
-    
-    /* 오른쪽(50px)에서 시작 */
-    transform: translateX(40px); 
-    
-    /* 애니메이션: 이름 | 시간 | 가속도 | 무한반복 */
-    animation: flow-in-out 3s ease-in-out infinite;
+.flowing-text {
+    display: inline-block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: white;
+    white-space: nowrap; /* 줄바꿈 방지 */
 }
 
-/* 2. 키프레임: 들어오고 나가는 동작 정의 */
-@keyframes flow-in-out {
+.flowing-text span {
+    display: inline-block;
+    opacity: 0;
+    
+    /* 시작 위치: 오른쪽으로 좀 더 멀리 보냄 (가속감 위해) */
+    transform: translateX(80px); 
+
+    /* 핵심: cubic-bezier로 가속도 구현 
+       (앞부분은 꿀렁~ 하다가 뒷부분에 챡! 붙는 느낌)
+    */
+    animation: accel-flow 3.5s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+}
+
+@keyframes accel-flow {
+    /* [1] 등장 (오른쪽 -> 중앙) */
     0% {
         opacity: 0;
-        transform: translateX(40px); /* 오른쪽에서 대기 */
+        transform: translateX(80px); /* 멀리서 시작 */
     }
     15% {
         opacity: 1;
-        transform: translateX(0);    /* 제자리로 슝! (가속) */
+        transform: translateX(-5px); /* 관성으로 살짝 더 갔다가 */
     }
-    85% {
+    20% {
+        transform: translateX(0);    /* 제자리 정착 */
+    }
+    
+    /* [2] 대기 (중앙 유지) */
+    80% {
         opacity: 1;
-        transform: translateX(0);    /* 글자 읽을 시간 동안 멈춤 */
+        transform: translateX(0);
     }
+    
+    /* [3] 퇴장 (중앙 -> 왼쪽) - 가속도 붙으며 사라짐 */
     100% {
         opacity: 0;
-        transform: translateX(-40px); /* 왼쪽으로 사라짐 */
+        transform: translateX(-100px); /* 왼쪽으로 슝! */
     }
 }
