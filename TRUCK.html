@@ -28,11 +28,42 @@
             <div class="tr-truck"></div>
             <div class="tr-wheels"></div>
         </div>
-        <p style="color: white; font-size: 1.5rem; font-weight: bold; margin-top: 20px; letter-spacing: 2px;">
-            매출현황표 배달중...
-        </p>
+        <p id="loading-message-display" style="margin-top: 30px; text-align: center;">
+            </p>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingText = document.getElementById('loading-message-display');
+            
+            if (loadingText) {
+                // 1. 텍스트 설정
+                const text = "매출현황표 배달중...";
+                
+                loadingText.innerHTML = '';
+                loadingText.classList.add('flowing-text');
+
+                // 2. 한 글자씩 쪼개기
+                [...text].forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.textContent = char === ' ' ? '\u00A0' : char;
+                    
+                    // 🔥 [핵심] 가속도 딜레이 공식
+                    // index(글자순서)가 커질수록 간격이 미세하게 좁아지거나
+                    // 탄력적으로 변하도록 계산
+                    
+                    // 기본 0.1초씩 늘어나되, 약간의 곡선을 줌
+                    const delay = index * 0.12; 
+                    
+                    span.style.animationDelay = `${delay}s`;
+                    
+                    loadingText.appendChild(span);
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>
+
 
