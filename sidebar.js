@@ -88,7 +88,8 @@ async function fetchConsolidatedList() {
     listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Drive에서 통합 파일을 검색 중입니다...</p>';
     statusEl.textContent = '상태: 검색 중...';
     
-    if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...');
+    // showLoader는 제거하고, 뷰 전환 시에만 메시지를 보여주도록 합니다.
+    // if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...'); 
     
     try {
         const result = await callAppsScript('getAllConsolidatedFiles'); 
@@ -102,7 +103,8 @@ async function fetchConsolidatedList() {
             renderConsolidatedList();
             statusEl.textContent = '상태: 목록 로드 완료.';
         } else {
-            listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>';
+            // 🚨 오류 메시지 수정: 이미지와 동일하게 '파일 목록을 불러오는 데 실패' 표시
+            listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>'; 
             statusEl.textContent = '상태: 오류 발생.';
         }
 
@@ -110,10 +112,9 @@ async function fetchConsolidatedList() {
         listContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">서버 통신 오류: ${e.message}</p>`;
         statusEl.textContent = '상태: 통신 실패.';
     } finally {
-        if (typeof hideLoader === 'function') hideLoader();
+        // if (typeof hideLoader === 'function') hideLoader(); // hideLoader 제거
     }
 }
-
 /**
  * 🚀 [신규] 연도 변경 버튼 클릭 시 호출
  */
@@ -125,8 +126,8 @@ function changeConsolidatedYear(delta) {
     renderConsolidatedList();
 }
 
-/**
- * 통합본 아이콘 목록 렌더링 (현재 연도 필터링)
+
+ * 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
@@ -135,7 +136,7 @@ function renderConsolidatedList() {
 
     // 1. 헤더 연도 업데이트
     if(headerYearEl) {
-        headerYearEl.textContent = `${currentConsolidatedYear}년`;
+        headerYearEl.textContent = `${currentConsolidatedYear}년`; 
     }
 
     // 2. 현재 연도에 맞는 파일만 필터링
@@ -143,25 +144,36 @@ function renderConsolidatedList() {
         file.name.includes(currentConsolidatedYear + '년')
     );
     
+    // 3. 월별 오름차순 (1월 -> 12월) 정렬
+    filteredFiles.sort((a, b) => {
+        const getMonthNum = (name) => {
+            const match = name.match(/(\d{1,2})월/); 
+            return match ? parseInt(match[1], 10) : 0;
+        };
+        return getMonthNum(a.name) - getMonthNum(b.name); 
+    });
+    
     listContainer.innerHTML = '';
 
-    // 3. 파일 없음 처리
+    // 4. 파일 없음 처리
     if (filteredFiles.length === 0) {
          listContainer.innerHTML = `<p class="text-gray-400 text-center col-span-full py-10">${currentConsolidatedYear}년도 통합본 파일이 없습니다.</p>`;
          statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 없음.`;
          return;
     }
     
+    // 5. 링크 연결 함수 정의
+    const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
+
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 4. 아이콘 생성
+    // 6. 아이콘 생성 및 텍스트 수정 (폰트 크기 안정화)
     filteredFiles.forEach(file => {
-        const match = file.name.match(/(\d{4})년\s*(\d{1,2})월/);
-        const displayYear = match ? match[1] : '';
-        const displayMonth = match ? match[2] : '';
+        const match = file.name.match(/(\d{1,2})월/); 
+        const displayMonth = match ? match[1] : '??';
 
         const itemHtml = `
-            <div onclick="openSalesSummary('${file.url}')" 
+            <div onclick="${openFunc}('${file.url}')" 
                  class="flex flex-col items-center p-4 rounded-xl border border-transparent 
                         hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer 
                         w-full max-w-[120px] active:bg-blue-100/70 active:border-blue-500 group">
@@ -169,8 +181,8 @@ function renderConsolidatedList() {
                      alt="통합본 아이콘" 
                      class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-xs font-semibold text-gray-700 text-center leading-tight">
-                    ${displayYear}년 ${displayMonth}월 통합본
+                <span class="text-lg font-bold text-gray-800 text-center leading-tight">
+                    ${displayMonth}월
                 </span>
             </div>
         `;
@@ -179,3 +191,4 @@ function renderConsolidatedList() {
     
     statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
 }
+
