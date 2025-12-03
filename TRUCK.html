@@ -3,22 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truck Animation</title>
+    <title>트럭 블러 테스트</title>
     <link rel="stylesheet" href="truck.css">
+    <style>
+        /* 실험용: 뒤에 깔릴 복잡한 배경 화면 */
+        body {
+            margin: 0;
+            height: 100vh;
+            /* 블러 효과 확인을 위한 임시 배경 이미지 (랜덤 자연 사진) */
+            background: url('https://source.unsplash.com/random/1920x1080/?nature,forest') no-repeat center center/cover;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="loop-wrapper">
-        <div class="mountain"></div>
-        <div class="hill"></div>
-        <div class="tree"></div>
-        <div class="tree"></div>
-        <div class="tree"></div>
-        <div class="rock"></div>
-        <div class="truck"></div>
-        <div class="wheels"></div>
+    <div id="loading-overlay">
+        <div class="tr-scene">
+            <div class="tr-mountain"></div>
+            <div class="tr-hill"></div>
+            <div class="tr-tree"></div>
+            <div class="tr-tree"></div>
+            <div class="tr-tree"></div>
+            <div class="tr-rock"></div>
+            <div class="tr-truck"></div>
+            <div class="tr-wheels"></div>
+        </div>
+        <p style="color: white; font-size: 1.5rem; font-weight: bold; margin-top: 20px; letter-spacing: 2px;">
+            처리 중...
+        </p>
     </div>
 
 </body>
-
 </html>
