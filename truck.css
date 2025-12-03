@@ -2,13 +2,17 @@
    truck.css - 트럭 로딩 애니메이션 전용
    ========================================= */
 
-/* 로딩 오버레이가 켜졌을 때 배경색 (기존 앱 스타일 덮어쓰기) */
+/* [1] 로딩 오버레이: 반투명 검정 + 블러 효과 */
 #loading-overlay:not(.hidden) {
-    background: #009688 !important; 
+    background: rgba(0, 0, 0, 0.3) !important; /* 배경 살짝 어둡게 */
+    backdrop-filter: blur(10px) !important;      /* 뒤 화면 흐리게 */
+    -webkit-backdrop-filter: blur(10px) !important;
+    
     display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    z-index: 9999;
 }
 
 /* 전체 장면 래퍼 */
@@ -24,7 +28,7 @@
     background: transparent; 
 }
 
-/* 산 */
+/* 배경 요소들 (산, 언덕, 나무, 바위) */
 .tr-mountain {
     position: absolute;
     right: -900px;
@@ -42,7 +46,6 @@
     animation: mtn 20s linear infinite;
 }
 
-/* 언덕 */
 .tr-hill {
     position: absolute;
     right: -900px;
@@ -60,7 +63,6 @@
     animation: hill 4s 2s linear infinite;
 }
 
-/* 나무 */
 .tr-tree, .tr-tree:nth-child(2), .tr-tree:nth-child(3) {
     position: absolute;
     height: 100px; 
@@ -69,7 +71,6 @@
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/tree.svg) no-repeat;
 }
 
-/* 바위 */
 .tr-rock {
     margin-top: -17%;
     height: 2%; 
@@ -81,12 +82,15 @@
     animation: rock 4s -0.530s linear infinite;
 }
 
-/* 🚛 트럭 몸통 (원본 SVG 사용) */
+/* 🚛 트럭 몸통 (외부 원본 SVG 사용) */
 .tr-truck {
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/truck.svg) no-repeat;
     background-size: contain;
+    
+    /* 원본 비율 유지 */
     height: 60px;
-    width: 100px;
+    width: 100px; 
+    
     position: absolute;
     bottom: 50px;
     left: 50%;
@@ -95,27 +99,35 @@
     z-index: 10;
 }
 
-/* 🚛 짐칸 로고 (왕로고 + 음각 효과) */
+/* 🚛 짐칸 로고 (음각 효과) */
 .tr-truck::after {
     content: '';
     position: absolute;
+    display: block;
+    
+    /* 원본 트럭에 맞춘 최적 위치 */
     top: 10px;
-    left: 12px;   /* 왼쪽으로 더 이동 */
-    width: 60px;  /* 로고 큼지막하게 */
+    left: 12px;
+    width: 60px;
     height: 40px;
+    
     z-index: 1;
     background: url('image_1d0097.png') no-repeat center center;
     background-size: contain;
+    
+    /* 음각 효과 */
     opacity: 0.7;
     mix-blend-mode: multiply; 
 }
 
-/* 🚛 바퀴 */
+/* 🚛 바퀴 (외부 원본 SVG 사용) */
 .tr-wheels {
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
     background-size: contain;
+    
     height: 15px;
     width: 100px;
+    
     position: absolute;
     bottom: 40px;
     left: 50%;
