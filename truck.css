@@ -144,117 +144,91 @@
 
 
 /* =========================================
-   🚛 트럭 본체 & 바퀴 & 로고
+   🚛 트럭 & 바퀴 (원본 스타일 정밀 복구)
    ========================================= */
+
+/* [공통 설정] 원본 style.css의 .truck, .wheels 공유 속성 */
+.tr-truck, .tr-wheels {
+    transition: all ease;
+    width: 85px;          /* 원본 너비 */
+    margin-right: -60px;  /* 원본 여백 */
+    bottom: 0px;          /* 🚨 원본 위치: 바닥에 딱 붙음 */
+    right: 50%;           /* 화면 중앙 */
+    position: absolute;
+    background: #eee;     /* 기본 배경 */
+}
+
+/* [트럭 몸통] */
 .tr-truck {
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/truck.svg) no-repeat;
     background-size: contain;
+    height: 60px;         /* 원본 높이 */
     
-    height: 60px;
-    width: 100px;
-    
-    position: absolute;
-    bottom: 6px; /* 바퀴 위에 안착 */
-    left: 50%;
-    transform: translateX(-50%);
-    
-    animation: truck 4s 0.080s ease infinite;
+    /* 원본 애니메이션 적용 */
+    animation: truck 4s 0.080s ease infinite; 
     z-index: 10;
 }
 
-/* 짐칸 로고 (생탁) */
+/* [바퀴] */
+.tr-wheels {
+    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
+    height: 15px;         /* 원본 높이 */
+    margin-bottom: 0;
+    
+    /* 원본 애니메이션 적용 */
+    animation: truck 4s 0.001s ease infinite; 
+}
+
+/* [트럭 앞유리 빛반사 효과] (원본에 있던 것) */
+.tr-truck::before {
+    content: " ";
+    position: absolute;
+    width: 25px;
+    box-shadow: -30px 28px 0 1.5px #fff, -35px 18px 0 1.5px #fff;
+    animation: wind 1.5s 0.000s ease infinite;
+}
+
+/* 🚛 [짐칸 로고] 위치 수정본 */
 .tr-truck::after {
     content: '';
     position: absolute;
     display: block;
     
-    top: 4px;
-    left: 7px;
-    width: 80px;
-    height: 40px;
-    z-index: 1;
+    /* [1] 위치: 왼쪽으로 더 밀기 */
+    top: 4px;       
+    left: 7px;      /* 일단 0px에서 시작해보세요 */
     
-    background: url('image_1d0097.png') no-repeat left center;
+    /* [2] 크기: 80px는 너무 큽니다! 짐칸 크기만큼만 잡으세요 */
+    width: 80px;    /* 80px -> 50px로 축소 */
+    height: 40px;
+    
+    z-index: 1;
+    background: url('image_1d0097.png') no-repeat;
+    
+    /* [3] 정렬: 박스 안에서 '왼쪽'에 붙어라! */
+    background-position: left center; /* center center -> left center */
     background-size: contain;
     
     opacity: 0.8;
-    mix-blend-mode: multiply; /* 음각 효과 */
-}
-
-/* 바퀴 */
-.tr-wheels {
-    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
-    background-size: contain;
-    
-    height: 15px;
-    width: 100px;
-    
-    position: absolute;
-    bottom: 0px;
-    left: 50%;
-    transform: translateX(-50%);
-    
-    animation: truck 4s 0.001s ease infinite;
+    mix-blend-mode: multiply;
 }
 
 
 /* =========================================
-   🔤 텍스트 애니메이션 (가속도 효과)
+   애니메이션 키프레임 (원본 그대로 유지)
    ========================================= */
-.flowing-text {
-    display: inline-block;
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: white;
-    white-space: nowrap;
-    
-    /* 글자 그림자 (가독성) */
-    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-    
-    margin-top: 20px;
-    z-index: 100;
-}
-
-.flowing-text span {
-    display: inline-block;
-    opacity: 0;
-    transform: translateX(80px);
-    
-    /* 쫀득한 움직임 (cubic-bezier) */
-    animation: elastic-flow 4.5s cubic-bezier(0.5, 0, 0.2, 1.3) infinite;
-}
-
-
-/* =========================================
-   🎬 애니메이션 키프레임 정의
-   ========================================= */
-
-/* 텍스트 흐름 */
-@keyframes elastic-flow {
-    0%   { opacity: 0; transform: translateX(80px); }
-    15%  { opacity: 1; transform: translateX(0); }
-    55%  { opacity: 1; transform: translateX(0); }
-    70%  { opacity: 0; transform: translateX(-100px); }
-    100% { opacity: 0; transform: translateX(-100px); }
-}
-
-/* 나무 이동 */
 .tr-tree { animation: tree 3s 0.000s linear infinite; }
 .tr-tree:nth-child(2) { animation: tree2 2s 0.150s linear infinite; }
 .tr-tree:nth-child(3) { animation: tree3 8s 0.050s linear infinite; }
 
-@keyframes tree  { 0% { transform: translate(1350px); } 100% { transform: translate(-50px); } }
+@keyframes tree { 0% { transform: translate(1350px); } 100% { transform: translate(-50px); } }
 @keyframes tree2 { 0% { transform: translate(650px); } 100% { transform: translate(-50px); } }
 @keyframes tree3 { 0% { transform: translate(2750px); } 100% { transform: translate(-50px); } }
+@keyframes rock { 0% { right: -200px; } 100% { right: 2000px; } }
+@keyframes mtn { 100% { transform: translateX(-2000px) rotate(130deg); } }
+@keyframes hill { 100% { transform: translateX(-2000px); } }
 
-/* 바위 이동 */
-@keyframes rock { 
-    0% { right: -200px; } 
-    100% { right: 2000px; } 
-}
-
-/* 트럭 덜컹거림 */
+/* 🚨 [핵심] 트럭 덜컹거림 원본 키프레임 */
 @keyframes truck {
     0% { }
     6% { transform: translateY(0px); }
@@ -265,10 +239,71 @@
     100% { }
 }
 
-/* 배경 회전 */
-@keyframes mtn { 
-    100% { transform: translateX(-2000px) rotate(130deg); } 
+/* 바람 효과 */
+@keyframes wind {
+    0% { }
+    50% { transform: translateY(3px); }
+    100% { }
 }
-@keyframes hill { 
-    100% { transform: translateX(-2000px); } 
+
+/* =========================================
+   [텍스트 애니메이션] 탄력(Elastic) + 꼬리물기 루프
+   ========================================= */
+
+.flowing-text {
+    display: inline-block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: white;
+    white-space: nowrap;
 }
+
+.flowing-text span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateX(80px); 
+
+    /* ⏱️ 전체 시간: 4.5초 (가장 최적화된 루프 시간)
+       - 너무 빠르지도, 너무 느리지도 않게 꼬리를 뭅니다.
+       
+       📈 물리 엔진: cubic-bezier(0.5, 0, 0.2, 1.3)
+       - 끝에 1.3이 있어서 글자가 도착할 때 '팅~' 하고 살짝 튕기는 탄력을 줍니다.
+    */
+    animation: elastic-flow 4.5s cubic-bezier(0.5, 0, 0.2, 1.3) infinite;
+}
+
+@keyframes elastic-flow {
+    /* [1] 등장 (오른쪽 -> 중앙) : 탄력 있게 팅! */
+    0% {
+        opacity: 0;
+        transform: translateX(80px);
+    }
+    15% {
+        opacity: 1;
+        transform: translateX(0); 
+    }
+    
+    /* [2] 정지 (읽는 시간) */
+    55% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    /* [3] 퇴장 (중앙 -> 왼쪽) : 가속도 붙으며 슝! */
+    /* 퇴장할 때는 튕기지 않고 가속도만 붙여서 빨려들어가게 설정 */
+    70% {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+    
+    /* [4] ⭐ 핵심: 꼬리 물기 대기 시간 (30%) */
+    /* 70% ~ 100% 구간은 투명한 상태로 대기합니다.
+       이 시간이 있어야 마지막 '점(...)'이 다 나갈 때까지
+       첫 글자 '매'가 오른쪽에서 기다려줍니다. */
+    100% {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+}
+
