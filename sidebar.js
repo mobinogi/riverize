@@ -192,3 +192,20 @@ function renderConsolidatedList() {
     statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
 }
 
+/**
+ * [핵심] 모든 모달과 오버레이를 강제로 숨기는 클린업 함수
+ */
+function cleanupOverlays() {
+    // 보고서 옵션 모달 잔여물 제거 (버튼 먹통 해결)
+    const reportModal = document.getElementById('report-option-modal');
+    if (reportModal) {
+        reportModal.classList.add('hidden'); 
+        document.getElementById('ro-sheet').classList.add('translate-y-full');
+        document.getElementById('ro-backdrop').classList.add('opacity-0');
+    }
+    
+    // 기타 오버레이/모달 강제 숨김
+    document.getElementById('map-overlay').classList.add('hidden');
+    document.getElementById('loading-overlay').classList.add('hidden'); // 로딩 오버레이 닫기
+    document.getElementById('confirm-modal').classList.add('hidden');
+}
