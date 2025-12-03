@@ -152,3 +152,40 @@
     50% { transform: translateY(3px); }
     100% { }
 }
+
+/* =========================================
+   [텍스트 애니메이션] 오른쪽 등장 -> 정지 -> 왼쪽 퇴장
+   ========================================= */
+
+/* 1. 글자 하나하나를 감싸는 span 스타일 */
+.flowing-text span {
+    display: inline-block; /* 움직이려면 블록이어야 함 */
+    opacity: 0;            /* 처음엔 안 보임 */
+    font-weight: 800;      /* 두껍게 */
+    
+    /* 오른쪽(50px)에서 시작 */
+    transform: translateX(40px); 
+    
+    /* 애니메이션: 이름 | 시간 | 가속도 | 무한반복 */
+    animation: flow-in-out 3s ease-in-out infinite;
+}
+
+/* 2. 키프레임: 들어오고 나가는 동작 정의 */
+@keyframes flow-in-out {
+    0% {
+        opacity: 0;
+        transform: translateX(40px); /* 오른쪽에서 대기 */
+    }
+    15% {
+        opacity: 1;
+        transform: translateX(0);    /* 제자리로 슝! (가속) */
+    }
+    85% {
+        opacity: 1;
+        transform: translateX(0);    /* 글자 읽을 시간 동안 멈춤 */
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-40px); /* 왼쪽으로 사라짐 */
+    }
+}
