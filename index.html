@@ -1349,7 +1349,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     }
 
     async function createMonthlySummary() {
-      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...', true);
+      showLoader(currentMonth + '월 매출현황 보고서를 배달중...', true);
       try {
         const result = await callAppsScript('createSummary', {
           year: currentYear,
@@ -1883,6 +1883,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
