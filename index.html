@@ -447,34 +447,38 @@
       return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
     }
     
-    /**
- * [업그레이드] 트럭 애니메이션에 맞춰 텍스트를 쪼개서 보여주는 로딩 함수
+/**
+ * [업그레이드] 로딩 화면 표시 함수
+ * @param {string} message - 표시할 텍스트
+ * @param {boolean} useTruck - 트럭 애니메이션 사용 여부 (true면 트럭 등장, false면 심플 로딩)
  */
-function showLoader(message) {
+function showLoader(message, useTruck = false) { // 기본값은 false(트럭 안 나옴)로 설정
     const overlay = document.getElementById('loading-overlay');
     const loadingTextContainer = document.getElementById('loading-message-display');
+    const truckScene = document.querySelector('.tr-scene'); // 트럭 장면 요소 찾기
     
-    if (!overlay) return; // 안전장치
+    if (!overlay) return;
 
     // 1. 오버레이 보이기
     overlay.classList.remove('hidden');
     
-    // 2. 텍스트 애니메이션 세팅 (매출현황표, 일보 등 모든 텍스트 대응)
+    // 2. 트럭 보이기/숨기기 결정
+    if (useTruck) {
+        if(truckScene) truckScene.style.display = 'block'; // 트럭 보임
+    } else {
+        if(truckScene) truckScene.style.display = 'none';  // 트럭 숨김 (글자만 나옴)
+    }
+    
+    // 3. 텍스트 애니메이션 세팅
     if (loadingTextContainer) {
-        // 기존 내용 초기화
         loadingTextContainer.innerHTML = '';
-        loadingTextContainer.classList.add('flowing-text'); // truck.css 클래스
+        loadingTextContainer.classList.add('flowing-text');
 
-        // 3. 글자를 한 글자씩 쪼개서 <span>으로 포장
         [...message].forEach((char, index) => {
             const span = document.createElement('span');
-            // 띄어쓰기 유지
             span.textContent = char === ' ' ? '\u00A0' : char;
-            
-            // ⭐ 핵심: 글자마다 0.12초씩 딜레이 (파도타기 효과)
             const delay = index * 0.12; 
             span.style.animationDelay = `${delay}s`;
-            
             loadingTextContainer.appendChild(span);
         });
     }
@@ -1345,7 +1349,7 @@ function showLoader(message) {
     }
 
     async function createMonthlySummary() {
-      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...');
+      showLoader(currentMonth + '월 매출현황 보고서를 생성 중...', true);
       try {
         const result = await callAppsScript('createSummary', {
           year: currentYear,
@@ -1879,6 +1883,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
