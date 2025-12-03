@@ -12,11 +12,9 @@ let allConsolidatedFiles = [];
  * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
  */
 function changeView(viewName) {
-  // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 보이기
   const targetView = document.getElementById('view-' + viewName);
   if (targetView) {
     targetView.classList.remove('hidden');
@@ -25,12 +23,10 @@ function changeView(viewName) {
     return;
   }
 
-  // 3. 사이드바 메뉴 활성화 표시
   document.querySelectorAll('#sidebar nav a').forEach(el => el.classList.remove('view-active'));
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) targetMenu.classList.add('view-active');
 
-  // 4. 뷰별 특수 로직 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
@@ -67,6 +63,15 @@ function openSalesSheet() {
     window.open(url, '_blank');
 }
 
+// ⚠️ openSalesSummary 함수가 index1.html에 없으므로 여기에 포함시켜 둡니다.
+function openSalesSummary(url) {
+    if (typeof openSheetApp === 'function') {
+        openSheetApp(url);
+    } else {
+        window.open(url, '_blank');
+    }
+}
+
 
 // ===============================================
 // 3. 통합본 목록 기능 (연도별 필터링 포함)
@@ -79,7 +84,6 @@ async function fetchConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
     const statusEl = document.getElementById('consolidated-status');
     
-    // 이미 불러온 데이터가 있으면 재사용 (속도 향상)
     if (allConsolidatedFiles.length > 0) {
         renderConsolidatedList();
         return;
@@ -88,22 +92,17 @@ async function fetchConsolidatedList() {
     listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Drive에서 통합 파일을 검색 중입니다...</p>';
     statusEl.textContent = '상태: 검색 중...';
     
-    // showLoader는 제거하고, 뷰 전환 시에만 메시지를 보여주도록 합니다.
-    // if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...'); 
-    
     try {
         const result = await callAppsScript('getAllConsolidatedFiles'); 
         
         if (result.status === 'success' && Array.isArray(result.files)) {
-            allConsolidatedFiles = result.files; // 전체 목록 저장
+            allConsolidatedFiles = result.files;
             
-            // 최신 파일의 연도로 초기화
             if (result.currentYear) currentConsolidatedYear = result.currentYear;
             
             renderConsolidatedList();
             statusEl.textContent = '상태: 목록 로드 완료.';
         } else {
-            // 🚨 오류 메시지 수정: 이미지와 동일하게 '파일 목록을 불러오는 데 실패' 표시
             listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>'; 
             statusEl.textContent = '상태: 오류 발생.';
         }
@@ -112,14 +111,13 @@ async function fetchConsolidatedList() {
         listContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">서버 통신 오류: ${e.message}</p>`;
         statusEl.textContent = '상태: 통신 실패.';
     } finally {
-        // if (typeof hideLoader === 'function') hideLoader(); // hideLoader 제거
+        // hideLoader() 호출 제거
     }
 }
 /**
- * 🚀 [신규] 연도 변경 버튼 클릭 시 호출
+ * 🚀 연도 변경 버튼 클릭 시 호출
  */
 function changeConsolidatedYear(delta) {
-    // 데이터가 없으면 반응 안 함
     if (allConsolidatedFiles.length === 0) return;
     
     currentConsolidatedYear += delta;
@@ -127,7 +125,8 @@ function changeConsolidatedYear(delta) {
 }
 
 
- /**통합본 아이콘 목록 렌더링 (최종 안정화 버전)
+/**
+ * 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
@@ -162,12 +161,12 @@ function renderConsolidatedList() {
          return;
     }
     
-    // 5. 링크 연결 함수 정의
-    const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
+    // 5. 링크 연결 함수 정의 (openSalesSummary는 위에 정의됨)
+    const openFunc = 'openSalesSummary'; 
 
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 6. 아이콘 생성 및 텍스트 수정 (폰트 크기 안정화)
+    // 6. 아이콘 생성 및 텍스트 수정
     filteredFiles.forEach(file => {
         const match = file.name.match(/(\d{1,2})월/); 
         const displayMonth = match ? match[1] : '??';
@@ -181,7 +180,7 @@ function renderConsolidatedList() {
                      alt="통합본 아이콘" 
                      class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-lg font-bold text-gray-800 text-center leading-tight">
+                <span class="text-xl font-bold text-gray-800 text-center leading-tight">
                     ${displayMonth}월
                 </span>
             </div>
