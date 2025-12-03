@@ -375,27 +375,29 @@ body {
         -35px 18px 0 1.5px #fff;
 }
 
-/* --- 로고 음각 추가 및 동기화 --- */
+/* 트럭 짐칸 로고: 하이라이트 제거, 색상 혼합으로 '진짜 음각' 구현 */
 .truck::after {
     content: '';
     position: absolute;
-    top: 12px;
-    left: 32px;
-    width: 35px;
-    height: 35px;
+    
+    /* 1. 위치: 짐칸 중앙 */
+    top: 10px;
+    left: 28px;
+    width: 45px;
+    height: 30px;
     z-index: 1;
-    /* 'image_1.png'를 실제 로고 파일 경로로 변경하세요 */
+
+    /* 2. 로고 이미지 */
     background: url('image_1d0097.png') no-repeat center center;
     background-size: contain;
+
+    /* 3. [핵심] 하이라이트 삭제 & 색상 혼합(Multiply) 적용 */
+    /* 설명: 로고의 검은 글씨가 뒤에 있는 트럭색(#009688)과 섞여서 '어두운 청록색'이 됩니다.
+       흰색이나 투명한 부분은 사라지고, 글씨만 트럭에 스며든 것처럼 보입니다. */
+    mix-blend-mode: multiply; 
     
-    /* 음각 효과 필터 */
-    filter: 
-        invert(93%) brightness(95%) contrast(90%)
-        drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.25))
-        drop-shadow(-0.5px -0.5px 0px rgba(255, 255, 255, 0.8));
-        
-    /* 트럭 앞부분(.truck:before)과 동일한 애니메이션 적용 */
-    animation: wind 1.5s 0.000s ease infinite;
+    /* 너무 새까맣지 않게 투명도 조절 (트럭 색이 은은하게 비치도록) */
+    opacity: 0.7; 
 }
 /* -------------------------------- */
 
