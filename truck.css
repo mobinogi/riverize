@@ -1,162 +1,260 @@
 /* =========================================
-   truck.css - 배경 투명도 & 블러 적용
+   truck.css - 트럭 로딩 애니메이션 (최종 정렬판)
    ========================================= */
 
-/* [1] 로딩 오버레이 설정 */
+/* 1. 로딩 오버레이 (껍데기) 설정 */
+#loading-overlay {
+    /* 켜고 끌 때 부드럽게 전환 */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
 #loading-overlay:not(.hidden) {
-    /* 1. 기본 설정 (모바일 기준) */
-    background: rgba(0, 0, 0, 0.3) !important; 
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    /* ✨ 배경: 비네팅 효과 (중앙은 진하게, 외곽은 연하게) */
+    background: radial-gradient(
+        circle, 
+        rgba(0, 0, 0, 0.7) 0%,   /* 중앙 70% 진하기 */
+        rgba(0, 0, 0, 0.4) 60%, 
+        rgba(0, 0, 0, 0.1) 100%  /* 끝부분 10% 연하기 */
+    ) !important;
+
+    /* 블러 효과 (유리창 느낌) */
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     
+    /* 레이아웃: 무조건 화면 정중앙 정렬 (Flexbox) */
     display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
     
+    /* 위치 고정 (전체 화면 덮기) */
+    z-index: 9999;
     position: fixed;
     top: 0;
     height: 100%;
     
-    /* 모바일에서는 전체 화면 덮기 */
-    left: 0;
-    width: 100%;
+    /* 📱 모바일 기본: 전체 너비 사용 */
+    left: 0 !important;
+    width: 100% !important;
 }
 
-/* 2. PC 화면 (너비 768px 이상) 설정 */
+/* 💻 PC 화면 설정 (사이드바 영역 피하기) */
 @media (min-width: 768px) {
     #loading-overlay:not(.hidden) {
-        /* 사이드바 너비(w-64 = 16rem = 256px)만큼 오른쪽에서 시작 */
-        left: 16rem !important; 
-        
-        /* 전체 너비에서 사이드바만큼 빼기 */
+        left: 16rem !important;        
         width: calc(100% - 16rem) !important; 
-        
-        /* 둥근 모서리 추가 (선택사항: 본문 영역 디자인과 맞춤) */
-        /* border-top-left-radius: 1.5rem; */
     }
 }
 
-/* [2] 전체 장면 (tr-scene) */
+/* 퇴장 상태 (페이드 아웃) */
+#loading-overlay.fade-out {
+    opacity: 0 !important;
+    visibility: hidden;
+}
+
+
+/* =========================================
+   🚚 트럭 무대 (Scene)
+   ========================================= */
 .tr-scene {
-    margin: 0 auto;
     position: relative;
     display: block;
     width: 600px;
     height: 250px;
     overflow: hidden;
+    
+    /* 바닥 흰 선 (도로) */
     border-bottom: 3px solid #fff;
-    color: #fff;
+    
+    /* 배경 투명 (중요!) */
     background: transparent !important;
+    
+    margin: 0 !important; 
+    flex-shrink: 0;
 }
 
-/* 배경 요소 (산, 언덕, 나무, 바위) - 원본 유지 */
-.tr-mountain {
-    position: absolute; right: -900px; bottom: -20px; width: 2px; height: 2px;
-    box-shadow: 0 0 0 50px #4DB6AC, 60px 50px 0 70px #4DB6AC, 90px 90px 0 50px #4DB6AC, 250px 250px 0 50px #4DB6AC, 290px 320px 0 50px #4DB6AC, 320px 400px 0 50px #4DB6AC;
-    transform: rotate(130deg); animation: mtn 20s linear infinite;
+/* 📱 모바일 전용: 트럭 크기 축소 */
+@media (max-width: 768px) {
+    .tr-scene {
+        /* 600px -> 0.6배로 축소 */
+        transform: scale(0.6); 
+        transform-origin: center center;
+        
+        /* 텍스트와 간격 좁히기 */
+        margin-bottom: -40px !important; 
+    }
 }
+
+
+/* =========================================
+   🌲 배경 요소들 (산, 언덕, 나무, 바위)
+   ========================================= */
+.tr-mountain {
+    position: absolute;
+    right: -900px;
+    bottom: -20px;
+    width: 2px;
+    height: 2px;
+    box-shadow: 
+        0 0 0 50px #4DB6AC, 
+        60px 50px 0 70px #4DB6AC, 
+        90px 90px 0 50px #4DB6AC, 
+        250px 250px 0 50px #4DB6AC, 
+        290px 320px 0 50px #4DB6AC, 
+        320px 400px 0 50px #4DB6AC;
+    transform: rotate(130deg);
+    animation: mtn 20s linear infinite;
+}
+
 .tr-hill {
-    position: absolute; right: -900px; bottom: -50px; width: 400px; border-radius: 50%; height: 20px;
-    box-shadow: 0 0 0 50px #4DB6AC, -20px 0 0 20px #4DB6AC, -90px 0 0 50px #4DB6AC, 250px 0 0 50px #4DB6AC, 290px 0 0 50px #4DB6AC, 620px 0 0 50px #4DB6AC;
+    position: absolute;
+    right: -900px;
+    bottom: -50px;
+    width: 400px;
+    border-radius: 50%;
+    height: 20px;
+    box-shadow: 
+        0 0 0 50px #4DB6AC, 
+        -20px 0 0 20px #4DB6AC, 
+        -90px 0 0 50px #4DB6AC, 
+        250px 0 0 50px #4DB6AC, 
+        290px 0 0 50px #4DB6AC, 
+        620px 0 0 50px #4DB6AC;
     animation: hill 4s 2s linear infinite;
 }
+
 .tr-tree, .tr-tree:nth-child(2), .tr-tree:nth-child(3) {
-    position: absolute; height: 100px; width: 35px; bottom: 0;
+    position: absolute;
+    height: 100px;
+    width: 35px;
+    bottom: 0;
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/tree.svg) no-repeat;
 }
+
 .tr-rock {
-    margin-top: -17%; height: 2%; width: 2%; bottom: -2px; border-radius: 20px; position: absolute; background: #ddd;
+    margin-top: -17%;
+    height: 2%;
+    width: 2%;
+    bottom: -2px;
+    border-radius: 20px;
+    position: absolute;
+    background: #ddd;
     animation: rock 4s -0.530s linear infinite;
 }
 
+
 /* =========================================
-   🚛 트럭 & 바퀴 (원본 스타일 정밀 복구)
+   🚛 트럭 본체 & 바퀴 & 로고
    ========================================= */
-
-/* [공통 설정] 원본 style.css의 .truck, .wheels 공유 속성 */
-.tr-truck, .tr-wheels {
-    transition: all ease;
-    width: 85px;          /* 원본 너비 */
-    margin-right: -60px;  /* 원본 여백 */
-    bottom: 0px;          /* 🚨 원본 위치: 바닥에 딱 붙음 */
-    right: 50%;           /* 화면 중앙 */
-    position: absolute;
-    background: #eee;     /* 기본 배경 */
-}
-
-/* [트럭 몸통] */
 .tr-truck {
     background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/truck.svg) no-repeat;
     background-size: contain;
-    height: 60px;         /* 원본 높이 */
     
-    /* 원본 애니메이션 적용 */
-    animation: truck 4s 0.080s ease infinite; 
+    height: 60px;
+    width: 100px;
+    
+    position: absolute;
+    bottom: 6px; /* 바퀴 위에 안착 */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    animation: truck 4s 0.080s ease infinite;
     z-index: 10;
 }
 
-/* [바퀴] */
-.tr-wheels {
-    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
-    height: 15px;         /* 원본 높이 */
-    margin-bottom: 0;
-    
-    /* 원본 애니메이션 적용 */
-    animation: truck 4s 0.001s ease infinite; 
-}
-
-/* [트럭 앞유리 빛반사 효과] (원본에 있던 것) */
-.tr-truck::before {
-    content: " ";
-    position: absolute;
-    width: 25px;
-    box-shadow: -30px 28px 0 1.5px #fff, -35px 18px 0 1.5px #fff;
-    animation: wind 1.5s 0.000s ease infinite;
-}
-
-/* 🚛 [짐칸 로고] 위치 수정본 */
+/* 짐칸 로고 (생탁) */
 .tr-truck::after {
     content: '';
     position: absolute;
     display: block;
     
-    /* [1] 위치: 왼쪽으로 더 밀기 */
-    top: 4px;       
-    left: 7px;      /* 일단 0px에서 시작해보세요 */
-    
-    /* [2] 크기: 80px는 너무 큽니다! 짐칸 크기만큼만 잡으세요 */
-    width: 80px;    /* 80px -> 50px로 축소 */
+    top: 4px;
+    left: 7px;
+    width: 80px;
     height: 40px;
-    
     z-index: 1;
-    background: url('image_1d0097.png') no-repeat;
     
-    /* [3] 정렬: 박스 안에서 '왼쪽'에 붙어라! */
-    background-position: left center; /* center center -> left center */
+    background: url('image_1d0097.png') no-repeat left center;
     background-size: contain;
     
-    opacity: 0.8;
-    mix-blend-mode: multiply;
+    opacity: 0.7;
+    mix-blend-mode: multiply; /* 음각 효과 */
+}
+
+/* 바퀴 */
+.tr-wheels {
+    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
+    background-size: contain;
+    
+    height: 15px;
+    width: 100px;
+    
+    position: absolute;
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    animation: truck 4s 0.001s ease infinite;
 }
 
 
 /* =========================================
-   애니메이션 키프레임 (원본 그대로 유지)
+   🔤 텍스트 애니메이션 (가속도 효과)
    ========================================= */
+.flowing-text {
+    display: inline-block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: white;
+    white-space: nowrap;
+    
+    /* 글자 그림자 (가독성) */
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    
+    margin-top: 20px;
+    z-index: 100;
+}
+
+.flowing-text span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateX(80px);
+    
+    /* 쫀득한 움직임 (cubic-bezier) */
+    animation: elastic-flow 4.5s cubic-bezier(0.5, 0, 0.2, 1.3) infinite;
+}
+
+
+/* =========================================
+   🎬 애니메이션 키프레임 정의
+   ========================================= */
+
+/* 텍스트 흐름 */
+@keyframes elastic-flow {
+    0%   { opacity: 0; transform: translateX(80px); }
+    15%  { opacity: 1; transform: translateX(0); }
+    55%  { opacity: 1; transform: translateX(0); }
+    70%  { opacity: 0; transform: translateX(-100px); }
+    100% { opacity: 0; transform: translateX(-100px); }
+}
+
+/* 나무 이동 */
 .tr-tree { animation: tree 3s 0.000s linear infinite; }
 .tr-tree:nth-child(2) { animation: tree2 2s 0.150s linear infinite; }
 .tr-tree:nth-child(3) { animation: tree3 8s 0.050s linear infinite; }
 
-@keyframes tree { 0% { transform: translate(1350px); } 100% { transform: translate(-50px); } }
+@keyframes tree  { 0% { transform: translate(1350px); } 100% { transform: translate(-50px); } }
 @keyframes tree2 { 0% { transform: translate(650px); } 100% { transform: translate(-50px); } }
 @keyframes tree3 { 0% { transform: translate(2750px); } 100% { transform: translate(-50px); } }
-@keyframes rock { 0% { right: -200px; } 100% { right: 2000px; } }
-@keyframes mtn { 100% { transform: translateX(-2000px) rotate(130deg); } }
-@keyframes hill { 100% { transform: translateX(-2000px); } }
 
-/* 🚨 [핵심] 트럭 덜컹거림 원본 키프레임 */
+/* 바위 이동 */
+@keyframes rock { 
+    0% { right: -200px; } 
+    100% { right: 2000px; } 
+}
+
+/* 트럭 덜컹거림 */
 @keyframes truck {
     0% { }
     6% { transform: translateY(0px); }
@@ -167,98 +265,10 @@
     100% { }
 }
 
-/* 바람 효과 */
-@keyframes wind {
-    0% { }
-    50% { transform: translateY(3px); }
-    100% { }
+/* 배경 회전 */
+@keyframes mtn { 
+    100% { transform: translateX(-2000px) rotate(130deg); } 
 }
-
-/* =========================================
-   [텍스트 애니메이션] 탄력(Elastic) + 꼬리물기 루프
-   ========================================= */
-
-.flowing-text {
-    display: inline-block;
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: white;
-    white-space: nowrap;
-}
-
-.flowing-text span {
-    display: inline-block;
-    opacity: 0;
-    transform: translateX(80px); 
-
-    /* ⏱️ 전체 시간: 4.5초 (가장 최적화된 루프 시간)
-       - 너무 빠르지도, 너무 느리지도 않게 꼬리를 뭅니다.
-       
-       📈 물리 엔진: cubic-bezier(0.5, 0, 0.2, 1.3)
-       - 끝에 1.3이 있어서 글자가 도착할 때 '팅~' 하고 살짝 튕기는 탄력을 줍니다.
-    */
-    animation: elastic-flow 4.5s cubic-bezier(0.5, 0, 0.2, 1.3) infinite;
-}
-
-@keyframes elastic-flow {
-    /* [1] 등장 (오른쪽 -> 중앙) : 탄력 있게 팅! */
-    0% {
-        opacity: 0;
-        transform: translateX(80px);
-    }
-    15% {
-        opacity: 1;
-        transform: translateX(0); 
-    }
-    
-    /* [2] 정지 (읽는 시간) */
-    55% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    
-    /* [3] 퇴장 (중앙 -> 왼쪽) : 가속도 붙으며 슝! */
-    /* 퇴장할 때는 튕기지 않고 가속도만 붙여서 빨려들어가게 설정 */
-    70% {
-        opacity: 0;
-        transform: translateX(-100px);
-    }
-    
-    /* [4] ⭐ 핵심: 꼬리 물기 대기 시간 (30%) */
-    /* 70% ~ 100% 구간은 투명한 상태로 대기합니다.
-       이 시간이 있어야 마지막 '점(...)'이 다 나갈 때까지
-       첫 글자 '매'가 오른쪽에서 기다려줍니다. */
-    100% {
-        opacity: 0;
-        transform: translateX(-100px);
-    }
-}
-
-/* =========================================
-   [모바일 전용 보정] 화면 좁은 기기 대응
-   ========================================= */
-@media (max-width: 768px) {
-    .tr-scene {
-        /* 1. 크기 더 축소 (0.75배 -> 0.55배) 
-           : 600px짜리 무대를 모바일 폭(약 360px) 안에 쏙 들어오게 줄입니다. */
-        transform: scale(0.55) !important; 
-        
-        /* 2. 위로 끌어올리기 (시각적 중앙 정렬)
-           : 트럭이 바닥에 있어서 처져 보이는 걸 방지하기 위해 
-             박스 자체를 위로 50px 당깁니다. */
-        margin-top: -50px !important;
-        
-        /* 3. 좌우 강제 중앙 정렬 (혹시 모를 쏠림 방지) */
-        left: auto !important;
-        right: auto !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-    }
-    
-    /* 로딩 텍스트도 비율에 맞춰 살짝 크기/위치 조정 */
-    .flowing-text {
-        transform: scale(0.8); /* 글자도 너무 크지 않게 */
-        margin-top: 10px !important; /* 트럭이랑 간격 좁히기 */
-    }
+@keyframes hill { 
+    100% { transform: translateX(-2000px); } 
 }
