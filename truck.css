@@ -101,7 +101,7 @@
     left: -2px;    /* 왼쪽에서 8px 떨어짐 */
     
     width: 80px;  /* 원본 트럭(85px)에 맞는 로고 크기 */
-    height: 60px;
+    height: 40px;
     
     z-index: 1;
     background: url('image_1d0097.png') no-repeat center center;
