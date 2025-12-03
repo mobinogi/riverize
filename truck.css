@@ -107,7 +107,7 @@
     
     /* [1] 위치: 왼쪽으로 더 밀기 */
     top: 2px;       
-    left: 5px;      /* 일단 0px에서 시작해보세요 */
+    left: 7px;      /* 일단 0px에서 시작해보세요 */
     
     /* [2] 크기: 80px는 너무 큽니다! 짐칸 크기만큼만 잡으세요 */
     width: 80px;    /* 80px -> 50px로 축소 */
@@ -120,7 +120,7 @@
     background-position: left center; /* center center -> left center */
     background-size: contain;
     
-    opacity: 0.7;
+    opacity: 0.8;
     mix-blend-mode: multiply;
 }
 
