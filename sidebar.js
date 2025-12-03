@@ -15,6 +15,11 @@ function changeView(viewName) {
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
+  // 💡 [추가] 뷰 전환 시, 화면을 가로막는 모든 요소를 강제로 닫습니다.
+  if (typeof cleanupOverlays === 'function') {
+      cleanupOverlays(); 
+  }
+  
   const targetView = document.getElementById('view-' + viewName);
   if (targetView) {
     targetView.classList.remove('hidden');
@@ -26,7 +31,7 @@ function changeView(viewName) {
   document.querySelectorAll('#sidebar nav a').forEach(el => el.classList.remove('view-active'));
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) targetMenu.classList.add('view-active');
-
+  
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
@@ -187,6 +192,34 @@ function renderConsolidatedList() {
         `;
         listContainer.innerHTML += itemHtml;
     });
-    
+   
     statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 ${filteredFiles.length}개 로드 완료.`;
+}
+
+function cleanupOverlays() {
+    // 1. 보고서 옵션 모달 (문제의 근원)
+    const reportModal = document.getElementById('report-option-modal');
+    if (reportModal) {
+        reportModal.classList.add('hidden'); // 메인 컨테이너 숨김
+        
+        // 투명 잔여물을 확실히 제거하기 위해 애니메이션 클래스도 제거합니다.
+        document.getElementById('ro-sheet').classList.add('translate-y-full'); 
+        document.getElementById('ro-backdrop').classList.add('opacity-0'); 
+    }
+    
+    // 2. 다른 오버레이/모달 강제 숨김
+    document.getElementById('map-overlay').classList.add('hidden');
+    document.getElementById('loading-overlay').classList.add('hidden');
+    // ... 필요한 다른 모달도 여기에 추가 ...
+}
+
+function showLoader(message) { 
+    // ID를 loading-message-display로 변경
+    const msgEl = document.getElementById('loading-message-display'); 
+    if (msgEl) msgEl.textContent = message;
+    
+    document.getElementById('loading-overlay').classList.remove('hidden'); 
+}
+function hideLoader() { 
+    document.getElementById('loading-overlay').classList.add('hidden'); 
 }
