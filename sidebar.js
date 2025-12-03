@@ -127,42 +127,54 @@ function changeConsolidatedYear(delta) {
 }
 
 /**
- * 통합본 아이콘 목록 렌더링 (현재 연도 필터링)
+ * 통합본 아이콘 목록 렌더링 (최종 수정판)
  */
 function renderConsolidatedList() {
     const listContainer = document.getElementById('consolidated-list');
     const headerYearEl = document.getElementById('consolidated-header-year');
     const statusEl = document.getElementById('consolidated-status');
 
-    // 1. 헤더 연도 업데이트
     if(headerYearEl) {
-        // 💡 [수정] headerYearEl은 <span> 태그의 ID이므로, 텍스트만 업데이트합니다.
         headerYearEl.textContent = `${currentConsolidatedYear}년`; 
     }
-    // 2. 현재 연도에 맞는 파일만 필터링
+
     const filteredFiles = allConsolidatedFiles.filter(file => 
         file.name.includes(currentConsolidatedYear + '년')
     );
     
+    // 💡 [수정] 오름차순 (1월 -> 12월) 정렬을 위한 로직 추가
+    filteredFiles.sort((a, b) => {
+        // 이름에서 "MM월" 부분만 추출하여 숫자로 비교 (예: "10월" -> 10, "1월" -> 1)
+        const getMonthNum = (name) => {
+            const match = name.match(/(\d{1,2})월/);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+        return getMonthNum(a.name) - getMonthNum(b.name); // 오름차순 정렬
+    });
+    
     listContainer.innerHTML = '';
 
-    // 3. 파일 없음 처리
     if (filteredFiles.length === 0) {
          listContainer.innerHTML = `<p class="text-gray-400 text-center col-span-full py-10">${currentConsolidatedYear}년도 통합본 파일이 없습니다.</p>`;
          statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 없음.`;
          return;
     }
     
+    // openSalesSummary(url) 함수는 openSheetApp(url)로 대체될 수 있습니다.
+    // 만약 openSalesSummary 함수가 index1.html에 없다면, 아래 함수가 필요합니다.
+    // ⚠️ openSalesSummary 함수가 없으므로 임시로 openSheetApp를 사용합니다. 
+    const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
+
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 4. 아이콘 생성
+    // 4. 아이콘 생성 및 폰트 크기 조정
     filteredFiles.forEach(file => {
         const match = file.name.match(/(\d{4})년\s*(\d{1,2})월/);
-        const displayYear = match ? match[1] : '';
+        // const displayYear = match ? match[1] : ''; // 💡 년도 제거
         const displayMonth = match ? match[2] : '';
 
         const itemHtml = `
-            <div onclick="openSalesSummary('${file.url}')" 
+            <div onclick="${openFunc}('${file.url}')" 
                  class="flex flex-col items-center p-4 rounded-xl border border-transparent 
                         hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer 
                         w-full max-w-[120px] active:bg-blue-100/70 active:border-blue-500 group">
@@ -170,8 +182,8 @@ function renderConsolidatedList() {
                      alt="통합본 아이콘" 
                      class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-xs font-semibold text-gray-700 text-center leading-tight">
-                    ${displayYear}년 ${displayMonth}월 통합본
+                <span class="text-base font-semibold text-gray-700 text-center leading-tight">
+                    ${displayMonth}월 통합본
                 </span>
             </div>
         `;
