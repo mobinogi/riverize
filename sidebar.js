@@ -88,7 +88,8 @@ async function fetchConsolidatedList() {
     listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Drive에서 통합 파일을 검색 중입니다...</p>';
     statusEl.textContent = '상태: 검색 중...';
     
-    if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...');
+    // showLoader는 제거하고, 뷰 전환 시에만 메시지를 보여주도록 합니다.
+    // if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...'); 
     
     try {
         const result = await callAppsScript('getAllConsolidatedFiles'); 
@@ -102,7 +103,8 @@ async function fetchConsolidatedList() {
             renderConsolidatedList();
             statusEl.textContent = '상태: 목록 로드 완료.';
         } else {
-            listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>';
+            // 🚨 오류 메시지 수정: 이미지와 동일하게 '파일 목록을 불러오는 데 실패' 표시
+            listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>'; 
             statusEl.textContent = '상태: 오류 발생.';
         }
 
@@ -110,10 +112,9 @@ async function fetchConsolidatedList() {
         listContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">서버 통신 오류: ${e.message}</p>`;
         statusEl.textContent = '상태: 통신 실패.';
     } finally {
-        if (typeof hideLoader === 'function') hideLoader();
+        // if (typeof hideLoader === 'function') hideLoader(); // hideLoader 제거
     }
 }
-
 /**
  * 🚀 [신규] 연도 변경 버튼 클릭 시 호출
  */
@@ -135,9 +136,9 @@ function renderConsolidatedList() {
 
     // 1. 헤더 연도 업데이트
     if(headerYearEl) {
-        headerYearEl.textContent = `${currentConsolidatedYear}년`;
+        // 💡 [수정] headerYearEl은 <span> 태그의 ID이므로, 텍스트만 업데이트합니다.
+        headerYearEl.textContent = `${currentConsolidatedYear}년`; 
     }
-
     // 2. 현재 연도에 맞는 파일만 필터링
     const filteredFiles = allConsolidatedFiles.filter(file => 
         file.name.includes(currentConsolidatedYear + '년')
