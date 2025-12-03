@@ -99,24 +99,29 @@
     animation: wind 1.5s 0.000s ease infinite;
 }
 
-/* 🚛 [짐칸 로고] (음각 효과) */
+/* 🚛 [짐칸 로고] 위치 수정본 */
 .tr-truck::after {
     content: '';
     position: absolute;
     display: block;
     
-    /* 👇 위치 조절은 여기서! (숫자가 작을수록 위/왼쪽으로 갑니다) */
-    top: 3px;    /* 위에서 10px 내려옴 */
-    left: -10px;    /* 왼쪽에서 8px 떨어짐 */
+    /* [1] 위치: 왼쪽으로 더 밀기 */
+    top: 5px;       
+    left: 0px;      /* 일단 0px에서 시작해보세요 */
     
-    width: 80px;  /* 원본 트럭(85px)에 맞는 로고 크기 */
-    height: 45px;
+    /* [2] 크기: 80px는 너무 큽니다! 짐칸 크기만큼만 잡으세요 */
+    width: 80px;    /* 80px -> 50px로 축소 */
+    height: 40px;
     
     z-index: 1;
-    background: url('image_1d0097.png') no-repeat center center;
+    background: url('image_1d0097.png') no-repeat;
+    
+    /* [3] 정렬: 박스 안에서 '왼쪽'에 붙어라! */
+    background-position: left center; /* center center -> left center */
     background-size: contain;
     
-    
+    /* 테스트를 위해 빨간 테두리 켜기 (위치 잡고 나서 지우세요!) */
+    border: 1px solid red; 
 }
 
 
