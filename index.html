@@ -174,12 +174,15 @@
                     </button>
                 </div>
 
+                <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
+                 
                 <div id="consolidated-list" 
-                     class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-6 justify-items-center">
+                     class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
                     <p class="text-gray-500 col-span-full">통합본 목록을 불러오는 중...</p>
                 </div>
-                <p id="consolidated-status" class="text-sm text-gray-400 mt-10 text-center">상태: 로딩 중...</p>
-            </div> 
+                
+                <p id="consolidated-status" class="text-sm text-gray-400 mt-8 py-3 text-center border-t border-gray-100/70">상태: 로딩 중...</p>
+            </div>
             </div> <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
   
   <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
@@ -1836,6 +1839,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
