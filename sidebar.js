@@ -5,84 +5,18 @@ let currentConsolidatedYear = new Date().getFullYear();
 let allConsolidatedFiles = [];
 
 // ===============================================
-// 2. 유틸리티 및 UI 헬퍼 함수
-// ===============================================
-
-/**
- * [핵심] 모든 모달과 오버레이를 강제로 숨기는 클린업 함수
- */
-function cleanupOverlays() {
-    // #report-option-modal 잔여물 제거
-    const reportModal = document.getElementById('report-option-modal');
-    if (reportModal) {
-        reportModal.classList.add('hidden'); 
-        // 애니메이션 클래스 초기화 (투명 잔여물 제거)
-        document.getElementById('ro-sheet').classList.add('translate-y-full');
-        document.getElementById('ro-backdrop').classList.add('opacity-0');
-    }
-    
-    // 기타 오버레이/모달 강제 숨김
-    document.getElementById('map-overlay').classList.add('hidden');
-    document.getElementById('loading-overlay').classList.add('hidden');
-    document.getElementById('confirm-modal').classList.add('hidden');
-    // 추가적인 바텀 시트들도 필요하면 여기에 추가 (예: nav-confirm-modal, delete-confirm-modal)
-}
-
-
-/**
- * [트럭 애니메이션용] 로딩 메시지를 설정하고 오버레이를 띄웁니다.
- */
-function showLoader(message) { 
-    const overlay = document.getElementById('loading-overlay');
-    
-    if (!overlay) {
-        console.error("❌ 로딩 오버레이 #loading-overlay 요소를 찾을 수 없습니다.");
-        return; 
-    }
-    
-    // ID: loading-message-display 참조
-    const msgEl = document.getElementById('loading-message-display'); 
-    if (msgEl) {
-        msgEl.textContent = message;
-    } 
-    
-    overlay.classList.remove('hidden'); 
-}
-
-/**
- * 로딩 오버레이를 숨깁니다.
- */
-function hideLoader() { 
-    document.getElementById('loading-overlay').classList.add('hidden'); 
-}
-
-/**
- * 새 창 또는 앱으로 스프레드시트 링크를 엽니다.
- */
-function openSalesSummary(url) {
-    // index1.html의 openSheetApp 함수를 사용합니다.
-    if (typeof openSheetApp === 'function') {
-        openSheetApp(url);
-    } else {
-        window.open(url, '_blank');
-    }
-}
-
-
-// ===============================================
-// 3. 뷰 전환 및 목록 제어 함수
+// 2. 뷰 전환 및 UI 제어 함수
 // ===============================================
 
 /**
  * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
  */
 function changeView(viewName) {
-  // 💡 [핵심] 뷰 전환 시, 모든 오버레이 잔여물을 강제로 제거합니다.
-  cleanupOverlays();
-  
+  // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
+  // 2. 선택한 뷰 보이기
   const targetView = document.getElementById('view-' + viewName);
   if (targetView) {
     targetView.classList.remove('hidden');
@@ -91,47 +25,117 @@ function changeView(viewName) {
     return;
   }
 
+  // 3. 사이드바 메뉴 활성화 표시
   document.querySelectorAll('#sidebar nav a').forEach(el => el.classList.remove('view-active'));
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) targetMenu.classList.add('view-active');
-  
+
+  // 4. 뷰별 특수 로직 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
-    // 💡 [수정] index1.html에 정의된 toggleSubTab을 호출합니다.
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   }
 }
 
 /**
- * 일보 작성 뷰 내의 서브 탭 전환 (index1.html에도 정의되어 있으면 중복)
+ * 일보 작성 뷰 내의 서브 탭 전환
  */
 function toggleSubTab(tabName) {
-    // 💡 [핵심] 이 함수는 index1.html에 정의된 것을 사용해야 합니다.
-    // 여기서는 안전을 위해 정의를 생략하거나 index1.html과 동일하게 유지합니다.
-    
-    // 만약 index1.html에서 이 함수를 정의하지 않았다면 아래 코드를 사용합니다.
     document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.add('hidden'));
     const targetContent = document.getElementById('content-' + tabName);
     if (targetContent) targetContent.classList.remove('hidden');
-    // ... (나머지 탭 전환 로직) ...
+
+    const btnContainer = document.querySelector('.flex.mb-0'); 
+    if(btnContainer) {
+        btnContainer.querySelectorAll('button').forEach(el => el.classList.remove('tab-active'));
+        const targetTab = document.getElementById('tab-' + tabName);
+        if (targetTab) targetTab.classList.add('tab-active');
+    }
+    
+    if (tabName === 'review') {
+        if (typeof isDataLoading !== 'undefined' && isDataLoading) {
+            if (typeof showLoader === 'function') showLoader('달력 정보를 불러오는 중...');
+        } else if (typeof renderCalendar === 'function') {
+            renderCalendar();
+        }
+    }
 }
 
-// ... (fetchConsolidatedList, changeConsolidatedYear 함수 유지) ...
+function openSalesSheet() {
+    const url = 'https://docs.google.com/spreadsheets/d/1p2glfJaac4EZG4vDD4n290hYwZyj7sXHJNkXv1YYtq8/edit?gid=0#gid=0';
+    window.open(url, '_blank');
+}
+
+
+// ===============================================
+// 3. 통합본 목록 기능 (연도별 필터링 포함)
+// ===============================================
 
 /**
- * 통합본 아이콘 목록 렌더링 (최종 안정화 버전)
+ * 서버에서 전체 파일 목록 가져오기 (최초 1회)
+ */
+async function fetchConsolidatedList() {
+    const listContainer = document.getElementById('consolidated-list');
+    const statusEl = document.getElementById('consolidated-status');
+    
+    // 이미 불러온 데이터가 있으면 재사용 (속도 향상)
+    if (allConsolidatedFiles.length > 0) {
+        renderConsolidatedList();
+        return;
+    }
+    
+    listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Drive에서 통합 파일을 검색 중입니다...</p>';
+    statusEl.textContent = '상태: 검색 중...';
+    
+    if (typeof showLoader === 'function') showLoader('통합본 목록을 불러오는 중...');
+    
+    try {
+        const result = await callAppsScript('getAllConsolidatedFiles'); 
+        
+        if (result.status === 'success' && Array.isArray(result.files)) {
+            allConsolidatedFiles = result.files; // 전체 목록 저장
+            
+            // 최신 파일의 연도로 초기화
+            if (result.currentYear) currentConsolidatedYear = result.currentYear;
+            
+            renderConsolidatedList();
+            statusEl.textContent = '상태: 목록 로드 완료.';
+        } else {
+            listContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">파일 목록을 불러오는 데 실패했습니다.</p>';
+            statusEl.textContent = '상태: 오류 발생.';
+        }
+
+    } catch (e) {
+        listContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">서버 통신 오류: ${e.message}</p>`;
+        statusEl.textContent = '상태: 통신 실패.';
+    } finally {
+        if (typeof hideLoader === 'function') hideLoader();
+    }
+}
+
+/**
+ * 🚀 [신규] 연도 변경 버튼 클릭 시 호출
+ */
+function changeConsolidatedYear(delta) {
+    // 데이터가 없으면 반응 안 함
+    if (allConsolidatedFiles.length === 0) return;
+    
+    currentConsolidatedYear += delta;
+    renderConsolidatedList();
+}
+
+/**
+ * 통합본 아이콘 목록 렌더링 (현재 연도 필터링)
  */
 function renderConsolidatedList() {
-    // ... (목록 렌더링 로직 유지) ...
-    // 이 함수는 hideLoader/showLoader를 사용하므로, 위에서 정의된 버전을 사용합니다.
     const listContainer = document.getElementById('consolidated-list');
     const headerYearEl = document.getElementById('consolidated-header-year');
     const statusEl = document.getElementById('consolidated-status');
 
     // 1. 헤더 연도 업데이트
     if(headerYearEl) {
-        headerYearEl.textContent = `${currentConsolidatedYear}년`; 
+        headerYearEl.textContent = `${currentConsolidatedYear}년`;
     }
 
     // 2. 현재 연도에 맞는 파일만 필터링
@@ -139,44 +143,34 @@ function renderConsolidatedList() {
         file.name.includes(currentConsolidatedYear + '년')
     );
     
-    // 3. 월별 오름차순 (1월 -> 12월) 정렬
-    filteredFiles.sort((a, b) => {
-        const getMonthNum = (name) => {
-            const match = name.match(/(\d{1,2})월/); 
-            return match ? parseInt(match[1], 10) : 0;
-        };
-        return getMonthNum(a.name) - getMonthNum(b.name); 
-    });
-    
     listContainer.innerHTML = '';
 
-    // 4. 파일 없음 처리
+    // 3. 파일 없음 처리
     if (filteredFiles.length === 0) {
          listContainer.innerHTML = `<p class="text-gray-400 text-center col-span-full py-10">${currentConsolidatedYear}년도 통합본 파일이 없습니다.</p>`;
          statusEl.textContent = `상태: ${currentConsolidatedYear}년 데이터 없음.`;
          return;
     }
     
-    const openFunc = 'openSalesSummary'; 
-
     const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
 
-    // 5. 아이콘 생성 및 텍스트 수정
+    // 4. 아이콘 생성
     filteredFiles.forEach(file => {
-        const match = file.name.match(/(\d{1,2})월/); 
-        const displayMonth = match ? match[1] : '??';
+        const match = file.name.match(/(\d{4})년\s*(\d{1,2})월/);
+        const displayYear = match ? match[1] : '';
+        const displayMonth = match ? match[2] : '';
 
         const itemHtml = `
-            <div onclick="${openFunc}('${file.url}')" 
+            <div onclick="openSalesSummary('${file.url}')" 
                  class="flex flex-col items-center p-4 rounded-xl border border-transparent 
                         hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer 
                         w-full max-w-[120px] active:bg-blue-100/70 active:border-blue-500 group">
                 <img src="${iconUrl}" 
                      alt="통합본 아이콘" 
-                     class="w-16 h-16 mb-2 select-none group-hover:scale-120 transition-transform object-contain" 
+                     class="w-16 h-16 mb-2 select-none group-hover:scale-110 transition-transform" 
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/64/cccccc/000000?text=DOC'">
-                <span class="text-xl font-bold text-gray-800 text-center leading-tight">
-                    ${displayMonth}월
+                <span class="text-xs font-semibold text-gray-700 text-center leading-tight">
+                    ${displayYear}년 ${displayMonth}월 통합본
                 </span>
             </div>
         `;
