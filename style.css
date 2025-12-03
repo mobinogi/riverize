@@ -276,3 +276,47 @@
         text-shadow: 0 0 5px #10b981; /* 기본 글로우를 짙은 녹색으로 */
     }
   
+/* =========================================
+   사이드바 메뉴 호버 효과 (가속도 직선 슈팅)
+   ========================================= */
+
+.hover-line {
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+/* 밑줄 가상 요소 */
+.hover-line::after {
+    content: '';
+    position: absolute;
+    
+    /* 위치 잡기 */
+    bottom: 5px;    
+    left: 16px;     
+    
+    /* 평소엔 너비 0 */
+    width: 0%;      
+    
+    /* 선 스타일: 2px로 존재감 확실하게 + 은은한 그라데이션 */
+    height: 2px; 
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+    
+    /* 그림자: 선명함을 위해 얇고 진한 그림자 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); 
+    
+    /* 🚀 [핵심 수정] 가속도 부활! (꿀렁임 없는 초고속 직진) */
+    /* 설명: 0.16, 1, 0.3, 1 -> 초반에 엄청 빠르게 80%를 가고, 나머지를 부드럽게 채움 */
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 마우스 올렸을 때 */
+.hover-line:hover::after {
+    /* 양옆 여백 남기고 꽉 채움 */
+    width: calc(100% - 32px); 
+}
+
+/* 글자 강조 */
+.hover-line:hover span {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
