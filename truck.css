@@ -73,15 +73,29 @@
     flex-shrink: 0;
 }
 
-/* 📱 모바일 전용: 트럭 크기 축소 */
+/* 📱 [모바일 전용] 트럭 크기 최적화 (황금 비율) */
 @media (max-width: 768px) {
     .tr-scene {
-        /* 600px -> 0.6배로 축소 */
-        transform: scale(0.6); 
-        transform-origin: center center;
+        /* 1. 도로 길이 자르기 (Crop) */
+        /* 무대 너비를 화면 폭(100%)에 맞춥니다. (흰 선이 화면 밖으로 안 나감) */
+        width: 100% !important; 
         
-        /* 텍스트와 간격 좁히기 */
-        margin-bottom: -40px !important; 
+        /* 2. 트럭 크기: 0.75배 (황금 비율) */
+        /* 0.6은 너무 작고, 0.85는 부담스러우니 0.75가 딱 적당합니다. */
+        transform: scale(0.75); 
+        
+        /* 3. 기준점 고정 */
+        transform-origin: center bottom;
+        
+        /* 4. 위치 미세 조정 */
+        /* 트럭 크기에 맞춰서 바닥 여백을 살짝만 줍니다 */
+        margin-bottom: 10px !important; 
+    }
+    
+    /* 텍스트 크기도 트럭에 맞춰서 밸런스 조절 */
+    .flowing-text {
+        margin-top: 15px !important; 
+        font-size: 1.25rem !important; 
     }
 }
 
