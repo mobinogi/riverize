@@ -234,3 +234,31 @@
         transform: translateX(-100px);
     }
 }
+
+/* =========================================
+   [모바일 전용 보정] 화면 좁은 기기 대응
+   ========================================= */
+@media (max-width: 768px) {
+    .tr-scene {
+        /* 1. 크기 더 축소 (0.75배 -> 0.55배) 
+           : 600px짜리 무대를 모바일 폭(약 360px) 안에 쏙 들어오게 줄입니다. */
+        transform: scale(0.55) !important; 
+        
+        /* 2. 위로 끌어올리기 (시각적 중앙 정렬)
+           : 트럭이 바닥에 있어서 처져 보이는 걸 방지하기 위해 
+             박스 자체를 위로 50px 당깁니다. */
+        margin-top: -50px !important;
+        
+        /* 3. 좌우 강제 중앙 정렬 (혹시 모를 쏠림 방지) */
+        left: auto !important;
+        right: auto !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+    
+    /* 로딩 텍스트도 비율에 맞춰 살짝 크기/위치 조정 */
+    .flowing-text {
+        transform: scale(0.8); /* 글자도 너무 크지 않게 */
+        margin-top: 10px !important; /* 트럭이랑 간격 좁히기 */
+    }
+}
