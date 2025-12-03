@@ -37,20 +37,30 @@
             md:border-r md:border-gray-500/50">
         
         <div onclick="changeView('write')"
-             class="text-2xl font-bold text-white mb-8 border-b border-gray-700 pb-4 select-none cursor-pointer hover:text-gray-300 transition-colors">
-            강서 도매소
-        </div>
+     class="text-2xl font-bold text-white mb-8 border-b border-gray-600/50 pb-4 
+            select-none cursor-pointer hover:text-gray-100 transition-all 
+            text-center"
+     style="text-shadow: 0 0 7px rgba(255, 255, 255, 0.6);">
+        강서 도매소
+       </div>
 
         <nav class="space-y-2">
-            <a onclick="changeView('consolidated')" id="menu-consolidated"
-               class="flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors hover:bg-gray-700">
-                <span class="font-medium text-lg">일보 통합본</span>
-            </a>
-            <a onclick="openSalesSheet()" id="menu-sales"
-               class="flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors hover:bg-gray-700">
-                <span class="font-medium text-lg">매출표</span>
-            </a>
-        </nav>
+    
+    <a onclick="changeView('consolidated')" id="menu-consolidated"
+       class="slide-hover flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors
+              /* 👇 음각 선 추가 */
+              border-t border-b border-t-black/20 border-b-white/10">
+        <span class="font-medium text-lg">일보 통합본</span>
+    </a>
+    
+    <a onclick="openSalesSheet()" id="menu-sales"
+       class="slide-hover flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors
+              /* 👇 음각 선 추가 */
+              border-t border-b border-t-black/20 border-b-white/10">
+        <span class="font-medium text-lg">매출표</span>
+    </a>
+
+</nav>
     </div>
     <div id="main-content-wrapper" 
          class="flex-grow pt-4 ml-0 md:ml-64 transition-all duration-300 w-full">
@@ -1891,6 +1901,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
