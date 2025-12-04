@@ -1686,7 +1686,7 @@ function getFactoryLedgerStatus(e) {
         document.getElementById('btn-delete-report').onclick = function() {
             // 삭제 확인 (시스템 confirm 사용)
             if (confirm("정말 삭제하시겠습니까? (휴지통으로 이동)")) {
-                (id, dateStr);
+                deleteReportAction(id, dateStr);
             }
         };
 
@@ -1984,6 +1984,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
