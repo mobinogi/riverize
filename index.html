@@ -24,48 +24,46 @@
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
     
     <div id="sidebar" 
-     class="fixed left-0 top-0 h-full hidden md:flex w-64 flex-shrink-0 flex-col p-4 z-50
-            transition-all duration-300
+     class="fixed left-0 top-0 h-full flex w-64 flex-shrink-0 flex-col p-4 z-50
+            transition-transform duration-300 ease-in-out
             bg-gradient-to-b from-gray-700 to-gray-900 text-gray-200
             
-            /* 📱 모바일: 평면 (그림자X, 선X) */
+            /* 📱 모바일: 평면 (그림자X) */
             shadow-none border-none
             
-            /* 💻 PC: 진한 그림자 + 선명한 경계선 */
-            /* 설명: x축으로 5px 이동, 검은색 50% 진하기로 그림자 생성 */
+            /* 💻 PC: 입체감 (그림자O, 경계선O) */
             md:shadow-[5px_0_25px_rgba(0,0,0,0.5)] 
             md:border-r md:border-gray-500/50">
-        
-        <div onclick="changeView('write')"
-     class="text-2xl font-bold text-white mb-8 border-b border-gray-600/50 pb-4 
-            select-none cursor-pointer hover:text-gray-100 transition-all 
-            text-center"
-     style="text-shadow: 0 0 7px rgba(255, 255, 255, 0.6);">
+    
+    <div onclick="changeView('write')"
+         class="text-2xl font-bold text-white mb-8 pb-4 
+                select-none cursor-pointer hover:text-gray-100 transition-all text-center
+                border-b border-black/20 shadow-[0_1px_0_rgba(255,255,255,0.1)]"
+         style="text-shadow: 0 0 7px rgba(255, 255, 255, 0.6);">
         강서 도매소
-       </div>
+    </div>
 
-        <nav class="space-y-2">
-    
-    <a onclick="changeView('consolidated')" id="menu-consolidated"
-       class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
-        <span class="font-medium text-lg transition-colors">일보 통합본</span>
-    </a>
-    
-    <a onclick="openSalesSheet()" id="menu-sales"
-       class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
-        <span class="font-medium text-lg transition-colors">매출표</span>
-    </a>
-  </nav>
-</div>
-   <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
-            class="absolute top-1/2 -right-6 w-6 h-16 -translate-y-1/2 
-                   bg-gray-700/80 backdrop-blur-sm 
-                   rounded-r-xl border-y border-r border-gray-600/50 
-                   shadow-lg cursor-pointer flex items-center justify-center
-                   hover:bg-gray-600 transition-colors z-50 group">
+    <nav class="space-y-2">
+        <a onclick="changeView('consolidated')" id="menu-consolidated"
+           class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
+            <span class="font-medium text-lg transition-colors">일보 통합본</span>
+        </a>
         
-        <svg id="sidebar-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        <a onclick="openSalesSheet()" id="menu-sales"
+           class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
+            <span class="font-medium text-lg transition-colors">매출표</span>
+        </a>
+    </nav>
+
+    <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
+            class="absolute top-1/2 -right-5 w-5 h-16 -translate-y-1/2 
+                   bg-gray-700 text-gray-400 
+                   rounded-r-lg border-y border-r border-gray-600/50 
+                   shadow-[2px_0_5px_rgba(0,0,0,0.3)] cursor-pointer 
+                   flex items-center justify-center
+                   hover:bg-gray-600 hover:text-white transition-colors z-50
+                   md:hidden"> <svg id="sidebar-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
     </button>  
     <div id="main-content-wrapper" 
@@ -1984,6 +1982,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
