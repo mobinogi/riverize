@@ -326,60 +326,90 @@
 }
 
 /* =========================================
-   사이드바 슬라이딩 시스템 (Text Safe)
+   📱 & 💻 사이드바 통합 제어 시스템 (최종)
    ========================================= */
 
-/* =========================================
-   📱 모바일 손잡이 강제 소환 (Emergency Fix)
-   ========================================= */
-
-/* 1. 기본적으로 무조건 보이게 설정 (가장 높은 우선순위) */
+/* ---------------------------------------------------
+   1. 📱 모바일 전용 손잡이 (Edge Handle) 설정
+   --------------------------------------------------- */
 #sidebar-handle {
-    display: flex !important;  /* 숨지 말고 나와라! */
-    z-index: 9999 !important;  /* 다른 거 다 뚫고 맨 위에 */
+    display: flex !important;  /* 모바일: 무조건 보임 */
+    z-index: 9999 !important;  /* 최상위 */
     visibility: visible !important;
 }
 
-/* 2. PC(768px 이상)에서는 숨김 */
+/* PC(768px 이상)에서는 모바일 손잡이 숨김 */
 @media (min-width: 768px) {
     #sidebar-handle {
         display: none !important;
     }
 }
 
-/* 3. 사이드바가 열려있을 때(.open)는 손잡이 숨김 (겹치니까) */
-/* (JS가 제어하긴 하지만, CSS로도 한 번 더 확실하게) */
+/* 모바일 사이드바가 열려있을 때(.open)는 손잡이 숨김 (겹침 방지) */
 #sidebar.open ~ #sidebar-handle {
     display: none !important;
 }
 
-/* 1. 사이드바 동작 정의 */
+
+/* ---------------------------------------------------
+   2. 📂 사이드바 동작 및 애니메이션 정의
+   --------------------------------------------------- */
 #sidebar {
     /* 부드러운 이동 애니메이션 */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
-    /* [중요] 텍스트 줄바꿈/찌그러짐 방지 */
-    min-width: 16rem; /* w-64 (256px) 고정 */
+    /* 텍스트 줄바꿈 방지 및 너비 고정 */
+    min-width: 16rem; 
     width: 16rem;
+    
+    /* 🚨 [모바일 기본 상태] 화면 왼쪽 밖으로 숨김 */
+    transform: translateX(-100%);
+    
+    /* PC 버튼이 튀어나와 보여야 하므로 overflow 설정 */
+    overflow-y: auto; 
+    overflow-x: visible; 
+    
+    z-index: 50;
 }
 
-/* 2. 닫혔을 때 (왼쪽으로 숨음) */
-#sidebar.closed {
-    /* 화면 왼쪽 밖으로 100% 이동 */
-    transform: translateX(-100%) !important; 
+/* 📱 [모바일 열림] .open 클래스가 붙으면 나옴 */
+#sidebar.open {
+    transform: translateX(0); /* 스르륵 나옴 */
+    box-shadow: 5px 0 30px rgba(0, 0, 0, 0.5); /* 그림자 */
 }
 
-/* 3. 닫혔을 때 손잡이 아이콘 회전 */
-#sidebar.closed #sidebar-icon {
-    transform: rotate(180deg); /* 화살표 반대로 */
+
+/* ---------------------------------------------------
+   3. 💻 PC 화면 설정 (768px 이상)
+   --------------------------------------------------- */
+@media (min-width: 768px) {
+    /* [PC 기본 상태] 무조건 보임 (제자리 0) */
+    #sidebar {
+        transform: translateX(0) !important;
+        box-shadow: 5px 0 25px rgba(0,0,0,0.5); /* PC 그림자 복구 */
+    }
+    
+    /* [PC 닫힘] 버튼 눌러서 닫았을 때 (.closed) */
+    #sidebar.closed {
+        transform: translateX(-100%) !important;
+    }
+    
+    /* PC에서 닫혔을 때 버튼 아이콘 회전 (화살표 반대 방향) */
+    #sidebar.closed #sidebar-icon {
+        transform: rotate(180deg);
+    }
 }
 
-/* 4. 메인 컨텐츠 영역 (사이드바에 맞춰 늘어나기) */
+
+/* ---------------------------------------------------
+   4. 🖼️ 메인 컨텐츠 영역 (PC 레이아웃 반응형)
+   --------------------------------------------------- */
 #main-content-wrapper {
+    /* 사이드바 열고 닫을 때 여백이 부드럽게 변함 */
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 사이드바가 닫히면 메인 화면이 넓어짐 (PC에서만) */
+/* PC에서 사이드바 닫히면 메인 화면 넓어짐 (여백 제거) */
 body.sidebar-collapsed #main-content-wrapper {
     margin-left: 0 !important; /* ml-64 제거 효과 */
 }
