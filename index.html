@@ -55,9 +55,20 @@
        class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
         <span class="font-medium text-lg transition-colors">매출표</span>
     </a>
-
-</nav>
-    </div>
+  </nav>
+     <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
+            class="absolute top-1/2 -right-6 w-6 h-16 -translate-y-1/2 
+                   bg-gray-700/80 backdrop-blur-sm 
+                   rounded-r-xl border-y border-r border-gray-600/50 
+                   shadow-lg cursor-pointer flex items-center justify-center
+                   hover:bg-gray-600 transition-colors z-50 group">
+        
+        <svg id="sidebar-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+    </button>
+  </div>
+  
     <div id="main-content-wrapper" 
          class="flex-grow pt-4 ml-0 md:ml-64 transition-all duration-300 w-full">
         
@@ -1893,6 +1904,7 @@ function reloadCurrentMonth() {
 </div>
 </body>
 </html>
+
 
 
 
