@@ -329,6 +329,30 @@
    사이드바 슬라이딩 시스템 (Text Safe)
    ========================================= */
 
+/* =========================================
+   📱 모바일 손잡이 강제 소환 (Emergency Fix)
+   ========================================= */
+
+/* 1. 기본적으로 무조건 보이게 설정 (가장 높은 우선순위) */
+#sidebar-handle {
+    display: flex !important;  /* 숨지 말고 나와라! */
+    z-index: 9999 !important;  /* 다른 거 다 뚫고 맨 위에 */
+    visibility: visible !important;
+}
+
+/* 2. PC(768px 이상)에서는 숨김 */
+@media (min-width: 768px) {
+    #sidebar-handle {
+        display: none !important;
+    }
+}
+
+/* 3. 사이드바가 열려있을 때(.open)는 손잡이 숨김 (겹치니까) */
+/* (JS가 제어하긴 하지만, CSS로도 한 번 더 확실하게) */
+#sidebar.open ~ #sidebar-handle {
+    display: none !important;
+}
+
 /* 1. 사이드바 동작 정의 */
 #sidebar {
     /* 부드러운 이동 애니메이션 */
