@@ -1811,7 +1811,40 @@ async function deleteReportAction(fileId, dateStr) {
         hideLoader();
     }
 }
-  
+  /**
+ * [수정됨] 보고서 삭제 함수 (캐시 삭제 기능 추가)
+ */
+function deleteReportFile(e) {
+  try {
+    const fileId = e.parameter.fileId;
+    const file = DriveApp.getFileById(fileId);
+    const fileName = file.getName(); // 파일 이름 미리 저장 (날짜 파악용)
+    
+    // 1. 휴지통으로 이동
+    file.setTrashed(true);
+    
+    // 2. 🚨 [핵심] 서버 캐시 삭제 (이게 없어서 갱신이 안 됐던 겁니다!)
+    // 파일명 예시: "2025년 12월 04일 일보" -> 여기서 연, 월 추출
+    const dateMatch = fileName.match(/(\d{4})년\s*(\d{1,2})월/);
+    
+    if (dateMatch) {
+      const year = parseInt(dateMatch[1], 10);
+      const month = parseInt(dateMatch[2], 10);
+      
+      const cache = CacheService.getScriptCache();
+      const cacheKey = `reports_folder_${year}_${month}`;
+      
+      cache.remove(cacheKey); // 해당 월의 장부를 찢어버림 (다음 요청 때 새로 만듦)
+      Logger.log(`[Delete] ${fileName} 삭제 완료. ${year}-${month} 캐시 초기화.`);
+    }
+    
+    return { status: 'success', message: '보고서 파일이 휴지통으로 이동되었습니다.' };
+    
+  } catch (err) {
+    Logger.log("파일 삭제 오류: " + err.toString());
+    return { status: 'error', message: '삭제 실패: ' + err.toString() };
+  }
+}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1940,6 +1973,7 @@ async function deleteReportAction(fileId, dateStr) {
 </div>
 </body>
 </html>
+
 
 
 
