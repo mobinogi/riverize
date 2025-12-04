@@ -366,7 +366,6 @@
     transform: translateX(-100%);
     
     /* [핵심] 버튼이 튀어나와 보여야 하므로 overflow visible 필수! */
-    overflow-y: auto; 
     overflow-x: visible !important; 
     
     z-index: 50;
