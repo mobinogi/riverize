@@ -651,6 +651,18 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
     }
+
+    // 2. 💻 [PC 전용] 사이드바 다시 꺼내기 (원상복구)
+    // 화면 너비가 768px 이상(PC)일 때만 작동
+    if (window.innerWidth >= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body;
+        
+        // '닫힘' 클래스 제거 -> 다시 나옴
+        sidebar.classList.remove('closed');
+        body.classList.remove('sidebar-collapsed');
+    }
+}
   
     // [최신] 롱프레스 활성화 함수
     function enableMapLongPress() {
@@ -1973,6 +1985,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
