@@ -148,7 +148,9 @@
                           <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                           </button>
-                          <div id="current-month-display" class="text-2xl font-bold text-green-700">불러오는 중...</div>
+                          <div id="current-month-display" onclick="reloadCurrentMonth()" title="누르면 달력을 새로고침합니다" class="text-2xl font-bold text-green-700 cursor-pointer hover:text-green-900 transition-all select-none active:scale-95">
+                                불러오는 중...
+                           </div>
                           <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                           </button>
@@ -1357,9 +1359,12 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             const result = await callAppsScript('generate'); 
             if (result.status === 'success' && result.url) {
                 openSheetApp(result.url, newWindow); 
-                if (new Date().getMonth() + 1 === currentMonth) fetchReportsForMonth(currentYear, currentMonth, true);
-            } else { if(newWindow) newWindow.close(); alert('실패: ' + result.message); }
-        } catch (e) { if(newWindow) newWindow.close(); alert('오류: ' + e.message); } finally { hideLoader(); }
+                reloadCurrentMonth();
+            } else { 
+              if(newWindow) newWindow.close(); alert('실패: ' + result.message); }
+        } catch (e) { 
+          if(newWindow) newWindow.close(); alert('오류: ' + e.message); } 
+        finally { hideLoader(); }
     }
 
     async function createMonthlySummary() {
@@ -1395,32 +1400,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
                 openSheetApp(result.url, newWindow);
             } else { if(newWindow) newWindow.close(); alert('실패'); }
         } catch (e) { if(newWindow) newWindow.close(); alert('오류'); } finally { hideLoader(); }
-    }
- 
-    /**
-     * [추가] 보고서 삭제 실행 함수 (code.js의 deleteReportFile 호출)
-     */
-    async function deleteReportAction(fileId, dateStr) {
-        showLoader(`"${dateStr}" 보고서 삭제 중...`);
-        closeReportOptionModal(); 
-        try {
-            const result = await callAppsScript('deleteReportFile', { fileId: fileId });
-            if (result.status === 'success') {
-                showToast("보고서가 삭제되었습니다.", "success");
-                
-                // 캘린더 데이터에서 제거 (UI 업데이트)
-                const dateKey = dateStr.replace(/년 |월 |일/g, '-').slice(0, -1).replace(/-(\d{1})$/g, '-0$1'); 
-                delete reportsMap[dateKey];
-                
-                renderCalendar(); // 캘린더 UI 갱신
-            } else {
-                showToast("삭제 실패: " + result.message, "error");
-            }
-        } catch (e) {
-            showToast("서버 오류: " + e.message, "error");
-        } finally {
-            hideLoader();
-        }
     }
 
     /**
@@ -1769,6 +1748,23 @@ function logClientActionAsync(actionName) {
         window.open(url, '_blank');
     }
 }
+
+  /**
+ * [신규] 달력 강제 새로고침 (제목 클릭 시 실행)
+ */
+function reloadCurrentMonth() {
+    // 1. 현재 보고 있는 달의 캐시 키 생성 (예: '2025-12')
+    const key = currentYear + '-' + currentMonth;
+    
+    // 2. "이미 로딩 완료됨" 표시를 삭제 -> 그래야 다시 서버에서 가져옴
+    delete reportsMap[key]; 
+    
+    // 3. 안내 메시지 띄우기
+    showToast(`${currentMonth}월 데이터를 최신으로 갱신합니다.`, 'success');
+    
+    // 4. 데이터 다시 요청 (이제 캐시가 없으니 서버로 요청함)
+    fetchReportsForMonth(currentYear, currentMonth);
+}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1897,6 +1893,7 @@ function logClientActionAsync(actionName) {
 </div>
 </body>
 </html>
+
 
 
 
