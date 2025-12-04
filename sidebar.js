@@ -209,76 +209,71 @@ function cleanupOverlays() {
     document.getElementById('loading-overlay').classList.add('hidden'); // 로딩 오버레이 닫기
     document.getElementById('confirm-modal').classList.add('hidden');
 }
-/**
- * 사이드바 열고 닫기 (토글)
- */
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const body = document.body;
-    
-    // 클래스 토글 (closed가 있으면 닫힘, 없으면 열림)
-    sidebar.classList.toggle('closed');
-    
-    // 메인 화면 넓이 조절을 위해 body에도 표식 남김
-    if (sidebar.classList.contains('closed')) {
-        body.classList.add('sidebar-collapsed');
-    } else {
-        body.classList.remove('sidebar-collapsed');
-    }
-}
 
 // ===============================================
-// 📱 모바일 사이드바 제어 (토글 & 스와이프)
+// 🖱️ 사이드바 제어 (PC/모바일 통합 + 스와이프)
 // ===============================================
 
 /**
- * 사이드바 열고 닫기 (토글 버튼용)
+ * [마스터 함수] 사이드바 열고 닫기
+ * - PC: 밀어내기 방식 (.closed 토글)
+ * - 모바일: 덮어쓰기 방식 (.open 토글 + 백드롭)
  */
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const handle = document.getElementById('sidebar-handle'); // (선택사항) 손잡이 ID
+    const handle = document.getElementById('sidebar-handle'); // 모바일용 손잡이
+    const body = document.body;
     
     if (!sidebar) return;
 
-    // 현재 열려있는지 확인 ('open' 클래스로 판단)
-    const isOpen = sidebar.classList.contains('open');
+    // 현재 화면 너비 확인 (768px 미만이면 모바일)
+    const isMobile = window.innerWidth < 768;
 
-    if (isOpen) {
-        // 닫기 🚪
-        sidebar.classList.remove('open');
-        
-        // 백드롭 숨기기 (부드럽게)
-        if (backdrop) {
-            backdrop.classList.remove('opacity-100');
-            setTimeout(() => backdrop.classList.add('hidden'), 300);
+    if (isMobile) {
+        // 📱 [모바일 로직] 평소에 닫혀있음 -> '.open' 클래스로 염
+        const isOpen = sidebar.classList.contains('open');
+
+        if (isOpen) {
+            // 닫기
+            sidebar.classList.remove('open');
+            // 백드롭 숨기기
+            if (backdrop) {
+                backdrop.classList.remove('opacity-100');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
+            // 손잡이 보이기
+            if (handle) handle.style.display = 'flex';
+        } else {
+            // 열기
+            sidebar.classList.add('open');
+            // 백드롭 보이기
+            if (backdrop) {
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.add('opacity-100'), 10);
+            }
+            // 손잡이 숨기기
+            if (handle) handle.style.display = 'none';
         }
-        
-        // 닫히면 손잡이 다시 보이기
-        if (handle) handle.style.display = 'flex';
-        
+
     } else {
-        // 열기 📂
-        sidebar.classList.add('open');
+        // 💻 [PC 로직] 평소에 열려있음 -> '.closed' 클래스로 닫음
+        sidebar.classList.toggle('closed');
         
-        // 백드롭 보이기
-        if (backdrop) {
-            backdrop.classList.remove('hidden');
-            // 약간의 딜레이 후 불투명하게 (트랜지션 효과)
-            setTimeout(() => backdrop.classList.add('opacity-100'), 10);
+        // 메인 화면 넓이 조절 (body 클래스 토글)
+        if (sidebar.classList.contains('closed')) {
+            body.classList.add('sidebar-collapsed');
+        } else {
+            body.classList.remove('sidebar-collapsed');
         }
-        
-        // 열렸을 땐 손잡이 숨기기 (거슬리니까)
-        if (handle) handle.style.display = 'none';
     }
 }
 
-// 👇 [보너스] 갤럭시처럼 화면 왼쪽 끝을 밀어서 열기 (Swipe)
+// 👇 [제스처] 갤럭시처럼 화면 왼쪽 끝을 밀어서 열기 (Swipe)
 let touchStartX = 0;
 let touchStartY = 0;
 
 document.addEventListener('touchstart', e => {
-    // 터치 시작 위치 기억
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
 }, {passive: true});
@@ -290,21 +285,22 @@ document.addEventListener('touchend', e => {
     const xDiff = touchEndX - touchStartX;
     const yDiff = touchEndY - touchStartY;
 
-    // 1. 가로로 길게 밀었고 (세로보다 가로 이동이 큼)
-    // 2. 50px 이상 움직였을 때만 실행
+    // 1. 가로로 길게 밀었고 (50px 이상)
+    // 2. 세로보다 가로 이동이 훨씬 클 때만 실행 (스크롤 오작동 방지)
     if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 50) {
         
         // Case A: 화면 왼쪽 끝(30px 이내)에서 오른쪽으로 밀었을 때 -> 열기
         if (touchStartX < 30 && xDiff > 0) {
             const sidebar = document.getElementById('sidebar');
-            if (sidebar && !sidebar.classList.contains('open')) {
+            // 모바일에서만 작동 & 닫혀있을 때만 염
+            if (window.innerWidth < 768 && sidebar && !sidebar.classList.contains('open')) {
                 toggleSidebar();
             }
         }
         
         // Case B: 사이드바가 열려있을 때 왼쪽으로 밀었을 때 -> 닫기
         const sidebar = document.getElementById('sidebar');
-        if (sidebar && sidebar.classList.contains('open') && xDiff < 0) {
+        if (window.innerWidth < 768 && sidebar && sidebar.classList.contains('open') && xDiff < 0) {
             toggleSidebar();
         }
     }
