@@ -55,9 +55,13 @@
                 <span class="font-medium text-lg transition-colors">매출표</span>
             </a>
         </nav>
-        
-    </div> <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
-            class="absolute top-1/2 -right-5 w-5 h-16 -translate-y-1/2 
+      </div> 
+       <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
+            class="absolute -right-5 w-5 h-16 -translate-y-1/2 
+                   
+                   /* 👇 여기가 핵심! (모바일은 위로, PC는 중앙으로) */
+                   top-[30%] md:top-1/2
+                   
                    bg-gray-700 text-gray-400 
                    rounded-r-lg border-y border-r border-gray-600/50 
                    shadow-[2px_0_5px_rgba(0,0,0,0.3)] cursor-pointer 
@@ -1994,6 +1998,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
