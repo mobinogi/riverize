@@ -324,3 +324,38 @@
     color: #ffffff;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
+
+/* =========================================
+   사이드바 슬라이딩 시스템 (Text Safe)
+   ========================================= */
+
+/* 1. 사이드바 동작 정의 */
+#sidebar {
+    /* 부드러운 이동 애니메이션 */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* [중요] 텍스트 줄바꿈/찌그러짐 방지 */
+    min-width: 16rem; /* w-64 (256px) 고정 */
+    width: 16rem;
+}
+
+/* 2. 닫혔을 때 (왼쪽으로 숨음) */
+#sidebar.closed {
+    /* 화면 왼쪽 밖으로 100% 이동 */
+    transform: translateX(-100%) !important; 
+}
+
+/* 3. 닫혔을 때 손잡이 아이콘 회전 */
+#sidebar.closed #sidebar-icon {
+    transform: rotate(180deg); /* 화살표 반대로 */
+}
+
+/* 4. 메인 컨텐츠 영역 (사이드바에 맞춰 늘어나기) */
+#main-content-wrapper {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 사이드바가 닫히면 메인 화면이 넓어짐 (PC에서만) */
+body.sidebar-collapsed #main-content-wrapper {
+    margin-left: 0 !important; /* ml-64 제거 효과 */
+}
