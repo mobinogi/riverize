@@ -1785,6 +1785,33 @@ function reloadCurrentMonth() {
     // 4. 데이터 다시 요청 (이제 캐시가 없으니 서버로 요청함)
     fetchReportsForMonth(currentYear, currentMonth);
 }
+
+/**
+ * [복구됨] 보고서 삭제 실행 함수
+ */
+async function deleteReportAction(fileId, dateStr) {
+    showLoader(`"${dateStr}" 보고서 삭제 중...`);
+    closeReportOptionModal(); 
+    
+    try {
+        const result = await callAppsScript('deleteReportFile', { fileId: fileId });
+        
+        if (result.status === 'success') {
+            showToast("보고서가 삭제되었습니다.", "success");
+            
+            // ✅ 삭제 후 달력 새로고침 (아까 추가한 기능 포함)
+            reloadCurrentMonth(); 
+            
+        } else {
+            showToast("삭제 실패: " + result.message, "error");
+        }
+    } catch (e) {
+        showToast("서버 오류: " + e.message, "error");
+    } finally {
+        hideLoader();
+    }
+}
+  
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -1913,6 +1940,7 @@ function reloadCurrentMonth() {
 </div>
 </body>
 </html>
+
 
 
 
