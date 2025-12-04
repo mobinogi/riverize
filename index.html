@@ -1780,23 +1780,32 @@ function logClientActionAsync(actionName) {
     }
 }
 
-  /**
- * [신규] 달력 강제 새로고침 (제목 클릭 시 실행)
+/**
+ * [수정됨] 달력 강제 새로고침 (메모리 초기화 기능 추가)
  */
 function reloadCurrentMonth() {
-    // 1. 현재 보고 있는 달의 캐시 키 생성 (예: '2025-12')
+    // 1. 이번 달 상태 키 (예: '2025-12')
     const key = currentYear + '-' + currentMonth;
     
-    // 2. "이미 로딩 완료됨" 표시를 삭제 -> 그래야 다시 서버에서 가져옴
+    // 2. '로딩 완료' 도장 지우기
     delete reportsMap[key]; 
     
-    // 3. 안내 메시지 띄우기
+    // 3. 🚨 [핵심 추가] 이번 달에 해당하는 '날짜별 데이터'도 싹 지워야 합니다!
+    // 예: '2025-12-01', '2025-12-04' 등...
+    const prefix = currentYear + '-' + String(currentMonth).padStart(2, '0');
+    
+    Object.keys(reportsMap).forEach(dateKey => {
+        if (dateKey.startsWith(prefix)) {
+            delete reportsMap[dateKey]; // 메모리에서 삭제!
+        }
+    });
+    
+    // 4. 안내 메시지
     showToast(`${currentMonth}월 데이터를 최신으로 갱신합니다.`, 'success');
     
-    // 4. 데이터 다시 요청 (이제 캐시가 없으니 서버로 요청함)
+    // 5. 이제 깨끗한 상태에서 다시 받아옴
     fetchReportsForMonth(currentYear, currentMonth);
 }
-
 /**
  * [복구됨] 보고서 삭제 실행 함수
  */
@@ -1984,6 +1993,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
