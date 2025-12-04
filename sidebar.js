@@ -209,3 +209,20 @@ function cleanupOverlays() {
     document.getElementById('loading-overlay').classList.add('hidden'); // 로딩 오버레이 닫기
     document.getElementById('confirm-modal').classList.add('hidden');
 }
+/**
+ * 사이드바 열고 닫기 (토글)
+ */
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const body = document.body;
+    
+    // 클래스 토글 (closed가 있으면 닫힘, 없으면 열림)
+    sidebar.classList.toggle('closed');
+    
+    // 메인 화면 넓이 조절을 위해 body에도 표식 남김
+    if (sidebar.classList.contains('closed')) {
+        body.classList.add('sidebar-collapsed');
+    } else {
+        body.classList.remove('sidebar-collapsed');
+    }
+}
