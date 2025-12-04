@@ -583,6 +583,15 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // [최종 수정] 지도 열기 + 강력한 터치 감지 (Capture 모드)
     function openMapOverlay() {
       console.log("지도 열기 버튼 클릭.");
+
+      // 👇 [추가] 지도가 열릴 때 사이드바를 강제로 닫습니다!
+      const sidebar = document.getElementById('sidebar');
+      const body = document.body;
+      if (!sidebar.classList.contains('closed')) {
+        sidebar.classList.add('closed');
+        body.classList.add('sidebar-collapsed');
+      }
+      
       document.getElementById('map-overlay').classList.remove('hidden');
 
       // ✅ [추가] 지도 열기 행동 로그를 비동기적으로 기록
@@ -1904,6 +1913,7 @@ function reloadCurrentMonth() {
 </div>
 </body>
 </html>
+
 
 
 
