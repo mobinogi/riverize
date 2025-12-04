@@ -662,7 +662,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         sidebar.classList.remove('closed');
         body.classList.remove('sidebar-collapsed');
     }
-}
   
     // [최신] 롱프레스 활성화 함수
     function enableMapLongPress() {
@@ -1687,7 +1686,7 @@ function getFactoryLedgerStatus(e) {
         document.getElementById('btn-delete-report').onclick = function() {
             // 삭제 확인 (시스템 confirm 사용)
             if (confirm("정말 삭제하시겠습니까? (휴지통으로 이동)")) {
-                deleteReportAction(id, dateStr);
+                (id, dateStr);
             }
         };
 
@@ -1985,6 +1984,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
