@@ -180,14 +180,20 @@
                           </div>
                           <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
                           </div>
+                         
                       </div>
-                      
+                  
                       <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
                         <span id="summary-button-text">XX월 매출현황표 생성</span>
                       </button>
 
                       <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 불러오는 중...</p>
-                    </div>
+                    <div id="calendar-loader" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl hidden">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin mb-3"></div>
+        <p class="text-sm font-bold text-gray-600 animate-pulse">
+            📅 달력 정보를 불러오는 중...
+        </p>
+    </div>
                 </div> 
             </div> 
           <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
@@ -2014,6 +2020,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
