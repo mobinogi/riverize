@@ -54,11 +54,9 @@ function toggleSubTab(tabName) {
     }
     
     if (tabName === 'review') {
-        if (typeof isDataLoading !== 'undefined' && isDataLoading) {
-            if (typeof showLoader === 'function') showLoader('달력 정보를 불러오는 중...');
-        } else if (typeof renderCalendar === 'function') {
-            renderCalendar();
-        }
+        // ✅ 그냥 달력 그리기만 호출하면 됩니다.
+        // (로딩 중이면 HTML에 넣어둔 로딩막이 알아서 돌아가고 있습니다)
+        if (typeof renderCalendar === 'function') renderCalendar();
     }
 }
 
