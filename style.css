@@ -124,6 +124,13 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
       border-right: 1px solid rgba(255, 255, 255, 0.3); /* 유리 경계선 느낌 */
     }
+    /* 💻 [PC 전용] 화면이 넓을 때만 320px로 고정 (너무 크지 않게) */
+    @media (min-width: 768px) {
+       #client-list-panel {
+            width: 320px !important;
+       }
+    }
+
     #client-list-panel::-webkit-scrollbar { display: none; }
     #client-list-panel { scrollbar-width: none; }
     /* [최종 수정] 사이드바 접었을 때 (라운드/패딩 강제 적용 + 그림자 제거) */
