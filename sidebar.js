@@ -84,7 +84,12 @@ async function fetchConsolidatedList() {
         renderConsolidatedList();
         return;
     }
-    
+
+    // 2. 🚛 [수정] 데이터가 없으면 트럭 출동! (배달중...)
+    if (typeof showLoader === 'function') {
+        showLoader('통합본 목록을 배달중...', true); 
+    }
+  
     listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Drive에서 통합 파일을 검색 중입니다...</p>';
     statusEl.textContent = '상태: 검색 중...';
     
