@@ -1474,16 +1474,16 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     async function fetchReportsForMonth(year, month, isInitial = false) {
     const key = year + '-' + month;
     
-    // 이미 로딩된 데이터면 즉시 표시
+    // 1. 이미 로딩된 데이터면 바로 보여주고 끝냄 (로딩 안 띄움)
     if (reportsMap[key] === 'completed') { 
         renderCalendar(); 
         return; 
     }
     
-    // 🚨 [수정 포인트] showLoader(전체화면) 삭제! 
-    // 대신 아까 심어둔 '달력 전용 로딩막(calendar-loader)'을 켭니다.
+    // 🚨 [수정 포인트] 전체 화면 로딩(showLoader) 삭제!
+    // 대신 '달력 박스 전용 로딩막'을 찾아서 켭니다.
     const localLoader = document.getElementById('calendar-loader');
-    if (localLoader) localLoader.classList.remove('hidden'); // 로딩 켜기
+    if (localLoader) localLoader.classList.remove('hidden'); // 로딩막 켜기
 
     try {
         const result = await callAppsScript('getReportFilesByMonth', { year, month });
@@ -1492,8 +1492,8 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             reportsMap[key] = 'completed'; 
         }
     } finally { 
-        // 🚨 [수정 포인트] hideLoader() 대신 로컬 로딩막을 끕니다.
-        if (localLoader) localLoader.classList.add('hidden'); // 로딩 끄기
+        // 🚨 [수정 포인트] 작업 끝났으니 로컬 로딩막 끄기
+        if (localLoader) localLoader.classList.add('hidden'); // 로딩막 끄기
         
         renderCalendar(); 
         
@@ -2022,6 +2022,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
