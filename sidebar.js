@@ -117,7 +117,7 @@ async function fetchConsolidatedList() {
         listContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">서버 통신 오류: ${e.message}</p>`;
         statusEl.textContent = '상태: 통신 실패.';
     } finally {
-        // if (typeof hideLoader === 'function') hideLoader(); // hideLoader 제거
+         if (typeof hideLoader === 'function') hideLoader(); // hideLoader 제거
     }
 }
 /**
