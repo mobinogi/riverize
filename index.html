@@ -1464,20 +1464,35 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
 
   
     // 캘린더 렌더링 관련
-    async function fetchReportsForMonth(year, month, isInitialLoad = false) {
-        const key = year + '-' + month;
-        if (reportsMap[key] === 'completed') { renderCalendar(); return; }
-        if (!isInitialLoad) showLoader('불러오는 중...');
-        try {
-            const result = await callAppsScript('getReportFilesByMonth', { year, month });
-            if (Array.isArray(result)) { result.forEach(r => reportsMap[r.date] = r); reportsMap[key] = 'completed'; }
-        } finally { 
-            hideLoader(); 
-            renderCalendar(); 
-            // ✅ [추가된 코드] 로딩 완료 시 상태 메시지를 갱신합니다.
-            document.getElementById('review-status').textContent = '상태: 월별 보고서 정보 로딩 완료.';
-        }
+    async function fetchReportsForMonth(year, month, isInitial = false) {
+    const key = year + '-' + month;
+    
+    // 이미 로딩된 데이터면 즉시 표시
+    if (reportsMap[key] === 'completed') { 
+        renderCalendar(); 
+        return; 
     }
+    
+    // 🚨 [수정] 글로벌 로딩(트럭) 대신, 달력 전용 로딩만 켭니다!
+    isDataLoading = true;
+    const localLoader = document.getElementById('calendar-loader');
+    if (localLoader) localLoader.classList.remove('hidden'); // 로딩막 켜기
+
+    try {
+        const result = await callAppsScript('getReportFilesByMonth', { year, month });
+        if (Array.isArray(result)) { 
+            result.forEach(r => reportsMap[r.date] = r); 
+            reportsMap[key] = 'completed'; 
+        }
+    } finally { 
+        // 🚨 [수정] 로딩 끝났으니 로딩막 끄기
+        isDataLoading = false;
+        if (localLoader) localLoader.classList.add('hidden'); // 로딩막 끄기
+        
+        renderCalendar(); 
+        document.getElementById('review-status').textContent = '상태: 월별 보고서 정보 로딩 완료.';
+    }
+}
   
      function renderCalendar() {
         const container = document.getElementById('calendar-days');
@@ -1999,6 +2014,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
