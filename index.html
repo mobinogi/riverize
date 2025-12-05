@@ -1391,6 +1391,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     async function generateTodayReport() {
         const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
         showLoader('새 일일 보고서 배송 중...' true);
+    }
         try {
             const result = await callAppsScript('generate'); 
             if (result.status === 'success' && result.url) {
@@ -1998,6 +1999,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
