@@ -1764,7 +1764,7 @@ function getFactoryLedgerStatus(e) {
             openReportOptionModal(id, url, dateStr);
             
             // 팝업이 뜨면 스타일 복귀 (다음 동작을 위해)
-            el.style.transform = "scale(1)";
+            el.style.transform = "";
         }, 800); // 0.8초 설정
     }
 
@@ -1775,7 +1775,11 @@ function getFactoryLedgerStatus(e) {
         clearTimeout(reportPressTimer);
         // 눌렀을 때 변했던 스타일 복귀
         const activeEls = document.querySelectorAll('.date-box');
-        activeEls.forEach(el => el.style.transform = "scale(1)");
+        activeEls.forEach(el => {
+            // 🚨 [수정됨] 여기서도 "scale(1)" 대신 빈 값("")으로 초기화!
+            // 그래야 스타일 속성이 사라지고, 다시 CSS hover 효과(scale 1.1)가 먹힙니다.
+            el.style.transform = ""; 
+        });
     }
 
     /**
@@ -2022,6 +2026,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
