@@ -16,12 +16,13 @@ async function loadOilPrice() {
 
     if (!elAvg) return; 
 
+    // 사장님 API 키
     const API_KEY = "F251207227"; 
     const PROD = "D047"; // 경유
 
     try {
         // 1. [스마트 탐색] 부산 강서구 지역코드(Area Code) 찾기
-        // (매번 찾으면 느리니까 localStorage에 저장해둡니다)
+        // (매번 찾으면 느리니까 브라우저에 저장해둡니다)
         let areaCode = localStorage.getItem('OPINET_AREA_CODE_BUSAN_GANGSEO');
         
         if (!areaCode) {
@@ -32,7 +33,7 @@ async function loadOilPrice() {
                 console.log(`📍 지역코드 발견 및 저장: ${areaCode}`);
             } else {
                 console.warn("지역코드를 찾지 못해 기본값(0204)을 사용합니다.");
-                areaCode = "0204"; // 실패 시 임시 코드 (안양 등)
+                areaCode = "0204"; // 실패 시 임시 코드
             }
         } else {
             console.log(`📍 저장된 지역코드 사용: ${areaCode}`);
@@ -40,6 +41,7 @@ async function loadOilPrice() {
 
         // 2. 최저가 주유소 조회 (lowTop10.do)
         const opinetUrl = `http://www.opinet.co.kr/api/lowTop10.do?out=json&code=${API_KEY}&prodcd=${PROD}&area=${areaCode}&cnt=20`;
+        // Proxy 서버를 통해 보안 우회
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(opinetUrl)}`;
 
         const response = await fetch(proxyUrl);
@@ -100,7 +102,7 @@ async function findGangseoCode(apiKey) {
         // "강서구" 찾기
         const gangseo = data2.RESULT.OIL.find(item => item.AREA_NM.includes("강서구"));
         
-        return gangseo ? gangseo.AREA_CD : null; // 코드 반환 (예: 0604)
+        return gangseo ? gangseo.AREA_CD : null; // 코드 반환
 
     } catch (e) {
         console.error("지역코드 탐색 중 오류:", e);
