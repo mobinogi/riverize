@@ -1641,9 +1641,9 @@ function getFactoryLedgerStatus(e) {
     const isJungDone = (jungVal !== "" && jungVal !== null);
 
     // --- [공장 합계: 현재 버전 F26~F28] ---
-    const totalF26 = sheet.getRange('F26').getValue() || 0; 
-    const totalF27 = sheet.getRange('F27').getValue() || 0; 
-    const totalF28 = sheet.getRange('F28').getValue() || 0; 
+    const totalF26 = sheet.getRange('F19').getValue() || 0; 
+    const totalF27 = sheet.getRange('F20').getValue() || 0; 
+    const totalF28 = sheet.getRange('F21').getValue() || 0; 
 
     return {
       status: 'success',
@@ -1651,9 +1651,9 @@ function getFactoryLedgerStatus(e) {
       isJungDone: isJungDone,
       isAllDone: (isKimDone && isJungDone),
       totals: {
-        f26: totalF26, 
-        f27: totalF27,
-        f28: totalF28
+        f19: totalF19, 
+        f20: totalF20,
+        f21: totalF21
       }
     };
 
@@ -1667,9 +1667,9 @@ function getFactoryLedgerStatus(e) {
     // ===============================================
     async function updateFactoryStatus() {
         // 1. 숫자가 들어갈 자리 찾기
-        const el26 = document.getElementById('val-f26');
-        const el27 = document.getElementById('val-f27');
-        const el28 = document.getElementById('val-f28');
+        const el26 = document.getElementById('val-f19');
+        const el27 = document.getElementById('val-f20');
+        const el28 = document.getElementById('val-f21');
 
         // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
         if (!el26 || !el27 || !el28) return;
@@ -1685,9 +1685,9 @@ function getFactoryLedgerStatus(e) {
             
             if (result.status === 'success') {
                 // 4. 받아온 숫자 채워넣기
-                el26.textContent = result.totals.f26;
-                el27.textContent = result.totals.f27;
-                el28.textContent = result.totals.f28;
+                el26.textContent = result.totals.f19;
+                el27.textContent = result.totals.f20;
+                el28.textContent = result.totals.f21;
             } else {
                 el26.textContent = '?'; // 실패 시 물음표
             }
@@ -2026,6 +2026,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
