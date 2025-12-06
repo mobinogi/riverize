@@ -97,17 +97,17 @@
     transition: all 0.1s ease-in-out;
 }
 
-/* 🚨 호버(마우스 올림) 효과 완전 제거! (가만히 있음) */
+/* 호버 (움직임 없음, 그림자 유지) */
 #generate-summary-button:hover {
-    transform: translateY(-3px) !important; /* 움직임 X */
-    box-shadow: 0 3px 0 #1e3a8a !important; /* 그림자 변화 X */
-    /* 색상 변화도 굳이 넣지 않습니다 (순정 유지) */
+    transform: translateY(-3px) !important;
+    /* 호버 시에도 회색 그림자 유지 */
+    box-shadow: 0 3px 0 rgba(184, 186, 186, 0.5) !important; 
 }
 
-/* 🖱️ 클릭했을 때 (꾹 눌리는 타격감은 필수!) */
+/* 클릭 (눌리는 효과) */
 #generate-summary-button:active {
-    transform: translateY(0) !important;     /* 바닥으로 쿵! */
-    box-shadow: 0 0 0 #1e3a8a !important;    /* 그림자 사라짐 */
+    transform: translateY(0) !important;     /* 쿵! */
+    box-shadow: 0 0 0 rgba(184, 186, 186, 0.5) !important; /* 그림자 삭제 */
 }
 
 /* (선택사항) 비활성화(회색) 상태일 때 */
