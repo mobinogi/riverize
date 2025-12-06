@@ -114,11 +114,11 @@
                         </div>
                         <div class="my-2 border-t border-blue-200/60"></div>
                         <div class="flex justify-around items-center pt-1">
-                            <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f26">-</span>
+                            <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f19">-</span>
                             <span class="text-blue-200 text-xl">|</span>
-                            <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f27">-</span>
+                            <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f20">-</span>
                             <span class="text-blue-200 text-xl">|</span>
-                            <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f28">-</span>
+                            <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f21">-</span>
                         </div>
                       </div>
 
@@ -1667,17 +1667,17 @@ function getFactoryLedgerStatus(e) {
     // ===============================================
     async function updateFactoryStatus() {
         // 1. 숫자가 들어갈 자리 찾기
-        const el26 = document.getElementById('val-f19');
-        const el27 = document.getElementById('val-f20');
-        const el28 = document.getElementById('val-f21');
+        const el19 = document.getElementById('val-f19');
+        const el20 = document.getElementById('val-f20');
+        const el21 = document.getElementById('val-f21');
 
         // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
-        if (!el26 || !el27 || !el28) return;
+        if (!el19 || !el20 || !el21) return;
 
         // 2. 로딩 중 표시 (...)
-        el26.textContent = '...';
-        el27.textContent = '...';
-        el28.textContent = '...';
+        el19.textContent = '...';
+        el20.textContent = '...';
+        el21.textContent = '...';
 
         try {
             // 3. 서버에 데이터 요청
@@ -1685,15 +1685,15 @@ function getFactoryLedgerStatus(e) {
             
             if (result.status === 'success') {
                 // 4. 받아온 숫자 채워넣기
-                el26.textContent = result.totals.f19;
-                el27.textContent = result.totals.f20;
-                el28.textContent = result.totals.f21;
+                el19.textContent = result.totals.f19;
+                el20.textContent = result.totals.f20;
+                el21.textContent = result.totals.f21;
             } else {
-                el26.textContent = '?'; // 실패 시 물음표
+                el19.textContent = '?'; // 실패 시 물음표
             }
         } catch (e) {
             console.error("공장 현황 로드 실패:", e);
-            el26.textContent = '-'; // 에러 시 하이픈
+            el19.textContent = '-'; // 에러 시 하이픈
         }
     }
 
@@ -2026,6 +2026,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
