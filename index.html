@@ -69,11 +69,11 @@
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-1">
                         <div>
-                            <p class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">경유 기준</p>
+                            <p class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">AVG DIESEL</p>
                             <h3 class="text-xs font-bold text-gray-200">부산 강서구 평균</h3>
                         </div>
                         <div class="text-right">
-                            <div class="text-xl font-black text-white tracking-tighter" id="diesel-avg-price">1,542</div>
+                            <div class="text-xl font-black text-white tracking-tighter" id="diesel-avg-price">--</div>
                             <div class="text-[10px] text-blue-400 font-bold flex justify-end items-center gap-0.5">
                                 ▼ 12원
                             </div>
@@ -84,20 +84,23 @@
 
                     <div class="flex justify-between items-end">
                         <div>
-                            <span class="text-[10px] text-yellow-400 font-bold border border-yellow-500/30 px-1 py-0.5 rounded bg-yellow-500/10 mb-1 inline-block">
-                                👑 최저가
-                            </span>
+                            <div class="flex items-center gap-1 mb-1">
+                                <span class="text-[10px] text-yellow-400 font-bold border border-yellow-500/30 px-1 py-0.5 rounded bg-yellow-500/10 inline-block">
+                                    👑 최저가 TOP 1
+                                </span>
+                                <span class="text-[10px] text-gray-500">길안내 ></span>
+                            </div>
                             
                             <div class="station-name-wrapper w-28">
                                 <h4 class="text-sm font-bold text-white leading-tight station-name-text" id="cheapest-st-name">
-                                    대박주유소
+                                    정보 수신 중...
                                 </h4>
                             </div>
                             
-                            <p class="text-[10px] text-gray-400 truncate w-28" id="cheapest-st-addr">위치 정보</p>
+                            <p class="text-[10px] text-gray-400 truncate w-28" id="cheapest-st-addr">-</p>
                         </div>
                         <div class="text-right">
-                            <span class="text-lg font-black text-yellow-400 tracking-tighter" id="cheapest-price">1,490</span>
+                            <span class="text-lg font-black text-yellow-400 tracking-tighter" id="cheapest-price">--</span>
                             <span class="text-[10px] text-yellow-600 font-bold">원</span>
                         </div>
                     </div>
@@ -2075,6 +2078,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
