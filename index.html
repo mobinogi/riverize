@@ -1201,35 +1201,76 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         }
     }
 
-    // 5. 안전한 T맵 실행 (좌표 없으면 찾아서 실행)
+    // 5. [최종 진화] 스마트 T맵 실행 (주소 보정 기능 탑재)
     async function launchTMapApp(client, user) {
         let lat, lon;
         
-        // (A) 이미 좌표가 있으면 사용
+        // (A) 이미 좌표가 있으면 바로 실행 (0초 컷)
         if (client.coords) {
-            lat = client.coords.lat();
-            lon = client.coords.lng();
+            startDirectNav(client.name, client.coords.lat(), client.coords.lng());
+            return;
         } 
-        // (B) 좌표가 없으면(목록에서 바로 클릭 등) 주소로 찾기
-        else {
+
+        // (B) 좌표가 없으면 찾아야 함
+        showToast("위치 정보를 확인 중입니다...", "success");
+
+        try {
+            // -----------------------------------------------------
+            // 1단계: 원본 주소로 시도 ("부산 강서구...")
+            // -----------------------------------------------------
+            let markerPos = await geocodeAndSetMarker(client.address, user);
+            
+            // 성공하면 바로 저장하고 출발!
+            saveAndGo(client, user, markerPos);
+
+        } catch (e1) {
+            console.warn("1차 좌표 찾기 실패. 주소 보정 시도...");
+
+            // -----------------------------------------------------
+            // 2단계: 주소 보정 ("부산" -> "부산광역시") 사장님 아이디어! 💡
+            // -----------------------------------------------------
+            let fixedAddress = client.address;
+            
+            // "부산 "으로 시작하면 "부산광역시 "로 변경
+            if (fixedAddress.startsWith("부산 ")) {
+                fixedAddress = fixedAddress.replace("부산 ", "부산광역시 ");
+            } 
+            // "부산"이 아예 없으면 앞에 붙여줌
+            else if (!fixedAddress.includes("부산")) {
+                fixedAddress = "부산광역시 " + fixedAddress;
+            }
+
             try {
-                showToast("위치 정보를 확인 중입니다...", "success");
-                const markerPos = await geocodeAndSetMarker(client.address, user);
-                lat = markerPos.lat();
-                lon = markerPos.lng();
+                const markerPos = await geocodeAndSetMarker(fixedAddress, user);
+                console.log(`주소 보정 성공! (${client.address} -> ${fixedAddress})`);
                 
-                // 찾은 좌표 저장 (다음에 또 안 찾게)
-                if(loadedClientData[user]) {
-                    const userData = loadedClientData[user].find(c => c.name === client.name);
-                    if (userData) userData.coords = markerPos;
-                }
-            } catch (e) {
-                showToast("주소 위치를 찾을 수 없습니다.", "error");
-                return;
+                // 성공하면 바로 저장하고 출발!
+                saveAndGo(client, user, markerPos);
+
+            } catch (e2) {
+                // -----------------------------------------------------
+                // 3단계: 그래도 안 되면 검색창으로 (최후의 수단)
+                // -----------------------------------------------------
+                console.warn("2차 시도 실패. 검색창으로 이동.", e2);
+                showToast("정확한 위치를 못 찾아 '이름'으로 검색합니다.", "success");
+                
+                const cleanName = client.name.replace(/[^\w\s가-힣]/g, "").trim();
+                setTimeout(() => {
+                    window.location.href = `tmap://search?name=${encodeURIComponent(cleanName)}`;
+                }, 800);
             }
         }
-        // 최종 실행
-        startDirectNav(client.name, lat, lon);
+    }
+
+    // [헬퍼 함수] 좌표 저장 및 길안내 시작
+    function saveAndGo(client, user, markerPos) {
+        // 찾은 좌표 캐싱 (다음번엔 바로 가게)
+        if(loadedClientData[user]) {
+            const userData = loadedClientData[user].find(c => c.name === client.name);
+            if (userData) userData.coords = markerPos;
+        }
+        // 길안내 시작
+        startDirectNav(client.name, markerPos.lat(), markerPos.lng());
     }
 
     // 6. URL 스키마로 앱 열기
@@ -2087,6 +2128,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
