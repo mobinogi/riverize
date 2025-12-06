@@ -71,7 +71,7 @@
     border: 2px solid #ffffff;
     
     /* 그림자: 초록색 빛 번짐 효과 (테두리 때문에 그림자를 조금 더 진하게) */
-    box-shadow: 0 2px 5px rgba(16, 185, 129, 0.5);
+    box-shadow: 0 2px 5px rgba(77, 79, 79, 0.5);
 }
 
 /* 마우스 올렸을 때 */
