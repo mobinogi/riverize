@@ -479,3 +479,41 @@
 body.sidebar-collapsed #main-content-wrapper {
     margin-left: 0 !important; /* ml-64 제거 효과 */
 }
+
+/* =========================================
+   ⛽ 주유소 이름 특수 효과 (그라데이션 + 마키)
+   ========================================= */
+
+/* 1. 텍스트 컨테이너 (마스크 효과) */
+.station-name-wrapper {
+    position: relative;
+    width: 100px; /* 적당한 너비 제한 */
+    overflow: hidden;
+    white-space: nowrap;
+    
+    /* 평소엔 오른쪽 끝이 흐릿하게 사라짐 (그라데이션 페이드) */
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+}
+
+/* 2. 움직일 텍스트 */
+.station-name-text {
+    display: inline-block;
+    padding-right: 20px; /* 반복될 때 간격 */
+}
+
+/* 3. 마우스 올렸을 때 애니메이션 실행 */
+.station-card:hover .station-name-text {
+    /* 텍스트가 길 때만 움직이도록 JS로 제어하거나, 기본적으로 천천히 흐르게 함 */
+    animation: marquee-scroll 3s linear infinite;
+    
+    /* 호버 시에는 마스크 제거 (글자 다 보여야 하니까) */
+    /* (선택사항: 흐린 채로 움직이는 게 더 이쁘면 이거 지우세요) */
+    /* mask-image: none; -webkit-mask-image: none; */ 
+}
+
+/* 4. 애니메이션 키프레임 */
+@keyframes marquee-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
