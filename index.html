@@ -58,18 +58,24 @@
         </nav>
       <div class="mt-auto mb-6 px-1">
     
-    <div onclick="confirmOilStationNav()" 
-         class="relative overflow-hidden rounded-2xl p-1.5 border border-white/10 shadow-lg group bg-gradient-to-br from-gray-800 to-gray-900 cursor-pointer hover:bg-white/5 transition-colors">
+    <div class="relative overflow-hidden rounded-2xl p-2 border border-white/10 shadow-lg group bg-gradient-to-br from-gray-800 to-gray-900 transition-colors">
         
-        <div class="absolute -right-3 -top-3 text-white/5 group-hover:text-yellow-500/10 transition-colors duration-500">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12v2h1.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 .5-.5H10v-2H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2.5ZM12 5H6v9h6V5Zm7.5 4.5h-1a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1Z"/>
-            </svg>
+        <div class="absolute -right-3 -top-3 text-white/5 group-hover:text-yellow-500/10 transition-colors duration-500 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12v2h1.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 .5-.5H10v-2H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2.5ZM12 5H6v9h6V5Zm7.5 4.5h-1a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1Z"/></svg>
         </div>
 
-        <div class="relative z-10 px-1"> <div class="flex justify-between items-start mb-1">
+        <div class="relative z-10 px-1">
+            
+            <div onclick="refreshOilPrice(this)" 
+                 class="flex justify-between items-start mb-1 cursor-pointer active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/5"
+                 title="누르면 정보를 갱신합니다">
                 <div>
-                    <p class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">경유 평균</p>
+                    <div class="flex items-center gap-1">
+                        <p class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">경유 평균</p>
+                        <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </div>
                     <h3 class="text-xs font-bold text-gray-200">부산 강서구 평균</h3>
                 </div>
                 <div class="text-right">
@@ -80,43 +86,41 @@
                 </div>
             </div>
 
-            <div class="w-full h-px bg-white/10 my-2"></div>
+            <div class="w-full h-px bg-white/10 my-2 pointer-events-none"></div>
 
-<div class="flex justify-between items-end">
-    <div>
-        <div class="mb-1">
-            <span class="text-[10px] text-yellow-400 font-bold border border-yellow-500/30 px-1 py-0.5 rounded bg-yellow-500/10 inline-block">
-                👑 최저가 TOP 1
-            </span>
-        </div>
-        
-        <div class="station-name-wrapper w-28">
-            <h4 class="text-sm font-bold text-white leading-tight station-name-text" id="cheapest-st-name">
-                정보 수신 중...
-            </h4>
-        </div>
-        
-        <div class="flex items-center gap-1 mt-0.5">
-            <p class="text-[10px] text-gray-400 truncate max-w-[80px]" id="cheapest-st-addr">-</p>
-            
-            <div class="flex items-center text-[10px] text-blue-300 font-bold animate-pulse">
-                <span>길안내</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
+            <div onclick="confirmOilStationNav()" 
+                 class="flex justify-between items-end cursor-pointer active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/5">
+                <div class="flex-1 min-w-0 mr-2">
+                    <div class="mb-1">
+                        <span class="text-[10px] text-yellow-400 font-bold border border-yellow-500/30 px-1 py-0.5 rounded bg-yellow-500/10 inline-block">
+                            👑 최저가 TOP 1
+                        </span>
+                    </div>
+                    
+                    <div class="station-name-wrapper w-full">
+                        <h4 class="text-sm font-bold text-white leading-tight station-name-text" id="cheapest-st-name">
+                            정보 수신 중...
+                        </h4>
+                    </div>
+                    
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <p class="text-[10px] text-gray-400 truncate w-full" id="cheapest-st-addr">-</p>
+                        <div class="flex items-center text-[10px] text-blue-300 font-bold animate-pulse whitespace-nowrap">
+                            <span>길안내</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-right">
+                    <span class="text-lg font-black text-yellow-400 tracking-tighter" id="cheapest-price">--</span>
+                    <span class="text-[10px] text-yellow-600 font-bold">원</span>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="text-right">
-        <span class="text-lg font-black text-yellow-400 tracking-tighter" id="cheapest-price">--</span>
-        <span class="text-[10px] text-yellow-600 font-bold">원</span>
-    </div>
-</div>
+         </div>
         </div>
     </div>
 </div>
-    </div>
        <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
             class="absolute -right-5 w-5 h-16 -translate-y-1/2 
                    
@@ -2128,6 +2132,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
