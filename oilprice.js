@@ -1,8 +1,9 @@
 /**
- * @fileoverview 오피넷 유가 정보 & T맵 연동 (부산 강서구 자동 탐색 버전)
+ * @fileoverview 오피넷 유가 정보 (캐싱 적용 + 안정성 강화 버전)
+ * - 기능: 3시간 동안은 저장된 데이터를 보여줘서 서버 오류를 방지함
  */
 
-let currentBestStationData = null; // T맵 길안내용 데이터 저장소
+let currentBestStationData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadOilPrice();
@@ -16,157 +17,150 @@ async function loadOilPrice() {
 
     if (!elAvg) return; 
 
-    // 사장님 API 키
+    // ✅ [1단계] 저장된 데이터(캐시)가 있는지 먼저 확인!
+    const cacheKey = 'OIL_PRICE_CACHE_DATA';
+    const cached = localStorage.getItem(cacheKey);
+    const now = new Date().getTime();
+    const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3시간 (밀리초)
+
+    if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        // 저장한 지 3시간 안 지났으면 -> 서버 안 부르고 저장된 거 씀 (속도 0초, 에러 0%)
+        if (now - timestamp < CACHE_DURATION) {
+            console.log("⚡ 저장된 유가 정보 사용 (서버 요청 생략)");
+            updateOilWidget(data);
+            return; 
+        }
+    }
+
+    // ✅ [2단계] 캐시가 없거나 오래됐으면 서버 호출
+    const AREA_CODE = "1011"; // 부산 강서구
     const API_KEY = "F251207227"; 
-    const PROD = "D047"; // 경유
+    const PROD_CODE = "D047"; 
 
     try {
-        // 1. [스마트 탐색] 부산 강서구 지역코드(Area Code) 찾기
-        // (매번 찾으면 느리니까 브라우저에 저장해둡니다)
-        let areaCode = localStorage.getItem('OPINET_AREA_CODE_BUSAN_GANGSEO');
-        
-        if (!areaCode) {
-            console.log("📍 지역코드 탐색 시작...");
-            areaCode = await findGangseoCode(API_KEY); // 자동으로 찾아오는 함수 실행
-            if (areaCode) {
-                localStorage.setItem('OPINET_AREA_CODE_BUSAN_GANGSEO', areaCode);
-                console.log(`📍 지역코드 발견 및 저장: ${areaCode}`);
-            } else {
-                console.warn("지역코드를 찾지 못해 기본값(0204)을 사용합니다.");
-                areaCode = "0204"; // 실패 시 임시 코드
-            }
-        } else {
-            console.log(`📍 저장된 지역코드 사용: ${areaCode}`);
-        }
+        console.log(`⛽ 오피넷 서버 요청 중...`);
 
-        // 2. 최저가 주유소 조회 (lowTop10.do)
-        const opinetUrl = `http://www.opinet.co.kr/api/lowTop10.do?out=json&code=${API_KEY}&prodcd=${PROD}&area=${areaCode}&cnt=20`;
-        // Proxy 서버를 통해 보안 우회
+        const opinetUrl = `http://www.opinet.co.kr/api/lowTop10.do?out=json&code=${API_KEY}&prodcd=${PROD_CODE}&area=${AREA_CODE}&cnt=20`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(opinetUrl)}`;
 
         const response = await fetch(proxyUrl);
+        
+        // 서버가 500 에러 등을 뱉으면 catch로 보냄
+        if (!response.ok) throw new Error(`Proxy Server Error: ${response.status}`);
+
         const data = await response.json();
         
         if (data && data.RESULT && data.RESULT.OIL && data.RESULT.OIL.length > 0) {
-            const stations = data.RESULT.OIL;
+            // 성공! 데이터를 가공해서 저장
+            const processedData = processOilData(data.RESULT.OIL);
             
-            // (1) 가격순 정렬 (가장 싼 곳이 맨 위로)
-            stations.sort((a, b) => parseInt(a.PRICE) - parseInt(b.PRICE));
-            const best = stations[0]; 
+            // 폰에 저장 (다음 3시간 동안은 이거 씀)
+            localStorage.setItem(cacheKey, JSON.stringify({
+                timestamp: now,
+                data: processedData
+            }));
 
-            // (2) 길안내용 데이터 저장
-            currentBestStationData = {
-                name: best.OS_NM,
-                address: best.VAN_ADR || best.NEW_ADR || "주소 정보 없음"
-            };
-
-            // (3) 평균가 계산 (TOP 20 기준)
-            let sum = 0;
-            stations.forEach(st => sum += parseInt(st.PRICE));
-            const avg = Math.floor(sum / stations.length);
+            updateOilWidget(processedData);
+            console.log("✅ 유가 정보 갱신 및 저장 완료");
+        } 
+    } catch (e) {
+        console.error("❌ 유가 로드 실패:", e);
+        
+        // 🚨 [비상 대책] 서버가 터졌을 때, 옛날 데이터라도 있으면 그거라도 보여줌
+        if (cached) {
+            console.warn("⚠️ 서버 오류로 인해 이전 데이터를 표시합니다.");
+            const { data } = JSON.parse(cached);
+            updateOilWidget(data);
             
-            // (4) 화면 업데이트 (숫자 카운트 효과)
-            animateValue(elAvg, 1500, avg, 1000);
-            animateValue(elPrice, 1400, best.PRICE, 1000);
-            
-            elName.textContent = best.OS_NM; 
-            
-            // 주소 표시 (동 이름만 깔끔하게)
-            const fullAddr = best.VAN_ADR || "";
-            const shortAddr = fullAddr.split(' ').slice(2).join(' ') || "강서구";
-            if(elAddr) elAddr.textContent = shortAddr;
+            // UI에 "업데이트 실패" 살짝 표시 (선택사항)
+            if(elName) elName.textContent = data.bestName + " (기존)";
+        } else {
+            if(elName) elName.textContent = "정보 없음";
         }
-    } catch (e) {
-        console.error("유가 정보 로드 실패:", e);
-        if(elName) elName.textContent = "정보 없음";
     }
 }
 
-// 🗺️ 지역코드 자동 찾기 함수 (부산 -> 강서구)
-async function findGangseoCode(apiKey) {
-    try {
-        // 1. 시/도 목록 가져오기
-        const url1 = `https://api.allorigins.win/raw?url=${encodeURIComponent(`http://www.opinet.co.kr/api/areaCode.do?out=json&code=${apiKey}`)}`;
-        const res1 = await fetch(url1);
-        const data1 = await res1.json();
-        
-        // "부산" 찾기
-        const busan = data1.RESULT.OIL.find(item => item.AREA_NM.includes("부산"));
-        if (!busan) return null;
-        
-        // 2. 부산의 시/군/구 목록 가져오기
-        const url2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(`http://www.opinet.co.kr/api/areaCode.do?out=json&code=${apiKey}&area=${busan.AREA_CD}`)}`;
-        const res2 = await fetch(url2);
-        const data2 = await res2.json();
-        
-        // "강서구" 찾기
-        const gangseo = data2.RESULT.OIL.find(item => item.AREA_NM.includes("강서구"));
-        
-        return gangseo ? gangseo.AREA_CD : null; // 코드 반환
+// 데이터 가공 함수 (정렬, 평균 계산)
+function processOilData(stations) {
+    // 1. 가격순 정렬
+    stations.sort((a, b) => parseInt(a.PRICE) - parseInt(b.PRICE));
+    const best = stations[0];
 
-    } catch (e) {
-        console.error("지역코드 탐색 중 오류:", e);
-        return null;
-    }
+    // 2. 평균가 계산
+    let sum = 0;
+    stations.forEach(st => sum += parseInt(st.PRICE));
+    const avg = Math.floor(sum / stations.length);
+
+    return {
+        avgPrice: avg,
+        bestPrice: best.PRICE,
+        bestName: best.OS_NM,
+        bestAddr: best.VAN_ADR || best.NEW_ADR,
+        rawAddr: best.VAN_ADR // 길안내용 원본 주소
+    };
 }
 
-// 🚗 T맵 길안내 팝업 띄우기
+// 화면 그리기 함수
+function updateOilWidget(info) {
+    const elAvg = document.getElementById('diesel-avg-price');
+    const elName = document.getElementById('cheapest-st-name');
+    const elPrice = document.getElementById('cheapest-price');
+    const elAddr = document.getElementById('cheapest-st-addr');
+
+    // 숫자 카운트 효과
+    animateValue(elAvg, 1500, info.avgPrice, 1000);
+    animateValue(elPrice, 1400, info.bestPrice, 1000);
+    
+    if(elName) elName.textContent = info.bestName;
+    
+    // 주소 줄임 표시
+    const shortAddr = (info.bestAddr || "").split(' ').slice(2).join(' ') || "강서구";
+    if(elAddr) elAddr.textContent = shortAddr;
+
+    // 전역 변수 업데이트 (길안내용)
+    currentBestStationData = {
+        name: info.bestName,
+        address: info.rawAddr
+    };
+}
+
+// 길안내 팝업
 function confirmOilStationNav() {
     if (!currentBestStationData) {
-        alert("주유소 정보를 불러오는 중입니다. 잠시만 기다려주세요.");
+        // 데이터가 없으면 강제로 새로고침 시도
+        refreshOilPrice();
         return;
     }
-
-    const fakeClient = {
-        name: `⛽ ${currentBestStationData.name}`, 
-        address: currentBestStationData.address
-    };
-
-    // index1.html에 있는 T맵 팝업 함수 호출
-    if (typeof openNavPrompt === 'function') {
-        openNavPrompt(fakeClient, '시스템');
-    } else {
-        if(confirm(`${currentBestStationData.name}\n길안내를 시작할까요?`)) {
-             location.href = `tmap://search?name=${encodeURIComponent(currentBestStationData.name)}`;
-        }
-    }
+    const fakeClient = { name: `⛽ ${currentBestStationData.name}`, address: currentBestStationData.address };
+    
+    if (typeof openNavPrompt === 'function') openNavPrompt(fakeClient, '시스템');
+    else if(confirm(`${currentBestStationData.name}\n길안내를 시작할까요?`)) location.href = `tmap://search?name=${encodeURIComponent(currentBestStationData.name)}`;
 }
 
-// 숫자 카운트 애니메이션
+// 수동 새로고침 (이때는 강제로 서버 부름)
+function refreshOilPrice(btnElement) {
+    const icon = document.getElementById('refresh-icon');
+    if(icon) icon.classList.add('animate-spin');
+    
+    // 강제로 캐시 삭제 후 재로드
+    localStorage.removeItem('OIL_PRICE_CACHE_DATA');
+    
+    loadOilPrice().then(() => {
+        setTimeout(() => {
+            if(icon) icon.classList.remove('animate-spin');
+            if(typeof showToast === 'function') showToast("최신 정보로 업데이트했습니다.", "success");
+        }, 500);
+    });
+}
+
 function animateValue(obj, start, end, duration) {
     let startTimestamp = null;
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
         obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
+        if (progress < 1) window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
-}
-/**
- * [신규] 유가 정보 수동 새로고침 (멈춤 해결사)
- */
-function refreshOilPrice(btnElement) {
-    // 1. 아이콘 회전 애니메이션 시작
-    const icon = document.getElementById('refresh-icon');
-    if(icon) icon.classList.add('animate-spin');
-
-    // 2. "갱신 중..." 표시 (선택사항)
-    const elName = document.getElementById('cheapest-st-name');
-    if(elName) elName.textContent = "정보 갱신 중...";
-
-    // 3. 데이터 다시 로드
-    loadOilPrice().then(() => {
-        // 4. 완료되면 0.5초 뒤에 회전 멈춤
-        setTimeout(() => {
-            if(icon) icon.classList.remove('animate-spin');
-            
-            // (선택) 토스트 알림 띄우기
-            if(typeof showToast === 'function') {
-                showToast("유가 정보를 갱신했습니다.", "success");
-            }
-        }, 500);
-    });
 }
