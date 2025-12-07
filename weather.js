@@ -30,7 +30,7 @@ async function loadWeather() {
             const wind = data.wind.speed;
             // 아이콘 URL
             const iconCode = data.weather[0].icon;
-            const iconUrl = `http://openweathermap.org/img/wn/${iconCode}@4x.png`;
+            const iconUrl = `http://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
             // 화면에 꽂아넣기
             animateValue(document.getElementById('weather-temp'), 0, temp, 1000);
