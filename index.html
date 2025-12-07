@@ -57,14 +57,12 @@
                 <span class="font-medium text-lg transition-colors">매출표</span>
             </a>
         </nav>
-          <div class="mt-6 px-1 mb-[-10px]"> <div class="relative overflow-hidden rounded-2xl p-4 border border-white/10 shadow-lg group bg-gradient-to-br from-blue-400 to-blue-600">
-                
+          div class="mt-auto mb-6 px-1 flex flex-col">
+            
+            <div class="relative overflow-hidden rounded-t-2xl p-4 border border-white/10 border-b-0 shadow-lg group bg-gradient-to-br from-blue-400 to-blue-600 z-10">
                 <div class="absolute -right-6 -top-6 text-white/20 animate-pulse">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-28 w-28" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M4.5 9.5a4.5 4.5 0 0 1 8.78-1.44 5.5 5.5 0 1 1 5.22 8.44H5.5A5.5 5.5 0 0 1 4.5 9.5z" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-28 w-28" fill="currentColor" viewBox="0 0 24 24"><path d="M4.5 9.5a4.5 4.5 0 0 1 8.78-1.44 5.5 5.5 0 1 1 5.22 8.44H5.5A5.5 5.5 0 0 1 4.5 9.5z" /></svg>
                 </div>
-
                 <div class="relative z-10 text-white">
                     <div class="flex justify-between items-start">
                         <div>
@@ -76,23 +74,16 @@
                         </div>
                         <img id="weather-icon" src="" alt="날씨" class="w-10 h-10 filter drop-shadow-md">
                     </div>
-
                     <div class="flex items-end gap-1 mt-1">
                         <span class="text-4xl font-black tracking-tighter" id="weather-temp">--</span>
                         <span class="text-xl font-medium mb-1">°C</span>
                     </div>
-
                     <div class="flex items-center gap-3 mt-3 text-xs font-medium opacity-90">
-                        <span class="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg">
-                            💧 <span id="weather-humidity">--</span>%
-                        </span>
-                        <span class="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg">
-                            💨 <span id="weather-wind">--</span>m/s
-                        </span>
+                        <span class="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg">💧 <span id="weather-humidity">--</span>%</span>
+                        <span class="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg">💨 <span id="weather-wind">--</span>m/s</span>
                     </div>
                 </div>
             </div>
-        </div>
       <div class="mt-auto mb-6 px-1">
     
     <div class="relative overflow-hidden rounded-2xl p-2 border border-white/10 shadow-lg group bg-gradient-to-br from-gray-800 to-gray-900 transition-colors">
@@ -2169,6 +2160,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
