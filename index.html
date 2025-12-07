@@ -57,30 +57,46 @@
                 <span class="font-medium text-lg transition-colors">매출표</span>
             </a>
         </nav>
-      </nav>
+      
 
-        <div class="mt-auto px-3 mb-2 flex justify-between items-center group cursor-default select-none">
-            <div>
-                <p class="text-[10px] text-gray-400 font-bold tracking-wider uppercase mb-0.5">
-                    BUSAN WEATHER
-                </p>
-                <div class="flex items-end gap-2">
-                    <span class="text-4xl font-black text-white tracking-tighter leading-none" id="weather-temp">--</span>
-                    <div class="flex flex-col justify-end pb-1">
-                        <span class="text-sm text-gray-400 font-bold leading-none mb-0.5">°C</span>
-                        <span class="text-[11px] text-blue-300 font-bold leading-none" id="weather-desc">--</span>
+        <div class="px-1 mb-2">
+            <div class="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg group cursor-default select-none border border-white/10">
+                
+                <div class="absolute -right-2 -top-2">
+                    <img id="weather-icon" src="" alt="Weather" 
+                         class="w-24 h-24 filter drop-shadow-md opacity-90 transition-transform group-hover:scale-110">
+                </div>
+
+                <div class="relative z-10">
+                    
+                    <div class="mb-1">
+                        <p class="text-[10px] text-blue-100 font-bold tracking-wider uppercase mb-0.5">NOW WEATHER</p>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-1">
+                            부산 강서구
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-80" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                        </h3>
+                    </div>
+
+                    <div class="flex items-start mb-3">
+                        <span class="text-5xl font-black text-white tracking-tighter leading-none" id="weather-temp">--</span>
+                        <div class="flex flex-col justify-between h-full ml-1 py-1">
+                            <span class="text-xl text-blue-100 font-medium leading-none">°C</span>
+                            <span class="text-xs text-white font-bold leading-none mt-1" id="weather-desc">--</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-[11px] font-medium text-white">
+                        <div class="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">
+                            <span>💧</span> <span id="weather-humidity">--%</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">
+                            <span>💨</span> <span id="weather-wind">--m/s</span>
+                        </div>
                     </div>
                 </div>
+                
             </div>
-            
-            <div class="flex flex-col items-end">
-                <img id="weather-icon" src="" alt="Weather" class="w-12 h-12 filter drop-shadow-lg opacity-90 -mr-2">
-                <div class="text-[10px] text-gray-500 font-medium bg-white/5 px-1.5 py-0.5 rounded flex items-center gap-1">
-                    💧 <span id="weather-humidity">--%</span>
-                </div>
-            </div>
-        </div>
-
+ 
         <div class="mb-6 px-1">
             <div onclick="confirmOilStationNav()" 
                  class="relative overflow-hidden rounded-2xl p-3 border border-white/10 shadow-lg group bg-gradient-to-br from-gray-800 to-gray-900 cursor-pointer hover:bg-white/5 transition-colors">
@@ -2142,6 +2158,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
