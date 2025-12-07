@@ -13,7 +13,7 @@ async function loadWeather() {
     
     // 🔑 API 키 (본인 키로 교체 권장: https://openweathermap.org/)
     // 일단 테스트용 무료 키를 사용합니다. (안 되면 발급받으세요!)
-    const API_KEY = "8c66847424104273809081e836968037"; 
+    const API_KEY = "1a7442ec79a869ffb74c77f858f3f515"; 
     
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric&lang=kr`;
 
