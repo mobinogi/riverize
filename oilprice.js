@@ -145,3 +145,28 @@ function animateValue(obj, start, end, duration) {
     };
     window.requestAnimationFrame(step);
 }
+/**
+ * [신규] 유가 정보 수동 새로고침 (멈춤 해결사)
+ */
+function refreshOilPrice(btnElement) {
+    // 1. 아이콘 회전 애니메이션 시작
+    const icon = document.getElementById('refresh-icon');
+    if(icon) icon.classList.add('animate-spin');
+
+    // 2. "갱신 중..." 표시 (선택사항)
+    const elName = document.getElementById('cheapest-st-name');
+    if(elName) elName.textContent = "정보 갱신 중...";
+
+    // 3. 데이터 다시 로드
+    loadOilPrice().then(() => {
+        // 4. 완료되면 0.5초 뒤에 회전 멈춤
+        setTimeout(() => {
+            if(icon) icon.classList.remove('animate-spin');
+            
+            // (선택) 토스트 알림 띄우기
+            if(typeof showToast === 'function') {
+                showToast("유가 정보를 갱신했습니다.", "success");
+            }
+        }, 500);
+    });
+}
