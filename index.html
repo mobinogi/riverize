@@ -198,20 +198,27 @@
                         </div>
                       </div>
 
-                      <div class="flex w-full gap-3 mt-4">
-                          <button onclick="generateTodayReport()" 
-                              class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400"> 
-                               생성&열기
-                           </button>
+                      <div class="flex w-full rounded-xl overflow-hidden mt-4">
     
-                        <button onclick="openQuickEntryModal()" 
-                             class="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors">
-                            ⚡간편 작성
-                            </button>
-                       </div>
+    <button onclick="generateTodayReport()" 
+            class="flex-1 py-5 bg-green-500 text-white font-bold 
+                   hover:bg-green-600 transition-colors flex items-center justify-center gap-2 text-2xl
+                   active:scale-[0.98]"> 
+        <span>생성&열기</span>
+    </button>
+    
+    <button onclick="openQuickEntryModal()" 
+            class="flex-1 py-5 bg-red-500 text-white font-bold 
+                   hover:bg-red-600 transition-colors flex items-center justify-center gap-2 text-2xl
+                   active:scale-[0.98]">
+        <span>⚡간편 작성</span>
+    </button>
+
+</div>
 
                       <h2 class="text-2xl font-light text-gray-700 pt-4">거래처 현황 지도</h2>
                       <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+                        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
                       </div>
                       <button onclick="openMapOverlay()" 
                         class="w-full mt-4 py-4 
@@ -2135,6 +2142,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
