@@ -29,7 +29,11 @@ async function loadWeather() {
         if (data.main) {
             // 데이터 추출
             const temp = Math.round(data.main.temp);       // 온도 (반올림)
-            const desc = data.weather[0].description;      // 날씨 설명 (한글)
+            // ✅ [수정 후] 이상한 한국어 교정 (온흐림 -> 흐림)
+            let desc = data.weather[0].description;
+            if (desc === '온흐림') desc = '흐림';
+            if (desc === '튼구름') desc = '구름 조금';
+            if (desc === '부서진 구름') desc = '구름 많음';
             const iconCode = data.weather[0].icon;         // 아이콘 코드
             const humidity = data.main.humidity;           // 습도
             const wind = Math.round(data.wind.speed * 10) / 10; // 풍속 (소수점 1자리)
