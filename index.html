@@ -163,14 +163,23 @@
                   강서 도매소
                 </h1>
                 
-                <div class="flex mb-0"> 
-                    <button id="tab-write" onclick="toggleSubTab('write')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors tab-active rounded-tl-xl rounded-tr-none">
-                      <span>일보 작성</span>
-                    </button>
-                    <button id="tab-review" onclick="toggleSubTab('review')" class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 transition-colors text-gray-600 rounded-tr-xl rounded-tl-none">
-                      <span>날짜 검색</span>
-                    </button>
-                </div>
+                <div class="flex w-full gap-3 mt-4">
+    
+    <button onclick="generateTodayReport()" 
+            class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl 
+                   hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400
+                   border-2 border-white"> 
+        생성&열기
+    </button>
+    
+    <button onclick="openQuickEntryModal()" 
+            class="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl 
+                   hover:bg-red-600 transition-colors shadow-md
+                   border-2 border-white">
+        ⚡ 간편 작성
+    </button>
+
+</div>
               
                 <div id="tab-content">
                     
@@ -2142,6 +2151,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
