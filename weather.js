@@ -1,68 +1,88 @@
 /**
  * @fileoverview OpenWeatherMap 날씨 정보 로드 (부산 강서구)
- * - 한글 지원 (&lang=kr)
- * - 고해상도 아이콘 (@4x)
+ * - 기능: 현재 날씨 + 오늘 최고/최저 기온 계산
+ * - 자동 갱신: 1시간마다 조용히 데이터만 새로고침 (로그 X)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 앱 켜지자마자 즉시 실행
     loadWeather();
+
+    // 2. 1시간마다 자동 갱신 (60분 * 60초 * 1000ms)
+    // 로그 없이 조용히 숫자만 바꿉니다.
+    setInterval(() => {
+        loadWeather();
+    }, 3600000); 
 });
 
 async function loadWeather() {
-    // 1. 부산 강서구 대저동 좌표
+    const elTemp = document.getElementById('weather-temp');
+    const elDesc = document.getElementById('weather-desc');
+    const elIcon = document.getElementById('weather-icon');
+    const elHum = document.getElementById('weather-humidity');
+    const elMax = document.getElementById('temp-max');
+    const elMin = document.getElementById('temp-min');
+
+    if (!elTemp) return;
+
+    // 1. 설정
     const LAT = 35.2128;
     const LON = 128.9806;
+    const API_KEY = "1a7442ec79a869ffb74c77f858f3f515"; // 사장님 키
     
-    // 🚨 [필수] 사장님의 API 키를 여기에 넣으세요!
-    const API_KEY = "1a7442ec79a869ffb74c77f858f3f515"; // (이건 제 테스트 키입니다. 본인 키로 바꾸세요!)
-    
-    // ✅ [핵심] 끝에 &lang=kr 을 붙여야 '맑음', '구름' 처럼 한글로 옵니다.
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric&lang=kr`;
+    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric&lang=kr`;
 
     try {
         const response = await fetch(url);
-        
-        if (!response.ok) throw new Error(`API 호출 오류: ${response.status}`);
-
+        if (!response.ok) throw new Error(`날씨 API 오류: ${response.status}`);
         const data = await response.json();
         
-        if (data.main) {
-            // 데이터 추출
-            const temp = Math.round(data.main.temp);       // 온도 (반올림)
-            // ✅ [수정 후] 이상한 한국어 교정 (온흐림 -> 흐림)
-            let desc = data.weather[0].description;
+        if (data.list && data.list.length > 0) {
+            // (1) 현재 날씨
+            const current = data.list[0];
+            const temp = Math.round(current.main.temp);
+            
+            // 설명 교정 (온흐림 -> 흐림)
+            let desc = current.weather[0].description;
             if (desc === '온흐림') desc = '흐림';
             if (desc === '튼구름') desc = '구름 조금';
             if (desc === '부서진 구름') desc = '구름 많음';
-            const iconCode = data.weather[0].icon;         // 아이콘 코드
-            const humidity = data.main.humidity;           // 습도
-            const wind = Math.round(data.wind.speed * 10) / 10; // 풍속 (소수점 1자리)
+
+            const iconCode = current.weather[0].icon;
+            const humidity = current.main.humidity;
             
-            // 아이콘 이미지 (@4x로 선명하게)
+            // (2) 오늘 최고/최저 계산
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(todayStr));
+            
+            let maxTemp = temp;
+            let minTemp = temp;
+            
+            if (todayForecasts.length > 0) {
+                maxTemp = Math.round(Math.max(...todayForecasts.map(item => item.main.temp_max)));
+                minTemp = Math.round(Math.min(...todayForecasts.map(item => item.main.temp_min)));
+            }
+
+            // (3) 화면 업데이트
             const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
 
-            // HTML 요소 찾기
-            const elTemp = document.getElementById('weather-temp');
-            const elDesc = document.getElementById('weather-desc');
-            const elIcon = document.getElementById('weather-icon');
-            const elHum = document.getElementById('weather-humidity');
-            const elWind = document.getElementById('weather-wind');
-
-            // 값 넣기 (요소가 있을 때만 넣어서 에러 방지)
-            if(elTemp) animateValue(elTemp, 0, temp, 1000);
+            animateValue(elTemp, 0, temp, 1000);
             if(elDesc) elDesc.textContent = desc;
             if(elIcon) elIcon.src = iconUrl;
             if(elHum) elHum.textContent = humidity + '%';
-            if(elWind) elWind.textContent = wind + 'm/s';
             
+            if(elMax) elMax.textContent = maxTemp;
+            if(elMin) elMin.textContent = minTemp;
+
             console.log(`🌦️ 날씨 로드 완료: ${temp}°C, ${desc}`);
         }
+        
     } catch (e) {
         console.error("날씨 로드 실패:", e);
     }
 }
 
-// 숫자 올라가는 효과
+// 숫자 카운트 애니메이션
 function animateValue(obj, start, end, duration) {
     if(!obj) return;
     let startTimestamp = null;
