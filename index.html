@@ -221,13 +221,14 @@
                         <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
                       </div>
                       <button onclick="openMapOverlay()" 
-                        class="w-full mt-4 py-4 
-                               bg-blue-600 text-white font-bold text-lg 
-                               rounded-xl 
-                               hover:bg-blue-700 transition-colors shadow-xl 
-                               active:scale-[0.98]">
-                                 거래처 현황 지도 보기
-                       </button>
+        class="w-full mt-4 py-4 
+               bg-blue-600 text-white font-bold text-xl 
+               rounded-xl border-2 border-white 
+               hover:bg-blue-700 transition-colors 
+               active:bg-blue-800 
+               shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
+    거래처 현황 지도 보기
+</button>
 
                       <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
                     </div>
@@ -2142,6 +2143,7 @@ function deleteReportFile(e) {
 </div>
 </body>
 </html>
+
 
 
 
