@@ -90,20 +90,31 @@ function processOilData(stations) {
     };
 }
 
-// 화면 그리기 함수 (🚨 여기가 수정되었습니다!)
+// 화면 그리기 함수 (수정됨: 길이 체크 로직 추가)
 function updateOilWidget(info) {
     const elAvg = document.getElementById('diesel-avg-price');
     const elName = document.getElementById('cheapest-st-name');
     const elPrice = document.getElementById('cheapest-price');
     const elAddr = document.getElementById('cheapest-st-addr');
+    const wrapper = document.querySelector('.station-name-wrapper'); // 래퍼 찾기
 
-    // 숫자 카운트
+    // 숫자 카운트 애니메이션
     animateValue(elAvg, 1500, info.avgPrice, 1000);
     animateValue(elPrice, 1400, info.bestPrice, 1000);
     
-    // 🚨 [핵심 수정] 이름을 2번 반복해서 넣어야 흐르는 효과(Marquee)가 됩니다!
-    if(elName) {
-        elName.innerHTML = `<span class="pr-8">${info.bestName}</span><span>${info.bestName}</span>`;
+    // 🚨 [핵심 수정 구간] 텍스트 길이에 따라 스마트하게 처리
+    if(elName && wrapper) {
+        // 1. 일단 텍스트를 하나만 넣어서 길이를 재봅니다. (초기화)
+        elName.innerHTML = info.bestName;
+        wrapper.classList.remove('is-long'); // 일단 클래스 제거
+
+        // 2. 텍스트의 실제 길이(scrollWidth)가 박스(clientWidth)보다 큰지 확인
+        // (약간의 여유 2px 정도 둠)
+        if (elName.scrollWidth > wrapper.clientWidth + 2) {
+            // 3. 넘친다면? -> 'is-long' 클래스 붙이고, 마퀴용 텍스트(두 번 반복)로 교체
+            wrapper.classList.add('is-long');
+            elName.innerHTML = `<span class="pr-8">${info.bestName}</span><span>${info.bestName}</span>`;
+        }
     }
     
     // 주소 줄임 표시
@@ -116,7 +127,6 @@ function updateOilWidget(info) {
         address: info.rawAddr
     };
 }
-
 // 길안내 팝업
 function confirmOilStationNav() {
     if (!currentBestStationData) {
