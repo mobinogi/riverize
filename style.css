@@ -481,39 +481,38 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* =========================================
-   ⛽ 주유소 이름 마키(흐름) 효과 (최종 수정)
+   ⛽ 주유소 이름 마키(흐름) 효과 (조건부 적용)
    ========================================= */
 
-/* 1. 텍스트 감싸는 틀 (보여지는 창문) */
+/* 1. 기본 래퍼 (평소에는 그냥 가만히 있음) */
 .station-name-wrapper {
     position: relative;
-    overflow: hidden;
-    /* 🚨 width: 100px; <--- 이거 삭제했습니다! (HTML의 w-full이 작동하도록) */
-    
+    width: 100%;       /* 부모 너비에 맞춤 */
+    overflow: hidden;  /* 넘치는 글자 숨김 */
     white-space: nowrap;
-    
-    /* 오른쪽 끝을 흐릿하게 (페이드 아웃) */
+    /* 🚨 중요: 여기에 mask-image가 없어야 평소에 흐릿하지 않음! */
+}
+
+/* 2. [신규] 내용이 길어서 JS가 'is-long'을 붙였을 때만! */
+.station-name-wrapper.is-long {
+    /* 오른쪽 끝을 흐릿하게 처리 */
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
-/* 2. 움직일 텍스트 본체 (기차) */
+/* 3. 텍스트 본체 스타일 */
 .station-name-text {
-    display: inline-flex; /* 가로로 길게 늘어뜨림 */
-    white-space: nowrap;  /* 줄바꿈 금지 */
-    width: max-content;   /* 🚨 [추가] 내용물 길이만큼 강제로 늘림 (중요!) */
-    will-change: transform; /* 애니메이션 성능 최적화 */
-    padding-right: 30px; /* 반복되는 텍스트 사이 간격 */
+    display: inline-block;
+    white-space: nowrap;
+    will-change: transform; /* 성능 최적화 */
 }
 
-/* 3. 마우스 올리면 기차 출발! */
-/* 🚨 [수정] .station-card 대신 .group 사용 (HTML 클래스와 일치시킴) */
-.group:hover .station-name-text {
-    animation: marquee-scroll 5s linear infinite;
+/* 4. [신규] 'is-long' 클래스가 있고 + 마우스를 올렸을 때만 움직임 */
+.group:hover .station-name-wrapper.is-long .station-name-text {
+    animation: marquee-scroll 3s linear infinite;
 }
 
-/* 4. 애니메이션 키프레임 (절반만 이동!) */
-/* 텍스트 2개 중 1개 길이(50%)만큼만 이동하면 무한루프처럼 보임 */
+/* 5. 애니메이션 키프레임 (이건 꼭 있어야 함!) */
 @keyframes marquee-scroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); } 
