@@ -679,7 +679,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
       // 🚀 [추가된 로직 1] 모바일 사이드바가 열려있다면? -> 닫기! (클래스 제거)
       if (sidebar.classList.contains('open')) {
           sidebar.classList.remove('open');
-      
+      }
       if (!sidebar.classList.contains('closed')) {
         sidebar.classList.add('closed');
         body.classList.add('sidebar-collapsed');
@@ -2188,4 +2188,5 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
