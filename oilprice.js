@@ -153,20 +153,42 @@ function updateOilWidget(info) {
     };
 }
 
+// 🚀 [최종 복구] 길안내 실행 (바텀 시트 모달 연결)
 function confirmOilStationNav() {
-    if (!currentBestStationData) { refreshOilPrice(); return; }
+    // 데이터 없으면 새로고침
+    if (!currentBestStationData) { 
+        refreshOilPrice(); 
+        return; 
+    }
 
-    const { name, coords } = currentBestStationData;
+    // index.html에 있는 바텀 시트 함수(openNavPrompt)가 존재하는지 확인
+    if (typeof openNavPrompt === 'function') {
+        
+        // 💡 [핵심] 기존 바텀 시트가 알아들을 수 있는 '가짜 거래처 객체'를 만듭니다.
+        // index.html의 launchTMapApp 함수는 coords.lat(), coords.lng() 형태를 원하므로 맞춰줍니다.
+        const fakeClient = {
+            name: currentBestStationData.name,
+            address: currentBestStationData.address,
+            coords: currentBestStationData.coords ? {
+                lat: () => currentBestStationData.coords.lat,
+                lng: () => currentBestStationData.coords.lon
+            } : null
+        };
 
-    if (coords) {
-        // 좌표가 있으므로 바로 안내 (가장 빠름)
-        if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
-            location.href = `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${coords.lon}&goaly=${coords.lat}`;
-        }
+        // 바텀 시트 열기! (담당자는 '유가위젯'으로 표시)
+        openNavPrompt(fakeClient, '유가위젯');
+
     } else {
-        // 좌표 못 찾았으면 검색창으로 (비상용)
-        if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
-            location.href = `tmap://search?name=${encodeURIComponent(name)}`;
+        // (비상용 백업) 만약 바텀 시트 함수가 없으면 기본 confirm 창 띄움
+        const { name, coords } = currentBestStationData;
+        if (coords) {
+            if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
+                location.href = `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${coords.lon}&goaly=${coords.lat}`;
+            }
+        } else {
+            if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
+                location.href = `tmap://search?name=${encodeURIComponent(name)}`;
+            }
         }
     }
 }
