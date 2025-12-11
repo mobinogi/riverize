@@ -19,6 +19,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="truck.css">
+  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="sidebar.js"></script>
   <script src="oilprice.js"></script>
   <script src="weather.js"></script>
@@ -1327,21 +1328,8 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     document.getElementById('current-date').textContent = formatDate(today);
     document.getElementById('app-status').textContent = '상태: 준비 완료.';
 
-    // 🚀 [보안 핵심] 서버에서 T맵 키를 받아와야만 지도를 그립니다.
-    try {
-        console.log("🔑 T맵 키 요청 중...");
-        const result = await callAppsScript('getTmapApiKey');
-
-        if (result.status === 'success' && result.key) {
-            
-            APP_KEY = result.key; // 키 저장
-            
-            // 🚨 [추가할 코드] 키가 진짜 왔는지 눈으로 확인하는 코드
-            alert("도착한 키: " + APP_KEY);
-
-            // 🔥 [동적 로딩] 스크립트 태그를 여기서 만듭니다!
-            await loadTmapScript(APP_KEY);
-            console.log("✅ T맵 로딩 완료");
+    // 2. 그냥 바로 시작합니다 (지도는 헤드에서 이미 로딩됨)
+    console.log("🚀 앱 시작");
 
             // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
             if (typeof changeView === 'function') changeView('write');
@@ -2088,19 +2076,6 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
         currentY = 0;
     });
 }
-
-// 2. T맵 로딩 함수 (이게 마지막 함수여야 함)
-function loadTmapScript(key) {
-    return new Promise((resolve, reject) => {
-        if (window.Tmapv2) { resolve(); return; }
-        const script = document.createElement('script');
-        script.src = `https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${key}&autoload=false`;
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
   
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
@@ -2230,6 +2205,7 @@ function loadTmapScript(key) {
 </div>
 </body>
 </html>
+
 
 
 
