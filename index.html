@@ -530,13 +530,13 @@
     // 1. 전역 변수 및 초기 설정
     // ===============================================
     const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
-
+    const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+  
     let reportsMap = {}; 
     let currentYear, currentMonth;
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
-    let APP_KEY = "";
-    // 지도 관련 변수
+
     let isMapInitialized = false;     
     let currentMapInstance = null;
     let currentMarker = null; 
@@ -2201,6 +2201,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
