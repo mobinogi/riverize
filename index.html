@@ -1333,7 +1333,11 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         const result = await callAppsScript('getTmapApiKey');
 
         if (result.status === 'success' && result.key) {
-            APP_KEY = result.key; // 전역 변수에 키 저장
+            
+            APP_KEY = result.key; // 키 저장
+            
+            // 🚨 [추가할 코드] 키가 진짜 왔는지 눈으로 확인하는 코드
+            alert("도착한 키: " + APP_KEY);
 
             // 🔥 [동적 로딩] 스크립트 태그를 여기서 만듭니다!
             await loadTmapScript(APP_KEY);
@@ -2226,6 +2230,7 @@ function loadTmapScript(key) {
 </div>
 </body>
 </html>
+
 
 
 
