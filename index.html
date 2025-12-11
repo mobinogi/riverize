@@ -2085,31 +2085,15 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     });
 }
 
-/**
- * [신규] T맵 스크립트를 동적으로 로드하는 함수 (이게 빠져있어서 멈춘 겁니다!)
- */
+// 2. T맵 로딩 함수 (이게 마지막 함수여야 함)
 function loadTmapScript(key) {
     return new Promise((resolve, reject) => {
-        // 이미 로딩되어 있으면 바로 성공 처리
-        if (window.Tmapv2) {
-            resolve();
-            return;
-        }
-        
+        if (window.Tmapv2) { resolve(); return; }
         const script = document.createElement('script');
         script.src = `https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${key}`;
         script.async = true;
-        
-        script.onload = () => {
-            console.log("✅ T맵 리소스 로드 완료");
-            resolve();
-        };
-        
-        script.onerror = (e) => {
-            console.error("❌ T맵 로드 실패:", e);
-            reject(e);
-        };
-        
+        script.onload = resolve;
+        script.onerror = reject;
         document.head.appendChild(script);
     });
 }
@@ -2242,6 +2226,7 @@ function loadTmapScript(key) {
 </div>
 </body>
 </html>
+
 
 
 
