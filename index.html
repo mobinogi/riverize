@@ -1331,35 +1331,44 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     try {
         console.log("🔑 T맵 키 요청 중...");
         const result = await callAppsScript('getTmapApiKey');
-        
+
         if (result.status === 'success' && result.key) {
             APP_KEY = result.key; // 전역 변수에 키 저장
-            
+
             // 🔥 [동적 로딩] 스크립트 태그를 여기서 만듭니다!
-            await loadTmapScript(APP_KEY); 
+            await loadTmapScript(APP_KEY);
             console.log("✅ T맵 로딩 완료");
-      
-    // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
-    if (typeof changeView === 'function') changeView('write');
 
-    fetchReportsForMonth(currentYear, currentMonth, true); // 캘린더 데이터 로드
-    updateFactoryStatus(); // 공장 잔량 채우기
+            // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
+            if (typeof changeView === 'function') changeView('write');
 
-    // 검색창 이벤트: 포커스 시 사이드바 숨김
-    const searchInput = document.getElementById('map-search-input');
-    if (searchInput) searchInput.addEventListener('focus', () => {
-        document.getElementById('client-list-panel').classList.add('hidden');
-        document.getElementById('btn-restore-sidebar').classList.remove('hidden');
-    });
-      
-    // 🚀 [신규] 스무스 스와이프 엔진 (모든 모달에 적용)
-    // 걸리적거림 없이 아이폰처럼 부드럽게 내려갑니다.
-    
-    setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);       // 길안내 팝업
-    setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt); // 삭제 팝업
-    setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet'); // 보고서 옵션 (얘는 껍데기 말고 내부 시트를 움직여야 함)
+            fetchReportsForMonth(currentYear, currentMonth, true); // 캘린더 데이터 로드
+            updateFactoryStatus(); // 공장 잔량 채우기
 
-    });
+            // 검색창 이벤트
+            const searchInput = document.getElementById('map-search-input');
+            if (searchInput) searchInput.addEventListener('focus', () => {
+                document.getElementById('client-list-panel').classList.add('hidden');
+                document.getElementById('btn-restore-sidebar').classList.remove('hidden');
+            });
+
+            // 🚀 [신규] 스무스 스와이프 엔진
+            setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
+            setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
+            setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
+            
+            // ⛽ [추가] 유가 정보 로드 (키가 준비된 후 실행)
+            if (typeof loadOilPrice === 'function') loadOilPrice();
+
+        } else {
+            console.error("키 가져오기 실패:", result.message);
+            showToast("API 키 로드 실패. 새로고침 해주세요.", "error");
+        }
+    } catch (e) {
+        console.error("초기화 중 오류 발생:", e);
+        // showToast("초기화 오류 발생", "error"); // 필요시 주석 해제
+    }
+});
     
     function openDeletePrompt(client, user) {
         deleteTargetClient = client; deleteTargetUser = user;
@@ -2233,6 +2242,7 @@ function loadTmapScript(key) {
 </div>
 </body>
 </html>
+
 
 
 
