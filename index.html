@@ -1319,7 +1319,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // ===============================================
     // 9. [최종 통합] 초기화 및 이벤트 리스너
     // ===============================================
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
     
     // --- (A) 초기 변수 및 UI 설정 ---
     const today = new Date();
@@ -1339,11 +1339,12 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
 
             // 검색창 이벤트
             const searchInput = document.getElementById('map-search-input');
-            if (searchInput) searchInput.addEventListener('focus', () => {
+            if (searchInput) {
+                searchInput.addEventListener('focus', () => {
                 document.getElementById('client-list-panel').classList.add('hidden');
                 document.getElementById('btn-restore-sidebar').classList.remove('hidden');
             });
-
+           }
             // 🚀 [신규] 스무스 스와이프 엔진
             setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
             setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
@@ -2196,6 +2197,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
