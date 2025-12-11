@@ -13,69 +13,49 @@ async function loadOilPrice() {
     const elAvg = document.getElementById('diesel-avg-price');
     if (!elAvg) return; 
 
-    // ✅ [1단계] 캐시 확인
-    const cacheKey = 'OIL_PRICE_CACHE_DATA_V3'; // 로직 변경으로 키 업데이트
+    // 1. 캐시 확인 (기존 유지)
+    const cacheKey = 'OIL_PRICE_CACHE_DATA_V5'; 
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
-    const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3시간
-
+    
     if (cached) {
         const { timestamp, data } = JSON.parse(cached);
-        if (now - timestamp < CACHE_DURATION) {
-            console.log("⚡ [캐시] 저장된 유가 정보 사용");
+        if (now - timestamp < 3 * 60 * 60 * 1000) { // 3시간
             updateOilWidget(data);
             return; 
         }
     }
 
-    // ✅ [2단계] 오피넷 서버 호출 (부산 강서구: 1011)
-    const AREA_CODE = "1011"; 
-    const API_KEY = "F251207227"; 
-    const PROD_CODE = "D047"; 
-
+    // 2. 서버 호출 (여기가 바뀜!)
     try {
-        console.log(`⛽ 오피넷 정보 요청 중...`);
-        const opinetUrl = `http://www.opinet.co.kr/api/lowTop10.do?out=json&code=${API_KEY}&prodcd=${PROD_CODE}&area=${AREA_CODE}&cnt=20`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(opinetUrl)}`;
-
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`Proxy Error: ${response.status}`);
-        const data = await response.json();
+        console.log("⛽ 서버(GAS)에 유가 정보 요청 중...");
         
-        if (data && data.RESULT && data.RESULT.OIL && data.RESULT.OIL.length > 0) {
-            
-            let processedData = processOilData(data.RESULT.OIL);
+        // 🚨 API 키, 지역코드 없이 그냥 함수 이름만 부르면 됩니다!
+        // (code.js가 알아서 처리해서 가져다 줍니다)
+        const result = await callAppsScript('getOilPrice'); 
 
-            // 🚀 [3단계] "부산 강서구" + 주유소 이름으로 좌표 조회
-            // 예: "대박주유소" -> "부산 강서구 대박주유소"로 검색
-            console.log(`🔍 T맵 정밀 검색: 부산 강서구 ${processedData.bestName}`);
+        if (result.status === 'success' && result.data && result.data.RESULT) {
             
-            // 검증 함수에 '지역명'을 아예 박아서 보냄
+            let processedData = processOilData(result.data.RESULT.OIL);
+            
+            // T맵 검증 (기존 유지)
             const tmapInfo = await verifyWithTmap("부산 강서구 " + processedData.bestName);
-
             if (tmapInfo) {
-                console.log("✅ 좌표 확보 성공:", tmapInfo);
-                processedData.bestName = tmapInfo.name; // T맵에 등록된 깔끔한 이름 사용
+                processedData.bestName = tmapInfo.name;
                 processedData.coords = tmapInfo.coords; 
-            } else {
-                console.warn("⚠️ T맵 검색 실패. 오피넷 기본 데이터 사용.");
             }
             
-            localStorage.setItem(cacheKey, JSON.stringify({
-                timestamp: now,
-                data: processedData
-            }));
-
+            // 저장 및 업데이트
+            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: processedData }));
             updateOilWidget(processedData);
-        } 
-    } catch (e) {
-        console.error("❌ 유가 로드 실패:", e);
-        if (cached) {
-            updateOilWidget(JSON.parse(cached).data);
+
         } else {
-            const elName = document.getElementById('cheapest-st-name');
-            if(elName) elName.textContent = "정보 수신 실패";
+            throw new Error("데이터 수신 실패");
         }
+    } catch (e) {
+        console.error("유가 로드 실패:", e);
+        if (cached) updateOilWidget(JSON.parse(cached).data); // 실패 시 캐시라도 보여줌
+        else document.getElementById('cheapest-st-name').textContent = "정보 수신 실패";
     }
 }
 
