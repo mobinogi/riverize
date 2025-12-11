@@ -1351,11 +1351,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             
             // ⛽ [추가] 유가 정보 로드 (키가 준비된 후 실행)
             if (typeof loadOilPrice === 'function') loadOilPrice();
-      
-    } catch (e) {
-        console.error("초기화 중 오류 발생:", e);
-        // showToast("초기화 오류 발생", "error"); // 필요시 주석 해제
-});
+    });
     
     function openDeletePrompt(client, user) {
         deleteTargetClient = client; deleteTargetUser = user;
@@ -2200,6 +2196,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
