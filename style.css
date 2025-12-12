@@ -581,13 +581,46 @@ body.sidebar-collapsed #main-content-wrapper {
     100% { transform: translate3d(-100%, 0, 0); }
 }
 
-/* 3. 뉴스 링크 디자인 (선택 사항) */
+/* 1. 뉴스 텍스트 및 링크 기본 스타일 */
 .news-link {
-    color: white;
-    text-decoration: none;
-    cursor: pointer;
+  cursor: pointer;
+  position: relative;    /* 툴팁 위치 기준 */
+  color: white;          /* 글자색 (배경에 맞춰 조정) */
+  text-decoration: none;
+  display: inline-flex;  /* 점과 글자 높이 맞춤 */
+  align-items: center;   /* 세로 중앙 정렬 */
 }
-.news-link:hover {
-    text-decoration: underline; /* 마우스 올리면 밑줄 */
-    color: #fbbf24; /* 노란색 강조 */
+
+/* 2. 빨간 구분자 (●) 설정 - 핵심 부분! */
+.news-link::before {
+  content: "●";          /* 구분자 모양 (원하는 특수문자로 변경 가능) */
+  color: #ff4d4d;        /* 빨간색 (원하는 색상 코드 변경 가능) */
+  font-size: 10px;       /* 점 크기 조절 */
+  
+  /* ▼ 여기가 요청하신 간격 조절 부분입니다 ▼ */
+  margin-left: 40px;     /* 앞 뉴스 끝나고 띄우는 간격 (넓게) */
+  margin-right: 2px;     /* 점과 다음 뉴스 사이 간격 (딱 붙거나 아주 살짝만) */
+}
+
+/* 첫 번째 뉴스는 앞에 점이 필요 없다면 아래 주석을 푸세요 */
+/* .news-link:first-child::before { display: none; } */
+
+/* 마우스 오버 시 툴팁(말풍선) 등장 */
+.news-link:hover::after {
+  content: "클릭 시 해당 기사로 이동 🔗"; /* 보여줄 멘트 */
+  position: absolute;
+  top: 120%;             /* 기사 제목 바로 아래에 표시 */
+  left: 50%;
+  transform: translateX(-50%); /* 중앙 정렬 */
+  
+  /* 툴팁 디자인 */
+  background-color: rgba(0, 0, 0, 0.9); /* 진한 검은색 배경 */
+  color: #fff;           /* 흰색 글씨 */
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;   /* 줄바꿈 방지 */
+  z-index: 9999;         /* 제일 위에 표시 */
+  pointer-events: none;  /* 툴팁이 마우스 클릭 방해 안 하게 */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
