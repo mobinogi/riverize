@@ -565,12 +565,14 @@ body.sidebar-collapsed #main-content-wrapper {
     flex-shrink: 0;
 }
 
+/* 1. 속도 조절: 25s -> 80s (숫자가 클수록 느려짐) */
 .ticker-content {
-    white-space: nowrap; /* 줄바꿈 금지 */
-    padding-left: 100%;  /* 오른쪽 끝에서 시작 */
-    animation: ticker-scroll 25s linear infinite; /* 25초 동안 흐르기 */
-    font-size: 14px;
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: ticker-scroll 80s linear infinite; /* 🚀 80초로 변경 (천천히) */
+    font-size: 16px;
     font-weight: 500;
+    display: inline-block; /* 링크 클릭 잘 되게 변경 */
 }
 
 /* 흐르는 애니메이션 정의 */
