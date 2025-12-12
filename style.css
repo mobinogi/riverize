@@ -534,7 +534,7 @@ body.sidebar-collapsed #main-content-wrapper {
     
     /* ★ 화면 너비 초과 방지 */
     max-width: 100vw; 
-    overflow: visible;
+    overflow: visible !important;
     
     background-color: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(5px);
@@ -557,7 +557,7 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 2. LIVE 라벨 (빨간 박스) */
 .ticker-label {
-    flex: 0 0 auto;
+    flex: 0 0 auto !important;
     background: #ef4444;
     color: white;
     padding: 0 15px;
@@ -571,7 +571,7 @@ body.sidebar-collapsed #main-content-wrapper {
     position: relative; 
     
     /* ★ 팝업이 제일 위에 떠야 함 */
-    z-index: 9999;
+    z-index: 50;
     box-shadow: 4px 0 15px rgba(0,0,0,0.6);
 }
 
