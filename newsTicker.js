@@ -66,19 +66,17 @@ async function fetchAndRenderNews() {
                 span.textContent = item.title;
                 span.onclick = () => window.open(item.link, '_blank');
                 
-                // ★★★ [복구 완료] 툴팁 기능 다시 넣었습니다! ★★★
+                // ★★★ [수정됨] 내용을 덮어쓰지 않고 보여주기만 함! ★★★
                 if (tooltip) {
                     span.onmouseenter = () => { 
-                        tooltip.textContent = item.title; // 툴팁 내용 채우기
+                        // tooltip.textContent = item.title;  <-- 범인 검거! 이 줄을 삭제했습니다.
                         tooltip.classList.remove('hidden'); 
                     };
                     span.onmouseleave = () => { 
                         tooltip.classList.add('hidden'); 
                     };
                     span.onmousemove = (e) => {
-                        // 마우스 커서 위치에 따라 툴팁 이동
                         tooltip.style.left = (e.clientX + 10) + 'px';
-                        // 사이드바나 헤더에 가리지 않게 마우스보다 좀 위쪽에 표시
                         tooltip.style.top = (e.clientY - 40) + 'px'; 
                     };
                 }
