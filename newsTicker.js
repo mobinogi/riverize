@@ -88,7 +88,7 @@ async function fetchAndRenderNews() {
             // 속도 계산 및 적용
             setTimeout(() => {
                 const trackWidth = track.scrollWidth;
-                const boxWidth = tickerContainer.clientWidth;
+                const boxWidth = window.innerWidth;
                 const totalDist = trackWidth + boxWidth;
                 const speed = 60; 
                 const duration = totalDist / speed;
