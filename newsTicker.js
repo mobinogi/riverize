@@ -90,7 +90,7 @@ async function fetchAndRenderNews() {
                 const trackWidth = track.scrollWidth;
                 const boxWidth = tickerContainer.clientWidth;
                 const totalDist = trackWidth + boxWidth;
-                const speed = 50; 
+                const speed = 60; 
                 const duration = totalDist / speed;
                 
                 if (duration > 0) track.style.animationDuration = duration + 's';
