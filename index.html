@@ -693,6 +693,10 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
       
       document.getElementById('map-overlay').classList.remove('hidden');
 
+      // ★★★ [여기 추가] 지도가 열리면 뉴스 티커를 숨깁니다 ★★★
+      const ticker = document.querySelector('.news-ticker-wrap'); // 혹은 document.getElementById('news-ticker')
+      if (ticker) ticker.style.display = 'none';
+      
       // ✅ [추가] 지도 열기 행동 로그를 비동기적으로 기록
       logClientActionAsync('지도 화면 열기');
       
@@ -749,6 +753,12 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
      */
     function closeMapOverlay() {
       document.getElementById('map-overlay').classList.add('hidden');
+
+    // ★★★ [여기 추가] 지도를 닫으면 뉴스 티커를 다시 보여줍니다 (PC 화면만) ★★★
+    if (window.innerWidth >= 768) {
+        const ticker = document.querySelector('.news-ticker-wrap'); // 혹은 document.getElementById('news-ticker')
+        if (ticker) ticker.style.display = 'flex';
+    }
 
      // 🚀 [추가된 핵심 로직] 맵 닫을 때 하단 길안내 팝업도 강제로 닫기!
     // (closeNavPrompt 함수가 있으면 실행해서 스르륵 내려가게 함)
@@ -2209,6 +2219,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
