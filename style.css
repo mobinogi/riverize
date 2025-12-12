@@ -528,9 +528,9 @@ body.sidebar-collapsed #main-content-wrapper {
     position: fixed;
     bottom: 0;
     right: 0;
-    height: 40px; /* 높이 고정 */
+    height: 40px !important;
     max-height: 40px;
-    z-index: 40px;
+    z-index: 9999 !important;
     
     /* ★ 화면 너비 초과 방지 */
     max-width: 100vw; 
@@ -552,6 +552,7 @@ body.sidebar-collapsed #main-content-wrapper {
         left: 16rem; 
         /* 틈새 방지용 1px 겹치기 */
         margin-left: 0px;
+        width: calc(100% - 16rem) !important;
     }
 }
 
@@ -571,7 +572,7 @@ body.sidebar-collapsed #main-content-wrapper {
     position: relative; 
     
     /* ★ 팝업이 제일 위에 떠야 함 */
-    z-index: 50;
+    z-index: 10000 !important;
     box-shadow: 4px 0 15px rgba(0,0,0,0.6);
 }
 
