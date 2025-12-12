@@ -520,31 +520,31 @@ body.sidebar-collapsed #main-content-wrapper {
    뉴스 티커 스타일 통합
    ========================================= */
 
-/* 1. 전체 틀 (위치 및 배경) */
+/* 1. 전체 틀 */
 .news-ticker-wrap {
-    display: none; /* 모바일 숨김 */
+    display: none; /* JS가 로딩되면 flex로 바뀝니다 */
     position: fixed;
     bottom: 0;
     right: 0;
     height: 40px;
-    z-index: 999; /* 맵 위에 */
+    z-index: 999;
     
-    background-color: rgba(20, 20, 20, 0.9);
+    /* 배경 및 디자인 */
+    background-color: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(5px);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 2. PC 화면 (사이드바 256px 피하기) */
+/* PC 화면 설정 */
 @media (min-width: 768px) {
     .news-ticker-wrap {
-        display: flex;
+        /* JS에서 flex로 켜주므로 여기선 위치만 잡음 */
         align-items: center;
-        /* ★ w-64는 256px입니다. 정확히 맞췄습니다. */
-        left: 256px; 
+        left: 251px; /* 사이드바 너비 */
     }
 }
 
-/* 3. LIVE 라벨 */
+/* 2. LIVE 라벨 */
 .ticker-label {
     background: #ef4444;
     color: white;
@@ -555,64 +555,59 @@ body.sidebar-collapsed #main-content-wrapper {
     font-weight: bold;
     font-size: 14px;
     flex-shrink: 0;
-    z-index: 2;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.5); /* 그림자 추가 */
+    z-index: 10;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
 }
 
-/* 4. 뉴스 내용 영역 (마스크 효과) */
+/* 3. 뉴스 내용 영역 */
 .ticker-content {
     flex: 1;
-    overflow: hidden;
+    overflow: hidden; /* 넘치는 글자 숨김 */
     height: 100%;
     position: relative;
-    
-    /* 양쪽 끝 그라데이션 흐림 (Fade) */
-    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
 
-/* 5. 움직이는 트랙 (여기에 애니메이션 적용) */
+/* 4. 움직이는 트랙 */
 .ticker-track {
-    display: flex;
-    align-items: center;
+    display: inline-block;
     white-space: nowrap;
-    position: absolute; /* 절대 위치로 흐르게 함 */
-    height: 100%;
+    position: absolute;
+    /* 시작 위치: 화면 오른쪽 끝 (100%) */
+    left: 100%; 
     
-    /* ★ 속도 조절: 30s (숫자를 줄이면 빨라짐) */
-    animation: ticker-slide 30s linear infinite;
+    /* 애니메이션 이름만 지정 (시간은 JS가 계산함) */
+    animation-name: ticker-slide;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
 }
 
-/* ★ 마우스가 '티커 전체'에 올라가면 멈춤 (개별 멈춤 아님) */
+/* 마우스 올리면 멈춤 */
 .news-ticker-wrap:hover .ticker-track {
     animation-play-state: paused;
 }
 
-/* 6. 개별 뉴스 아이템 */
+/* 5. 개별 뉴스 아이템 */
 .news-item {
     cursor: pointer;
     color: #e5e7eb;
     font-size: 14px;
-    padding-right: 40px; /* 뉴스 간격 */
-    display: flex;
-    align-items: center;
+    margin-right: 60px; /* 뉴스 사이 간격 */
+    vertical-align: middle;
 }
 .news-item:hover {
-    color: #fcd34d; /* 노란색 하이라이트 */
+    color: #fcd34d;
     text-decoration: underline;
 }
-
-/* 구분자 점 */
 .news-item::before {
     content: "●";
     color: #ff4d4d;
     font-size: 8px;
-    margin-right: 10px;
-    transform: translateY(-1px);
+    margin-right: 12px;
+    vertical-align: middle;
 }
 
-/* 애니메이션 정의 (오른쪽 -> 왼쪽) */
+/* ★ 오른쪽 끝(100%)에서 -> 왼쪽 완전 밖(-100%)으로 이동 */
 @keyframes ticker-slide {
-    0% { transform: translateX(100%); } /* 화면 오른쪽 끝에서 시작 */
-    100% { transform: translateX(-100%); } /* 왼쪽으로 완전히 사라짐 */
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
 }
