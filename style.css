@@ -529,11 +529,12 @@ body.sidebar-collapsed #main-content-wrapper {
     bottom: 0;
     right: 0;
     height: 40px; /* 높이 고정 */
-    z-index: 999;
+    z-index: 40px;
     
     background-color: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(5px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 /* PC 화면 설정 */
@@ -545,7 +546,7 @@ body.sidebar-collapsed #main-content-wrapper {
         /* 사이드바(256px) 옆에 딱 붙이기 */
         left: 16rem; 
         /* 틈새 방지용 1px 겹치기 */
-        margin-left: -1px;
+        margin-left: 0px;
     }
 }
 
@@ -565,12 +566,19 @@ body.sidebar-collapsed #main-content-wrapper {
     box-shadow: 4px 0 15px rgba(0,0,0,0.6);
 }
 
-/* 3. 뉴스 내용 영역 */
+/* 3. 뉴스 내용 영역 (★ 그라데이션 복구 완료!) */
 .ticker-content {
     flex: 1;
     overflow: hidden;
     height: 100%;
     position: relative;
+    display: flex;
+    align-items: center;
+
+    /* ▼▼▼ 여기가 빠졌던 부분입니다! ▼▼▼ */
+    /* 양쪽 끝 5% 구간을 투명하게 만듦 */
+    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
 
 /* 4. 움직이는 트랙 (★ 여기가 핵심 수정!) */
@@ -585,7 +593,7 @@ body.sidebar-collapsed #main-content-wrapper {
     align-items: center; 
     
     white-space: nowrap;
-    animation: ticker-slide 30s linear infinite;
+    animation: ticker-slide 40s linear infinite;
 }
 
 /* 마우스 올리면 멈춤 */
