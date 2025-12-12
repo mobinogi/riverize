@@ -11,6 +11,7 @@
     img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org;
     frame-src 'self' blob:; 
   ">
+  <?!= include('newsTicker.js'); ?>
   <link rel="icon" href="favicon.ico" type="image/png">
   <base target="_top">
   <meta name="theme-color" content="#f7f9fc">
@@ -2196,11 +2197,16 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     </div>
 </div>
       <div id="news-ticker" class="news-ticker-wrap hidden">
-    <div class="ticker-label">강서구 소식</div>
-    <div class="ticker-content" id="ticker-text">뉴스를 불러오는 중입니다...</div>
+    <div class="ticker-label">
+        <span class="animate-pulse">LIVE</span> 부산·강서
+    </div>
+    <div class="ticker-content" id="ticker-text">
+        최신 뉴스를 불러오는 중입니다...
+    </div>
 </div>
 </body>
 </html>
+
 
 
 
