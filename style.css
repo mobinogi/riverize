@@ -543,7 +543,7 @@ body.sidebar-collapsed #main-content-wrapper {
         align-items: center;
         
         /* 사이드바(256px) 옆에 딱 붙이기 */
-        left: 256px; 
+        left: 16rem; 
         /* 틈새 방지용 1px 겹치기 */
         margin-left: -1px;
     }
