@@ -110,16 +110,31 @@ function toggleNewsSettings(e) {
     if(e) e.stopPropagation(); // 라벨 클릭 시 팝업 닫힘 방지
     const popup = document.getElementById('news-settings-popup');
     popup.classList.toggle('hidden');
+
+    if (popup.classList.contains('hidden')) {
+        // 열 때: 현재 설정대로 체크박스 UI 맞춤 (취소하고 나갔을 때 대비)
+        loadNewsSettingsUI();
+        popup.classList.remove('hidden');
+    } else {
+        // 닫을 때: 저장 & 적용
+        closeNewsSettings();
+    }
 }
 
 function closeNewsSettings() {
     document.getElementById('news-settings-popup').classList.add('hidden');
+    if (popup && !popup.classList.contains('hidden')) {
+        popup.classList.add('hidden');
+        // ★ 여기서 저장 및 갱신 실행!
+        saveNewsSettings();
+    }
 }
 
 // 바깥 클릭 시 닫기
 document.addEventListener('click', (e) => {
     const popup = document.getElementById('news-settings-popup');
     const label = document.querySelector('.ticker-label');
+    // 팝업이 열려있고, 팝업이나 라벨을 클릭한 게 아니라면 -> 닫기
     if (popup && !popup.classList.contains('hidden')) {
         if (!popup.contains(e.target) && !label.contains(e.target)) {
             closeNewsSettings();
@@ -127,27 +142,42 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// 체크박스 변경 시 -> 저장 & 즉시 티커 새로고침
+// 4. 저장 & 티커 새로고침 (변경사항 있을 때만!)
 function saveNewsSettings() {
     const selected = [];
     document.querySelectorAll('input[name="news-cat"]:checked').forEach(el => {
         selected.push(el.value);
     });
 
-    // 하나도 선택 안 하면 기본값 강제 (부산)
+    // ★ [부활 및 업그레이드] 하나도 선택 안 했으면 '강서구' 강제 주입
     if (selected.length === 0) {
-        // alert("최소 하나의 채널을 선택해야 합니다."); // 필요하면 주석 해제
-        // return; 
+        selected.push('gangseo'); 
     }
 
-    // LocalStorage에 저장
+    // ① 변경된 게 있는지 확인 (없으면 리로딩 안 함 -> 깜빡임 방지)
+    const currentSaved = JSON.parse(localStorage.getItem('user_news_settings') || "[]");
+    
+    // 배열 내용물 비교 (순서 상관없이)
+    const isSame = JSON.stringify(selected.sort()) === JSON.stringify(currentSaved.sort());
+    
+    if (isSame) {
+        return; // 바뀐 거 없으면 조용히 종료
+    }
+
+    // ② 변경사항 저장
     localStorage.setItem('user_news_settings', JSON.stringify(selected));
 
-    // ★ 즉시 티커 새로고침 (로딩 표시 띄우고)
-    document.getElementById('ticker-text').innerHTML = '<div style="padding-left:20px; color:#aaa; font-size:13px;">채널 변경 중...</div>';
-    lastNewsData = ""; // 강제 갱신 트리거
-    startNewsTicker();
+    // ③ UI 업데이트 (체크박스 상태도 강제 주입된 '강서구'로 다시 맞춤)
+    loadNewsSettingsUI();
+
+    // ④ 티커 새로고침
+    const tickerText = document.getElementById('ticker-text');
+    if(tickerText) tickerText.innerHTML = '<div style="padding-left:20px; color:#aaa; font-size:13px;">채널 변경 적용 중...</div>';
+    
+    lastNewsData = ""; 
+    startNewsTicker(); 
 }
+
 
 // 초기 로딩 시 체크박스 상태 복구
 function loadNewsSettingsUI() {
