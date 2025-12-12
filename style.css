@@ -593,11 +593,15 @@ body.sidebar-collapsed #main-content-wrapper {
     align-items: center; 
     
     white-space: nowrap;
-    animation: ticker-slide 40s linear infinite;
+    animation: ticker-slide 45s linear infinite;
 }
 
-/* 마우스 올리면 멈춤 */
-.news-ticker-wrap:hover .ticker-track {
+/* 전체티커박스 멈춤 */
+/*.news-ticker-wrap:hover .ticker-track {
+    animation-play-state: paused;
+}
+/*  뉴스 글자가 나오는 '내용 영역'에만 올렸을 때 멈춤 ▼▼▼ */
+.ticker-content:hover .ticker-track {
     animation-play-state: paused;
 }
 
