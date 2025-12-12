@@ -11,7 +11,6 @@
     img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org;
     frame-src 'self' blob:; 
   ">
-  <?!= include('newsTicker.js'); ?>
   <link rel="icon" href="favicon.ico" type="image/png">
   <base target="_top">
   <meta name="theme-color" content="#f7f9fc">
@@ -24,6 +23,7 @@
   <script src="sidebar.js"></script>
   <script src="oilprice.js"></script>
   <script src="weather.js"></script>
+  <script src="newsTicker.js"></script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
     
@@ -2206,6 +2206,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
