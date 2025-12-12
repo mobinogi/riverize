@@ -522,25 +522,29 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 1. 전체 틀 */
 .news-ticker-wrap {
-    display: none; /* JS가 로딩되면 flex로 바뀝니다 */
+    /* 모바일에선 숨김 (기본) */
+    display: none; 
+    
     position: fixed;
     bottom: 0;
     right: 0;
     height: 40px;
     z-index: 999;
     
-    /* 배경 및 디자인 */
     background-color: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(5px);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* PC 화면 설정 */
+/* PC 화면 설정 (768px 이상) */
 @media (min-width: 768px) {
     .news-ticker-wrap {
-        /* JS에서 flex로 켜주므로 여기선 위치만 잡음 */
+        /* ★ [복구] JS 없이도 일단 무조건 보이게 설정 */
+        display: flex !important; 
         align-items: center;
-        left: 251px; /* 사이드바 너비 */
+        
+        /* ★ [수정] 사이드바 그림자 5px 고려해서 딱 붙이기 */
+        left: 251px; 
     }
 }
 
@@ -562,7 +566,7 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 3. 뉴스 내용 영역 */
 .ticker-content {
     flex: 1;
-    overflow: hidden; /* 넘치는 글자 숨김 */
+    overflow: hidden;
     height: 100%;
     position: relative;
 }
@@ -572,13 +576,11 @@ body.sidebar-collapsed #main-content-wrapper {
     display: inline-block;
     white-space: nowrap;
     position: absolute;
-    /* 시작 위치: 화면 오른쪽 끝 (100%) */
+    /* 화면 오른쪽 끝에서 시작 */
     left: 100%; 
     
-    /* 애니메이션 이름만 지정 (시간은 JS가 계산함) */
-    animation-name: ticker-slide;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
+    /* ★ [복구] 기본 속도 30초 지정 (JS 고장나도 흐르게) */
+    animation: ticker-slide 30s linear infinite;
 }
 
 /* 마우스 올리면 멈춤 */
@@ -591,7 +593,7 @@ body.sidebar-collapsed #main-content-wrapper {
     cursor: pointer;
     color: #e5e7eb;
     font-size: 14px;
-    margin-right: 60px; /* 뉴스 사이 간격 */
+    margin-right: 60px; /* 뉴스 간격 */
     vertical-align: middle;
 }
 .news-item:hover {
@@ -606,8 +608,8 @@ body.sidebar-collapsed #main-content-wrapper {
     vertical-align: middle;
 }
 
-/* ★ 오른쪽 끝(100%)에서 -> 왼쪽 완전 밖(-100%)으로 이동 */
+/* 오른쪽(100%) -> 왼쪽(-100%) 이동 */
 @keyframes ticker-slide {
-    from { transform: translateX(0); }
-    to { transform: translateX(-100%); }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
