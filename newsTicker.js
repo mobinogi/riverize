@@ -1,4 +1,3 @@
-<script>
 /**
  * newsTicker.js - 뉴스 티커 전용 스크립트
  */
@@ -37,4 +36,3 @@ async function startNewsTicker() {
         console.warn("뉴스 로딩 실패 (일시적 오류):", e);
     }
 }
-</script>
