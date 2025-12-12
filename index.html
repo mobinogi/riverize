@@ -2275,6 +2275,12 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
         <div style="padding-left:20px; color:#aaa; font-size:13px;">뉴스 로딩 중...</div>
     </div>
 </div>
-      <div id="global-tooltip" class="hidden fixed z-[99999] bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl pointer-events-none border border-gray-700 whitespace-nowrap" style="font-family: sans-serif;"></div>
+    <div id="global-tooltip" class="hidden fixed z-[99999] bg-gray-900/95 backdrop-blur text-white text-xs px-3 py-2 rounded-lg shadow-2xl pointer-events-none border border-gray-700 whitespace-nowrap flex items-center gap-2" style="font-family: sans-serif;">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+    <span class="font-bold text-gray-100">클릭 시 해당 기사로 이동합니다</span>
+</div>
 </body>
 </html>
+
