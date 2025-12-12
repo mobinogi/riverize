@@ -36,7 +36,10 @@ async function startNewsTicker() {
                     span.onmouseleave = () => { tooltip.classList.add('hidden'); };
                     span.onmousemove = (e) => {
                         tooltip.style.left = e.clientX + 15 + 'px';
-                        tooltip.style.top = e.clientY + 15 + 'px';
+                        // tooltip.style.top = e.clientY + 15 + 'px';  <-- 기존 (커서 아래)
+        
+                        // ★ 수정! 커서 위쪽으로 40px 올려서 표시 (높이 확보)
+                        tooltip.style.top = (e.clientY - 40) + 'px';
                     };
                 }
 
