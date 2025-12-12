@@ -20,24 +20,22 @@ async function startNewsTicker() {
             
             tickerText.innerHTML = ''; // 기존 내용 비우기
             
-            // 뉴스 아이템 하나하나 태그로 만들기
+            // 뉴스 아이템 하나하나 만들기
             result.news.forEach((item) => {
-                // 1. 기사 링크 생성
-                const link = document.createElement('a');
-                link.href = item.link;
-                link.target = "_blank"; // 새 창에서 열기
-                link.textContent = item.title;
-                link.className = "news-link hover:text-yellow-300 transition-colors"; // 마우스 올리면 노란색
+                // 1. span 태그로 생성 (a태그 아님!)
+                const span = document.createElement('span');
                 
-                // 2. 구분자 생성 (간격 넓게)
-                const separator = document.createElement('span');
-                // &nbsp; 를 많이 넣어서 간격을 벌립니다
-                separator.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔴&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"; 
-                separator.className = "text-red-500 text-[10px]";
-
-                // 3. 화면에 붙이기
-                tickerText.appendChild(link);
-                tickerText.appendChild(separator);
+                // 2. 내용 및 클릭 이벤트 설정
+                span.textContent = item.title;
+                // 클릭하면 새 창으로 열리게 설정 (이게 href 대신입니다)
+                span.onclick = () => window.open(item.link, '_blank');
+                
+                // 3. 클래스 설정 (CSS 디자인 + 마우스 오버 효과)
+                // news-link: CSS에서 점(●)과 툴팁을 만들기 위한 핵심 클래스
+                span.className = "news-link hover:text-yellow-300 transition-colors"; 
+                
+                // 4. 화면에 붙이기 (구분자는 CSS가 알아서 찍어줌)
+                tickerText.appendChild(span);
             });
             
             // 내용 채운 뒤 보여주기
