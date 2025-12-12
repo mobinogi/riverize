@@ -574,6 +574,7 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 3. 뉴스 내용 영역 (★ 그라데이션 복구 완료!) */
 .ticker-content {
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     height: 100%;
     position: relative;
