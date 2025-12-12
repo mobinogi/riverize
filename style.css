@@ -517,36 +517,34 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* =========================================
-   뉴스 티커 스타일 통합 (최종본)
+   뉴스 티커 스타일 통합
    ========================================= */
 
-/* 1. 전체 틀 (위치, 배경, 모바일 숨김 기본 설정) */
+/* 1. 전체 틀 (위치 및 배경) */
 .news-ticker-wrap {
-    display: none; /* 모바일에선 기본적으로 숨김 */
+    display: none; /* 모바일 숨김 */
     position: fixed;
     bottom: 0;
     right: 0;
     height: 40px;
-    z-index: 999; /* 맵이나 다른 요소보다 위에 오게 */
+    z-index: 999; /* 맵 위에 */
     
-    /* 디자인: 반투명 글래스 효과 */
     background-color: rgba(20, 20, 20, 0.9);
     backdrop-filter: blur(5px);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 2. PC 화면(768px 이상) 설정 */
+/* 2. PC 화면 (사이드바 256px 피하기) */
 @media (min-width: 768px) {
     .news-ticker-wrap {
-        display: flex; /* PC에서만 보임 */
+        display: flex;
         align-items: center;
-        
-        /* ★ 핵심: 사이드바 너비만큼 왼쪽을 비워둠 */
-        left: 250px; 
+        /* ★ w-64는 256px입니다. 정확히 맞췄습니다. */
+        left: 256px; 
     }
 }
 
-/* 3. LIVE 라벨 (빨간 박스) */
+/* 3. LIVE 라벨 */
 .ticker-label {
     background: #ef4444;
     color: white;
@@ -556,77 +554,65 @@ body.sidebar-collapsed #main-content-wrapper {
     align-items: center;
     font-weight: bold;
     font-size: 14px;
-    flex-shrink: 0; /* 줄어들지 않게 고정 */
+    flex-shrink: 0;
     z-index: 2;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5); /* 그림자 추가 */
 }
 
-/* 4. 뉴스 내용 영역 (애니메이션 & 마스크 효과) */
+/* 4. 뉴스 내용 영역 (마스크 효과) */
 .ticker-content {
-    flex: 1; /* 남은 공간 꽉 채우기 */
-    display: flex;
-    align-items: center;
+    flex: 1;
     overflow: hidden;
     height: 100%;
+    position: relative;
     
-    /* 양쪽 끝 그라데이션 흐림 효과 (Fade) */
+    /* 양쪽 끝 그라데이션 흐림 (Fade) */
     mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
 
-/* 5. 개별 뉴스 링크 (디자인 & 툴팁 기준점) */
-.news-link {
-    display: inline-flex;
+/* 5. 움직이는 트랙 (여기에 애니메이션 적용) */
+.ticker-track {
+    display: flex;
     align-items: center;
-    color: white;
-    cursor: pointer;
-    white-space: nowrap; /* 줄바꿈 금지 */
-    font-size: 15px;
-    position: relative;
+    white-space: nowrap;
+    position: absolute; /* 절대 위치로 흐르게 함 */
+    height: 100%;
     
-    /* 애니메이션 적용 */
-    animation: ticker-scroll 80s linear infinite; 
-    /* 80초: 숫자가 클수록 느려짐. 너무 빠르면 100s로 늘리세요 */
+    /* ★ 속도 조절: 30s (숫자를 줄이면 빨라짐) */
+    animation: ticker-slide 30s linear infinite;
 }
 
-/* 6. 마우스 올리면 멈춤 */
-.news-link:hover {
+/* ★ 마우스가 '티커 전체'에 올라가면 멈춤 (개별 멈춤 아님) */
+.news-ticker-wrap:hover .ticker-track {
     animation-play-state: paused;
-    color: #fcd34d; /* 노란색으로 하이라이트 */
 }
 
-/* 7. 빨간 점 구분자 (●) 자동 생성 */
-.news-link::before {
+/* 6. 개별 뉴스 아이템 */
+.news-item {
+    cursor: pointer;
+    color: #e5e7eb;
+    font-size: 14px;
+    padding-right: 40px; /* 뉴스 간격 */
+    display: flex;
+    align-items: center;
+}
+.news-item:hover {
+    color: #fcd34d; /* 노란색 하이라이트 */
+    text-decoration: underline;
+}
+
+/* 구분자 점 */
+.news-item::before {
     content: "●";
     color: #ff4d4d;
-    font-size: 10px;
-    margin-left: 40px; /* 뉴스 사이 간격 */
+    font-size: 8px;
     margin-right: 10px;
-}
-/* 첫 번째 뉴스는 점 빼기 */
-.news-link:first-child::before {
-    display: none;
+    transform: translateY(-1px);
 }
 
-/* 8. 마우스 오버 시 '설명 툴팁' */
-.news-link:hover::after {
-    content: "클릭 시 해당 기사로 이동 🔗";
-    position: absolute;
-    bottom: 45px; /* 티커 위쪽에 뜸 */
-    left: 50%;
-    transform: translateX(-50%); /* 중앙 정렬 */
-    
-    background-color: rgba(0, 0, 0, 0.95);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    pointer-events: none;
-    white-space: nowrap;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-/* 9. 흐르는 애니메이션 정의 */
-@keyframes ticker-scroll {
-    0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-100%, 0, 0); }
+/* 애니메이션 정의 (오른쪽 -> 왼쪽) */
+@keyframes ticker-slide {
+    0% { transform: translateX(100%); } /* 화면 오른쪽 끝에서 시작 */
+    100% { transform: translateX(-100%); } /* 왼쪽으로 완전히 사라짐 */
 }
