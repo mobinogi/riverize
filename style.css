@@ -557,6 +557,7 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 2. LIVE 라벨 (빨간 박스) */
 .ticker-label {
+    flex: 0 0 auto;
     background: #ef4444;
     color: white;
     padding: 0 15px;
@@ -573,8 +574,8 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 3. 뉴스 내용 영역 (★ 그라데이션 복구 완료!) */
 .ticker-content {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 0; /* 이거 없으면 레이아웃 깨짐 */
     overflow: hidden;
     height: 100%;
     position: relative;
