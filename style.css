@@ -535,6 +535,11 @@ body.sidebar-collapsed #main-content-wrapper {
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* 2. [신규] 마우스 올리면 멈춤 (뉴스 바 전체에 올렸을 때) */
+.news-ticker-wrap:hover .ticker-content {
+    animation-play-state: paused;
+}
+
 /* 🚨 [핵심 수정 1] 기본적으로는 안 보이게 숨깁니다 (모바일용) */
     display: none; 
 }
@@ -572,4 +577,15 @@ body.sidebar-collapsed #main-content-wrapper {
 @keyframes ticker-scroll {
     0% { transform: translate3d(0, 0, 0); }
     100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* 3. 뉴스 링크 디자인 (선택 사항) */
+.news-link {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+.news-link:hover {
+    text-decoration: underline; /* 마우스 올리면 밑줄 */
+    color: #fbbf24; /* 노란색 강조 */
 }
