@@ -637,5 +637,5 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 애니메이션 */
 @keyframes ticker-slide {
     0% { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
+    100% { transform: translateX(calc(-100% - 100vw)); }
 }
