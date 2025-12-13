@@ -11,7 +11,7 @@
     height: 100%;
     overflow: hidden; /* 애니메이션이 튀어나가는 것을 막음 */
     z-index: 5; /* 날씨 텍스트보다 뒤에 깔리도록 */
-    opacity: 0;
+    opacity: 10;
     transition: opacity 0.5s ease-in-out; /* 부드럽게 나타나고 사라지게 */
 }
 
