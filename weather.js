@@ -67,42 +67,6 @@ async function loadWeather() {
                 minTemp = Math.round(Math.min(...todayForecasts.map(item => item.main.temp_min)));
             }
 
-            // 🚨 [새로운 함수 선언] 빗방울을 생성하고 배치하는 함수
-const createRainDrops = (widgetEl, count = 80) => {
-    // 기존 빗방울 제거 (중복 생성 방지)
-    widgetEl.querySelectorAll('.drop').forEach(d => d.remove());
-    
-    // 위젯의 너비를 얻습니다.
-    const widgetWidth = widgetEl.clientWidth;
-    
-    for (let i = 0; i < count; i++) {
-        const drop = document.createElement('div');
-        drop.className = 'drop';
-
-        const stem = document.createElement('div');
-        stem.className = 'stem';
-
-        const splat = document.createElement('div');
-        splat.className = 'splat';
-
-        drop.appendChild(stem);
-        drop.appendChild(splat);
-
-        // 개별 빗방울의 위치와 애니메이션 딜레이를 랜덤으로 설정
-        const x = Math.floor(Math.random() * widgetWidth); 
-        const delay = Math.random() * 5; // 0~5초 딜레이
-
-        drop.style.left = `${x}px`;
-        drop.style.animationDelay = `${delay}s`;
-        
-        // 빗방울이 화면 밖에서 시작하도록 설정
-        drop.style.bottom = '100%'; 
-
-        widgetEl.querySelector('.weather-animation-layer').appendChild(drop);
-    }
-};
-             
-            
             // (3) 화면 업데이트
             const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
 
@@ -113,10 +77,8 @@ const createRainDrops = (widgetEl, count = 80) => {
             
             if(elMax) elMax.textContent = maxTemp;
             if(elMin) elMin.textContent = minTemp;
-            
+
             // 🚨 [4. 날씨 애니메이션 발동 로직] 🚨
-            // 이 로직은 반드시 if (data.list...) 블록 안에, 
-            // 그리고 loadWeather() 함수 안에 있어야 합니다!
             const weatherWidget = document.getElementById('weather-widget');
             const animationLayer = weatherWidget ? weatherWidget.querySelector('.weather-animation-layer') : null;
             
@@ -139,7 +101,7 @@ const createRainDrops = (widgetEl, count = 80) => {
                 } 
                 else if (iconCode.startsWith('09') || iconCode.startsWith('10') || iconCode.startsWith('11') || iconCode.startsWith('5')) {
                     
-                    // 🚨 [통합된 빗방울 생성 로직] makeItRain 로직을 여기에 넣습니다.
+                    // 🚨 [통합된 빗방울 생성 로직]
                     if (!animationLayer.querySelector('.drop')) { // 빗방울이 없을 때만 생성
                         makeItRainJS(animationLayer);
                     }
@@ -163,8 +125,6 @@ const createRainDrops = (widgetEl, count = 80) => {
                     // 2. animDuration 후 클래스 제거 (애니메이션 자동 소멸)
                     setTimeout(() => {
                         weatherWidget.classList.remove(animClass);
-                        // animClass가 사라질 때, 빗방울은 그대로 둡니다.
-                        // (다음 rain 로드 시 재생성/제거됩니다.)
                     }, animDuration);
                 }
             } // 🚨 애니메이션 로직 끝
@@ -178,7 +138,7 @@ const createRainDrops = (widgetEl, count = 80) => {
 } // loadWeather() 함수 끝
 
 // ----------------------------------------------------
-// 🚨 [새로 추가] 순수 JS로 변환된 makeItRain 함수 🚨
+// 🚨 [추가] 순수 JS로 변환된 makeItRain 함수 (loadWeather 함수 밖에 위치) 🚨
 // ----------------------------------------------------
 
 /**
@@ -192,18 +152,14 @@ function makeItRainJS(targetLayer) {
     var increment = 0;
     var dropsHtml = "";
     
-    // 이 애니메이션은 front-row만 사용합니다.
+    // 이 애니메이션은 front-row만 사용하며, 빗방울을 100% 영역에 걸쳐 생성
     while (increment < 100) {
-        // random number between 98 and 1
         var randoHundo = (Math.floor(Math.random() * (98 - 1 + 1) + 1));
-        // random number between 5 and 2
         var randoFiver = (Math.floor(Math.random() * (5 - 2 + 1) + 2));
         
-        // increment
         increment += randoFiver;
         
-        // add in a new raindrop with various randomizations
-        // backDrops 로직은 복잡해지므로 제외하고, front-row 로직만 사용합니다.
+        // 빗방울 생성. animation-delay와 duration은 인라인 스타일로 설정
         dropsHtml += '<div class="drop" style="left: ' + increment + '%; bottom: ' + (randoFiver + randoFiver - 1 + 100) + '%; animation-delay: 0.' + randoHundo + 's; animation-duration: 0.5' + randoHundo + 's;"><div class="stem"></div><div class="splat"></div></div>';
     }
 
