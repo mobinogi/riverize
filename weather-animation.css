@@ -27,7 +27,7 @@
 /* 개별 빗방울 (Drop) */
 .drop {
   position: absolute;
-  top: -200px; /* 🚨 위젯 상단 밖(200px 위)에서 시작 */
+  top: -20vh; /* 🚨 위젯 상단 밖(200px 위)에서 시작 */
   width: 1px; /* 🚨 [핵심 수정] 빗줄기 너비를 1px로 최적화 */
   height: 120px;
   pointer-events: none;
@@ -36,8 +36,8 @@
 @keyframes drop {
   0% { transform: translateY(0); }
   /* 🚨 [최종 수정] 위젯 하단 밖으로 사라지도록 400px 하강 */
-  75% { transform: translateY(400px); } 
-  100% { transform: translateY(400px); }
+  75% { transform: translateY(120vh); } 
+  100% { transform: translateY(120vh); }
 }
 
 /* 빗방울 몸통 (Stem) */
