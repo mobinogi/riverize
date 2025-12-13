@@ -282,8 +282,8 @@ function toggleSidebar() {
             body.classList.remove('sidebar-collapsed');
             
             if (ticker) {
-                ticker.style.left = '256px'; // 사이드바 너비(16rem)
-                ticker.style.width = 'calc(100% - 256px)';
+                ticker.style.left = '16rem'; 
+                ticker.style.width = 'calc(100% - 16rem)';
             }
         }
     }
