@@ -2208,7 +2208,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
       <div id="news-ticker" class="news-ticker-wrap hidden">
     
-    <div class="ticker-label relative cursor-pointer hover:bg-red-600 transition-colors select-none" onclick="toggleNewsSettings(event)">
+    <div class="ticker-label relative cursor-pointer hover:bg-red-600 transition-colors select-none" z-[10000] border-l border-red-800 onclick="toggleNewsSettings(event)">
         
         <span class="animate-pulse font-black mr-2 tracking-wider">LIVE</span>
         <span id="current-news-cate" class="font-bold">부산·강서</span>
@@ -2283,5 +2283,6 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
