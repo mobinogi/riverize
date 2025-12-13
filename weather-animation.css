@@ -87,61 +87,64 @@
     opacity: 0.9; /* 구름이 잘 보이도록 불투명도 높임 */
 }
 
-/* 개별 구름 컨테이너 (이것이 움직입니다) */
 .cloud-container {
     position: absolute;
-    top: 50%; /* 위젯 중앙 기준 */
-    left: 50%;
-    transform: translate(-50%, -50%);
     z-index: 10;
-    opacity: 0.8;
-    animation: cloud-drift-new 10s linear infinite alternate; /* 더 느리고 부드럽게 움직임 */
+    opacity: 0; /* 🚨 [핵심] 기본 투명도 0으로 설정 */
 }
 
-/* 구름 키프레임 (수평 이동) */
-@keyframes cloud-drift-new {
-    0% { transform: translate(-60%, -50%); }
-    100% { transform: translate(-40%, -50%); }
+/* ---------------------------------------------------- */
+/* 3. 구름 애니메이션 (Clouds) - 최종 위젯 최적화 */
+/* ---------------------------------------------------- */
+
+.clouds-active .weather-animation-layer {
+    opacity: 0.9;
+    /* 기존의 배경 패턴 방식은 제거합니다. */
 }
 
-/* 실제 구름 모양 (흰색 원형 덩어리들) */
-.cloud {
-    width: 200px; /* 구름 크기 (위젯에 맞게 적당히 크게) */
-    height: 60px;
-    background: #fff;
-    border-radius: 200px;
-    position: relative;
-    
-    /* 그림자 효과로 입체감을 줍니다 (선택 사항) */
-    box-shadow: 
-        0 8px 8px rgba(0, 0, 0, 0.1), 
-        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.cloud:after, .cloud:before {
-    content: '';
+/* ------------------ 구름 1 (대형) ------------------ */
+.cloud-1 {
     position: absolute;
-    background: #fff;
-    border-radius: 100px;
-    z-index: 10;
+    top: 50%;
+    left: 50%;
+    transform: translate(-150%, -150%); /* 🚨 [시작] 위젯 좌상단 밖으로 더 멀리 이동 */
+    animation: cloud-in-1 10s ease-out forwards; /* 🚨 [변경] 한 번만 실행하고 멈춤 (forwards) */
 }
 
-/* 구름 좌측 덩어리 */
-.cloud:after {
-    width: 100px;
-    height: 100px;
-    top: -50px;
-    left: 10px;
-    transform: rotate(30deg);
+/* ------------------ 구름 2 (소형) ------------------ */
+.cloud-2 {
+    position: absolute;
+    top: 60%;
+    right: 50%;
+    transform: translate(150%, -150%); /* 🚨 [시작] 위젯 우상단 밖으로 더 멀리 이동 */
+    opacity: 0.6;
+    animation: cloud-in-2 10s ease-out forwards; /* 🚨 [변경] 한 번만 실행하고 멈춤 (forwards) */
 }
 
-/* 구름 우측 덩어리 */
-.cloud:before {
-    width: 140px;
-    height: 140px;
-    top: -70px;
-    right: 20px;
-    transform: rotate(50deg);
+/* 🚨 [키프레임 1] 사선 이동 + 페이드 인 */
+@keyframes cloud-in-1 {
+    0% { 
+        transform: translate(-150%, -150%); /* 시작 위치 (화면 밖) */
+        opacity: 0; /* 시작 투명도 0 */
+    }
+    10% { opacity: 0.5; } /* 빠르게 불투명도 증가 */
+    100% { 
+        transform: translate(-20%, -30%); /* 최종 위치 (위젯 중앙) */
+        opacity: 1; /* 최종 투명도 1 */
+    } 
+}
+
+/* 🚨 [키프레임 2] 사선 이동 + 페이드 인 */
+@keyframes cloud-in-2 {
+    0% { 
+        transform: translate(150%, -150%); /* 시작 위치 (화면 밖) */
+        opacity: 0; 
+    }
+    10% { opacity: 0.3; } /* 빠르게 불투명도 증가 */
+    100% { 
+        transform: translate(30%, -20%); /* 최종 위치 (위젯 중앙) */
+        opacity: 0.6; /* 구름 2는 약간 흐리게 유지 */
+    }
 }
 
 /* 4. 눈 애니메이션 (Snow Active) */
