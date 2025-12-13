@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전체 화면 빗방울 애니메이션 테스트</title>
+    
+    <link rel="stylesheet" href="weather-animation.css">
+    
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* 화면 스크롤 방지 */
+            background-color: #111119; /* 어두운 배경 */
+            color: white;
+            font-family: Arial, sans-serif;
+            position: relative; /* 자식인 .weather-animation-layer의 absolute 기준이 됨 */
+        }
+        
+        /* 🚨 전체 화면을 덮는 레이어 (weather-animation.css의 기본 레이어 스타일을 상속받음) */
+        .weather-animation-layer {
+            /* 이 스타일은 weather-animation.css에 정의되어 있습니다. */
+        }
+        
+        .test-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100; 
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="rain-active">
+    
+    <div class="test-info">
+        <h2>☔ 전체 화면 빗방울 테스트</h2>
+        <p>화면 전체에 얇은 빗줄기가 내려야 합니다.</p>
+    </div>
+    
+    <div class="weather-animation-layer"></div>
+    
+    <script src="weather.js"></script>
+    <script>
+        // makeItRainJS 함수는 weather.js 파일에 정의되어 있습니다.
+        document.addEventListener('DOMContentLoaded', () => {
+            const animationLayer = document.querySelector('.weather-animation-layer');
+            
+            if (typeof makeItRainJS === 'function') {
+                // 전체 화면 테스트이므로 빗방울 개수를 늘립니다.
+                makeItRainJS(animationLayer); 
+            } else {
+                console.error("makeItRainJS 함수를 찾을 수 없습니다. weather.js 로드 확인 필요.");
+            }
+        });
+    </script>
+</body>
+</html>
