@@ -1,7 +1,7 @@
-/* weather-animation.css (새로 생성할 파일) */
+/* weather-animation.css - 최종 버전 (빗방울 애니메이션 통합) */
 
 /* ---------------------------------------------------- */
-/* 1. 기본 설정 (모든 애니메이션에 공통 적용) */
+/* 1. 기본 레이어 설정 (모든 애니메이션에 공통 적용) */
 /* ---------------------------------------------------- */
 .weather-animation-layer {
     position: absolute;
@@ -9,87 +9,123 @@
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden; /* 애니메이션이 튀어나가는 것을 막음 */
+    overflow: hidden; 
     z-index: 5; /* 날씨 텍스트보다 뒤에 깔리도록 */
-    opacity: 1.0;
-    transition: opacity 0.5s ease-in-out; /* 부드럽게 나타나고 사라지게 */
+    opacity: 0; /* 🚨 평소에는 숨김 (0으로 복구) */
+    transition: opacity 0.5s ease-in-out; 
+    pointer-events: none; /* 애니메이션이 마우스 클릭을 방해하지 않도록 */
 }
 
 /* ---------------------------------------------------- */
-/* 2. 비 애니메이션 (Rain) */
+/* 2. 비 애니메이션 (Rain) - 사장님 제공 코드 통합 */
 /* ---------------------------------------------------- */
 
-/* weather-animation.css - 2. 비 애니메이션 (Rain) */
+.rain-active .weather-animation-layer {
+  opacity: 1.0; /* 활성화되면 선명하게 보이게 (1.0으로 설정) */
+}
+
+/* 개별 빗방울 (Drop) */
 .drop {
   position: absolute;
   bottom: 100%;
   width: 15px;
   height: 120px;
   pointer-events: none;
-  /* animation: drop 0.5s linear infinite; 🚨 이 줄을 제거합니다! */
+  /* animation 속성은 JS에서 인라인 스타일로 넣어줍니다. */
 }
 
-@keyframes rain-fall {
-    from { background-position: 0 0; }
-    to { background-position: 0 100px; } /* 빗방울이 아래로 100px 움직임 */
+@keyframes drop {
+  0% { transform: translateY(0vh); }
+  75% { transform: translateY(120px); } /* 빗방울 높이만큼 빠르게 이동 */
+  100% { transform: translateY(120px); }
+}
+
+/* 빗방울 몸통 (Stem) */
+.stem {
+  width: 1px;
+  height: 60%;
+  margin-left: 7px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); /* 투명도 조정 */
+  animation: stem 0.5s linear infinite;
+}
+
+@keyframes stem {
+  0% { opacity: 1; }
+  65% { opacity: 1; }
+  75% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* 물 튀김 (Splat) */
+.splat {
+  width: 15px;
+  height: 10px;
+  border-top: 2px dotted rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  opacity: 1;
+  transform: scale(0);
+  animation: splat 0.5s linear infinite;
+  display: block; /* 빗방울 내에 항상 존재하지만, 애니메이션에 의해 제어됨 */
+}
+
+@keyframes splat {
+  0% { opacity: 1; transform: scale(0); }
+  80% { opacity: 1; transform: scale(0); }
+  90% { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
 }
 
 /* ---------------------------------------------------- */
-/* 3. 구름 애니메이션 (Clouds) */
+/* 3. 구름 애니메이션 (Clouds) - 이미지 없음 버전 */
 /* ---------------------------------------------------- */
 
-/* weather-animation.css - 3. 구름 애니메이션 (Clouds) */
 .clouds-active .weather-animation-layer {
-    opacity: 0.3; /* 구름은 배경이므로 투명하게 */
-    /* 🚨 [수정] URL 대신 연한 색 그라데이션으로 구름 패턴 대체 */
+    opacity: 0.3; 
     background-image: linear-gradient(to right, rgba(255,255,255,0.05) 50%, transparent 50%),
                       linear-gradient(to bottom, rgba(255,255,255,0.05) 50%, transparent 50%);
     background-size: 200px 200px;
     background-repeat: repeat;
-    animation: cloud-drift 8s linear infinite alternate; /* 천천히 양옆으로 이동 */
+    animation: cloud-drift 8s linear infinite alternate; 
 }
-/* @keyframes cloud-drift는 이미 정의된 것을 사용합니다. */
 
 @keyframes cloud-drift {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 100% 0%; } /* 오른쪽으로 이동 */
+    0% { background-position: -50px 0; }
+    100% { background-position: 50px 0; }
 }
 
 /* ---------------------------------------------------- */
-/* 4. 눈 애니메이션 (Snow Active) */
+/* 4. 눈 애니메이션 (Snow Active) - CSS 패턴 버전 */
 /* ---------------------------------------------------- */
 
 .snow-active .weather-animation-layer {
-    opacity: 0.7; /* 눈은 흰색이므로 배경이 어두워도 잘 보이게 */
+    opacity: 0.7; 
     background-image: 
-        /* 부드러운 눈송이 패턴 (흰색) */
         radial-gradient(circle at 50% 50%, #ffffff 1px, transparent 1px),
         radial-gradient(circle at 50% 50%, #dddddd 1px, transparent 1px);
-    background-size: 10px 10px; /* 눈송이 크기 */
-    animation: snow-drift 5s linear infinite; /* 천천히 내려옴 */
+    background-size: 10px 10px; 
+    animation: snow-drift 5s linear infinite; 
 }
 
 @keyframes snow-drift {
     0% { background-position: 0 0; }
-    100% { background-position: 20px 50px; } /* 오른쪽 아래로 천천히 흔들리며 떨어짐 */
+    100% { background-position: 20px 50px; } 
 }
 
 /* ---------------------------------------------------- */
-/* 5. 맑음 애니메이션 (Sun Active) */
+/* 5. 맑음 애니메이션 (Sun Active) - CSS 그라데이션 버전 */
 /* ---------------------------------------------------- */
 
 .sun-active .weather-animation-layer {
     opacity: 0.2; 
-    /* 따뜻하고 은은한 노란색/주황색 방사형 그라데이션 */
     background: radial-gradient(circle at 50% 50%, 
                 rgba(255, 204, 0, 0.4) 0%, 
                 rgba(255, 140, 0, 0.2) 20%, 
                 transparent 70%);
-    background-size: 100% 100%; /* 위젯 전체를 덮도록 */
-    animation: sun-pulse 4s ease-in-out infinite alternate; /* 4초 동안 부드럽게 맥동 */
+    background-size: 100% 100%; 
+    animation: sun-pulse 4s ease-in-out infinite alternate; 
 }
 
 @keyframes sun-pulse {
     0% { transform: scale(1); opacity: 0.15; }
-    100% { transform: scale(1.05); opacity: 0.25; } /* 크기를 살짝 키우며 투명도도 높여 빛이 번지는 효과 */
+    100% { transform: scale(1.05); opacity: 0.25; } 
 }
