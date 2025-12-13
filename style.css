@@ -565,11 +565,7 @@ body.sidebar-collapsed #main-content-wrapper {
     .news-ticker-wrap {
         display: flex !important; 
         
-        /* 사이드바(256px) 옆에 딱 붙이기 */
-        left: 16rem; 
-        /* 틈새 방지용 1px 겹치기 */
-        margin-left: 0px;
-        width: calc(100% - 16rem) !important;
+        
     }
 }
 
