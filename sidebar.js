@@ -222,68 +222,61 @@ function cleanupOverlays() {
  * - PC: 밀어내기 방식 (.closed 토글)
  * - 모바일: 덮어쓰기 방식 (.open 토글 + 백드롭)
  */
+/* sidebar.js - toggleSidebar 함수 (최종_확정.js) */
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const handle = document.getElementById('sidebar-handle'); // 모바일용 손잡이
+    const handle = document.getElementById('sidebar-handle'); 
     const body = document.body;
-
-    // ★ 뉴스 티커 가져오기
+    
+    // ★ 뉴스 티커 요소 가져오기
     const ticker = document.getElementById('news-ticker');
-   
+
     if (!sidebar) return;
 
     // 현재 화면 너비 확인 (768px 미만이면 모바일)
     const isMobile = window.innerWidth < 768;
 
     if (isMobile) {
-        // 📱 [모바일 로직] 평소에 닫혀있음 -> '.open' 클래스로 염
+        // 📱 [모바일] 기존 로직 유지 (티커 건드리지 않음)
         const isOpen = sidebar.classList.contains('open');
-
         if (isOpen) {
-            // 닫기
             sidebar.classList.remove('open');
-            // 백드롭 숨기기
             if (backdrop) {
                 backdrop.classList.remove('opacity-100');
                 setTimeout(() => backdrop.classList.add('hidden'), 300);
             }
-            // 손잡이 보이기
             if (handle) handle.style.display = 'flex';
         } else {
-            // 열기
             sidebar.classList.add('open');
-            // 백드롭 보이기
             if (backdrop) {
                 backdrop.classList.remove('hidden');
                 setTimeout(() => backdrop.classList.add('opacity-100'), 10);
             }
-            // 손잡이 숨기기
             if (handle) handle.style.display = 'none';
         }
 
     } else {
-        // 💻 [PC] 고무줄 방식 적용!
+        // 💻 [PC] 너비(Width) 직접 제어 방식
         sidebar.classList.toggle('closed');
         const isClosed = sidebar.classList.contains('closed');
 
         if (isClosed) {
-            // [닫힘] 왼쪽 0으로 붙임 -> 오른쪽이 벽에 박혀있어서 쫙 늘어남
+            // [닫힘] 사이드바 사라짐 -> 티커가 왼쪽 구석(0)부터 끝(100%)까지 차지
             body.classList.add('sidebar-collapsed');
             
             if (ticker) {
-                ticker.style.right = '0px';   // ★ 오른쪽 벽에 못 박기
-                ticker.style.width = 'auto';  // ★ 너비 계산 금지 (자동)
-                ticker.style.left = '0px';    // 왼쪽 벽에 붙이기
+                ticker.style.left = '0px';      // 왼쪽 벽에 딱 붙임
+                ticker.style.width = '100%';    // 너비를 화면 전체로 늘림
             }
+
         } else {
-            // [열림] 왼쪽 16rem으로 밈 -> 오른쪽은 벽에 박혀있어서 줄어듦
+            // [열림] 사이드바 나옴 -> 티커가 16rem만큼 비키고 나머지만 차지
             body.classList.remove('sidebar-collapsed');
             
             if (ticker) {
-                ticker.style.right = '0px';   // ★ 오른쪽 벽에 못 박기
-                ticker.style.width = 'auto';  // ★ 너비 계산 금지 (자동)
-                ticker.style.left = '16rem';  // 사이드바만큼 비켜주기
+                ticker.style.left = '16rem';              // 사이드바 너비만큼 오른쪽으로 밀어냄
+                ticker.style.width = 'calc(100% - 16rem)'; // 전체에서 사이드바만큼 뺀 나머지만 가짐
             }
         }
     }
