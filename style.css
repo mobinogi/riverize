@@ -670,3 +670,8 @@ body.sidebar-collapsed #main-content-wrapper {
 #news-ticker {
     transition: left 0.3s ease-in-out, width 0.3s ease-in-out;
 }
+
+/* 하단 팝업 2종을 티커보다 1px 더 아래로 내립니다. */
+#nav-confirm-modal, #delete-confirm-modal {
+    bottom: -1px !important; 
+}
