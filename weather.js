@@ -67,6 +67,42 @@ async function loadWeather() {
                 minTemp = Math.round(Math.min(...todayForecasts.map(item => item.main.temp_min)));
             }
 
+            // 🚨 [새로운 함수 선언] 빗방울을 생성하고 배치하는 함수
+const createRainDrops = (widgetEl, count = 80) => {
+    // 기존 빗방울 제거 (중복 생성 방지)
+    widgetEl.querySelectorAll('.drop').forEach(d => d.remove());
+    
+    // 위젯의 너비를 얻습니다.
+    const widgetWidth = widgetEl.clientWidth;
+    
+    for (let i = 0; i < count; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'drop';
+
+        const stem = document.createElement('div');
+        stem.className = 'stem';
+
+        const splat = document.createElement('div');
+        splat.className = 'splat';
+
+        drop.appendChild(stem);
+        drop.appendChild(splat);
+
+        // 개별 빗방울의 위치와 애니메이션 딜레이를 랜덤으로 설정
+        const x = Math.floor(Math.random() * widgetWidth); 
+        const delay = Math.random() * 5; // 0~5초 딜레이
+
+        drop.style.left = `${x}px`;
+        drop.style.animationDelay = `${delay}s`;
+        
+        // 빗방울이 화면 밖에서 시작하도록 설정
+        drop.style.bottom = '100%'; 
+
+        widgetEl.querySelector('.weather-animation-layer').appendChild(drop);
+    }
+};
+             
+            
             // (3) 화면 업데이트
             const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
 
@@ -77,7 +113,7 @@ async function loadWeather() {
             
             if(elMax) elMax.textContent = maxTemp;
             if(elMin) elMin.textContent = minTemp;
-
+            
             // 🚨 [4. 날씨 애니메이션 발동 로직] 🚨
             // 이 로직은 반드시 if (data.list...) 블록 안에, 
             // 그리고 loadWeather() 함수 안에 있어야 합니다!
@@ -95,9 +131,11 @@ async function loadWeather() {
                     animDuration = 4000;
                 } 
                 else if (iconCode.startsWith('09') || iconCode.startsWith('10') || iconCode.startsWith('11') || iconCode.startsWith('5')) {
-                    animClass = 'rain-active';
-                    animDuration = 3000;
-                } 
+        // 비 애니메이션일 때만 빗방울 생성 함수 호출!
+        createRainDrops(weatherWidget, 80); 
+        animClass = 'rain-active';
+        animDuration = 3000;
+    }
                 else if (iconCode.startsWith('13') || iconCode.startsWith('6')) {
                     animClass = 'snow-active';
                     animDuration = 3000;
@@ -114,6 +152,7 @@ async function loadWeather() {
                     // 2. animDuration 후 클래스 제거
                     setTimeout(() => {
                         weatherWidget.classList.remove(animClass);
+                        weatherWidget.querySelectorAll('.drop').forEach(d => d.remove());
                     }, animDuration);
                 }
             } // 🚨 애니메이션 로직 끝
