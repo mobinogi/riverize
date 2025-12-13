@@ -263,27 +263,27 @@ function toggleSidebar() {
         }
 
     } else {
-        // 💻 [PC 로직] 평소에 열려있음 -> '.closed' 클래스로 닫음
+        // 💻 [PC] 고무줄 방식 적용!
         sidebar.classList.toggle('closed');
-
-        // 사이드바가 '닫혔는지' 확인
         const isClosed = sidebar.classList.contains('closed');
 
         if (isClosed) {
-            // [닫힘] 본문 넓히고, 티커도 꽉 채우기
+            // [닫힘] 왼쪽 0으로 붙임 -> 오른쪽이 벽에 박혀있어서 쫙 늘어남
             body.classList.add('sidebar-collapsed');
             
             if (ticker) {
-                ticker.style.left = '0px';
-                ticker.style.width = '100%';
+                ticker.style.right = '0px';   // ★ 오른쪽 벽에 못 박기
+                ticker.style.width = 'auto';  // ★ 너비 계산 금지 (자동)
+                ticker.style.left = '0px';    // 왼쪽 벽에 붙이기
             }
         } else {
-            // [열림] 본문 좁히고, 티커도 사이드바만큼 비켜주기
+            // [열림] 왼쪽 16rem으로 밈 -> 오른쪽은 벽에 박혀있어서 줄어듦
             body.classList.remove('sidebar-collapsed');
             
             if (ticker) {
-                ticker.style.left = '16rem'; 
-                ticker.style.width = 'calc(100% - 16rem)';
+                ticker.style.right = '0px';   // ★ 오른쪽 벽에 못 박기
+                ticker.style.width = 'auto';  // ★ 너비 계산 금지 (자동)
+                ticker.style.left = '16rem';  // 사이드바만큼 비켜주기
             }
         }
     }
