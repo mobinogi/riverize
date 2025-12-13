@@ -47,3 +47,42 @@
     0% { background-position: 0% 0%; }
     100% { background-position: 100% 0%; } /* 오른쪽으로 이동 */
 }
+
+/* ---------------------------------------------------- */
+/* 4. 눈 애니메이션 (Snow Active) */
+/* ---------------------------------------------------- */
+
+.snow-active .weather-animation-layer {
+    opacity: 0.7; /* 눈은 흰색이므로 배경이 어두워도 잘 보이게 */
+    background-image: 
+        /* 부드러운 눈송이 패턴 (흰색) */
+        radial-gradient(circle at 50% 50%, #ffffff 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, #dddddd 1px, transparent 1px);
+    background-size: 10px 10px; /* 눈송이 크기 */
+    animation: snow-drift 5s linear infinite; /* 천천히 내려옴 */
+}
+
+@keyframes snow-drift {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 50px; } /* 오른쪽 아래로 천천히 흔들리며 떨어짐 */
+}
+
+/* ---------------------------------------------------- */
+/* 5. 맑음 애니메이션 (Sun Active) */
+/* ---------------------------------------------------- */
+
+.sun-active .weather-animation-layer {
+    opacity: 0.2; 
+    /* 따뜻하고 은은한 노란색/주황색 방사형 그라데이션 */
+    background: radial-gradient(circle at 50% 50%, 
+                rgba(255, 204, 0, 0.4) 0%, 
+                rgba(255, 140, 0, 0.2) 20%, 
+                transparent 70%);
+    background-size: 100% 100%; /* 위젯 전체를 덮도록 */
+    animation: sun-pulse 4s ease-in-out infinite alternate; /* 4초 동안 부드럽게 맥동 */
+}
+
+@keyframes sun-pulse {
+    0% { transform: scale(1); opacity: 0.15; }
+    100% { transform: scale(1.05); opacity: 0.25; } /* 크기를 살짝 키우며 투명도도 높여 빛이 번지는 효과 */
+}
