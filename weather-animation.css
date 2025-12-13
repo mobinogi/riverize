@@ -19,11 +19,15 @@
 /* 2. 비 애니메이션 (Rain) */
 /* ---------------------------------------------------- */
 
+/* weather-animation.css - 2. 비 애니메이션 (Rain) */
 .rain-active .weather-animation-layer {
-    opacity: 1; /* 활성화되면 불투명하게 */
-    background: url('data:image/png;base64, ... [빗방울 이미지 Base64 인코딩] ...');
-    background-size: 50px 100px; /* 빗방울 크기 */
-    animation: rain-fall 0.8s linear infinite; /* 빠르게 떨어짐 */
+    opacity: 1.0; 
+    /* 🚨 [수정] URL 대신 CSS 그라데이션으로 빗줄기 패턴 생성 */
+    background-image: 
+        radial-gradient(circle at 50% 50%, #4f94d4 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, #76aee4 1px, transparent 1px);
+    background-size: 5px 25px; /* 빗줄기가 길게 보이도록 */
+    animation: rain-fall 0.5s linear infinite; 
 }
 
 @keyframes rain-fall {
@@ -35,13 +39,17 @@
 /* 3. 구름 애니메이션 (Clouds) */
 /* ---------------------------------------------------- */
 
+/* weather-animation.css - 3. 구름 애니메이션 (Clouds) */
 .clouds-active .weather-animation-layer {
     opacity: 0.3; /* 구름은 배경이므로 투명하게 */
-    /* 구름 이미지 사용: 작고 밝은 구름 패턴 이미지 */
-    background: url('data:image/png;base64, ... [작은 구름 패턴 이미지] ...');
-    background-size: 200% 200%; /* 위젯보다 2배 크게 잡아 움직이게 함 */
+    /* 🚨 [수정] URL 대신 연한 색 그라데이션으로 구름 패턴 대체 */
+    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 50%, transparent 50%),
+                      linear-gradient(to bottom, rgba(255,255,255,0.05) 50%, transparent 50%);
+    background-size: 200px 200px;
+    background-repeat: repeat;
     animation: cloud-drift 8s linear infinite alternate; /* 천천히 양옆으로 이동 */
 }
+/* @keyframes cloud-drift는 이미 정의된 것을 사용합니다. */
 
 @keyframes cloud-drift {
     0% { background-position: 0% 0%; }
