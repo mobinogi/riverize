@@ -147,8 +147,6 @@ async function loadWeather() {
  */
 function makeItRainJS(targetLayer) {
     // 기존 내용 삭제
-    console.log("💧 makeItRainJS: 빗방울 생성 시작.");
-    
     targetLayer.innerHTML = ''; 
 
     var increment = 0;
@@ -166,9 +164,6 @@ function makeItRainJS(targetLayer) {
     }
 
     targetLayer.innerHTML = dropsHtml; 
-
-    // 🚨 [로그 추가] 함수 완료 및 생성된 빗방울 수 확인
-    console.log(`💧 makeItRainJS: 빗방울 ${dropsHtml.split('drop').length - 1}개 생성 완료.`);
 }
 
 
