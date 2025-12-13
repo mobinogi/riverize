@@ -27,8 +27,9 @@
 /* 개별 빗방울 (Drop) */
 .drop {
   position: absolute;
+  top: -200px;
   bottom: 100%;
-  width: 15px;
+  width: 1px;
   height: 120px;
   pointer-events: none;
   /* animation 속성은 JS에서 인라인 스타일로 넣어줍니다. */
@@ -44,7 +45,7 @@
 .stem {
   width: 1px;
   height: 60%;
-  margin-left: 7px;
+  
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.8)); /* 투명도 조정 */
   animation: stem 0.5s linear infinite;
 }
