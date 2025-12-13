@@ -416,7 +416,7 @@
 #sidebar {
     /* 부드러운 이동 애니메이션 */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+    height: calc(100% + 1px) !important;
     /* 텍스트 줄바꿈 방지 및 너비 고정 */
     min-width: 16rem; 
     width: 16rem;
@@ -525,8 +525,9 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 1. 전체 틀 */
 .news-ticker-wrap {
     position: fixed !important;
-    bottom: 0 !important;
-    height: 40px !important; /* 높이 40px 고정 */
+    bottom: -1px !important; 
+    
+    height: 41px !important; /* 1px 내렸으니 높이도 1px 키워줍니다 (40 -> 41) */
     
     /* overflow: visible 유지 (팝업창 위해) */
     overflow: visible !important; 
