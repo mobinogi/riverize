@@ -564,7 +564,9 @@ body.sidebar-collapsed #main-content-wrapper {
 @media (min-width: 768px) {
     .news-ticker-wrap {
         display: flex !important; 
+        width: calc(100% - 16rem); 
         
+        margin-left: 0px;
         
     }
 }
