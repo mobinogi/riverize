@@ -153,7 +153,7 @@ function makeItRainJS(targetLayer) {
     var dropsHtml = "";
     
     // 이 애니메이션은 front-row만 사용하며, 빗방울을 100% 영역에 걸쳐 생성
-    while (increment < 100) {
+    while (increment < 400) {
         var randoHundo = (Math.floor(Math.random() * (98 - 1 + 1) + 1));
         var randoFiver = (Math.floor(Math.random() * (5 - 2 + 1) + 2));
         
