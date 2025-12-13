@@ -94,3 +94,40 @@ function animateValue(obj, start, end, duration) {
     };
     window.requestAnimationFrame(step);
 }
+
+// 🚨 [신규] 4. 날씨 애니메이션 발동 로직 🚨
+const weatherWidget = document.getElementById('weather-widget'); // 날씨 위젯의 ID를 'weather-widget'이라고 가정합니다.
+if (weatherWidget) {
+    // 기존의 애니메이션 클래스를 모두 제거 (중복 재생 방지)
+    weatherWidget.classList.remove('rain-active', 'snow-active', 'clouds-active');
+    
+    let animClass = null;
+    let animDuration = 4000; // 4초 후 사라지게 설정 (ms)
+
+    // 날씨 설명(desc) 또는 아이콘 코드(iconCode)를 기반으로 애니메이션 결정
+    // iconCode (2xx:비, 5xx:비, 6xx:눈, 80x:구름)
+    
+    if (iconCode.startsWith('09') || iconCode.startsWith('10') || iconCode.startsWith('11') || iconCode.startsWith('5')) {
+        // 비/소나기/천둥번개
+        animClass = 'rain-active';
+    } else if (iconCode.startsWith('13') || iconCode.startsWith('6')) {
+        // 눈/진눈깨비
+        animClass = 'snow-active';
+    } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04') || desc.includes('구름')) {
+        // 구름 조금, 구름 많음, 흐림
+        animClass = 'clouds-active';
+    }
+    
+    if (animClass) {
+        // 1. 애니메이션 클래스 추가 (애니메이션 시작)
+        weatherWidget.classList.add(animClass);
+        
+        // 2. animDuration 후 클래스 제거 (애니메이션 자동 소멸)
+        setTimeout(() => {
+            weatherWidget.classList.remove(animClass);
+        }, animDuration);
+    }
+}
+// 🚨 [삽입 종료]
+            
+console.log(`🌦️ 날씨 로드 완료: ${temp}°C, ${desc}`);
