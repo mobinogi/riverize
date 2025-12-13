@@ -45,7 +45,7 @@
   width: 1px;
   height: 60%;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); /* 흰색 복구 */
-  animation: stem 0.5s linear infinite;
+  animation: stem 2s linear infinite;
 }
 /* stem에 마진은 없습니다. */
 
