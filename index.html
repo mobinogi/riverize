@@ -19,6 +19,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="truck.css">
+  <link rel="stylesheet" href="weather-animation.css">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="sidebar.js"></script>
   <script src="oilprice.js"></script>
@@ -57,9 +58,13 @@
                class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
                 <span class="font-medium text-lg transition-colors">매출표</span>
             </a>
-        </nav></div> <div class="w-full px-2 pb-6 pt-4 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
+        </nav></div> 
+      <div class="w-full px-2 pb-6 pt-4 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
         
-        <div class="px-2 mb-4 group cursor-default select-none flex flex-col items-center">
+        <div id="weather-widget" 
+     class="px-2 mb-4 group cursor-default select-none flex flex-col items-center relative overflow-hidden">
+    
+    <div class="weather-animation-layer"></div>
             
             <div class="relative w-full flex justify-center mb-1">
                 <img id="weather-icon" src="" alt="Weather" 
@@ -2283,6 +2288,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
