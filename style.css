@@ -37,8 +37,8 @@
     padding: 0; 
     overscroll-behavior-y: none; 
 
-   /* padding-bottom: constant(safe-area-inset-bottom); /* 구형 iOS 지원 */
-   /* padding-bottom: env(safe-area-inset-bottom);      /* 최신 모바일 지원 */
+    padding-bottom: constant(safe-area-inset-bottom); /* 구형 iOS 지원 */
+    padding-bottom: env(safe-area-inset-bottom);      /* 최신 모바일 지원 */
      
     /* ✅ GmarketSans로 변경 */
     font-family: 'NexonLv1Gothic', sans-serif !important; 
