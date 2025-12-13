@@ -115,13 +115,16 @@ async function loadWeather() {
                 } 
                 else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04') || desc.includes('구름')) {
     
-    // 🚨 [핵심 추가] 구름일 때만 구름 요소를 한 번 생성
-    if (!animationLayer.querySelector('.cloud-container')) { 
-        animationLayer.innerHTML = '<div class="cloud-container"><div class="cloud"></div></div>';
+    // 🚨 [핵심 추가] 두 개의 구름 요소를 생성합니다.
+    if (!animationLayer.querySelector('.cloud-1')) { 
+        animationLayer.innerHTML = `
+            <div class="cloud-1"><div class="cloud"></div></div>
+            <div class="cloud-2"><div class="cloud"></div></div>
+        `;
     }
     
     animClass = 'clouds-active';
-    animDuration = 10000; // 구름은 길게 유지
+    animDuration = 10000;
 }
                 
                 if (animClass) {
