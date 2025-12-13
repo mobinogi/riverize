@@ -114,9 +114,15 @@ async function loadWeather() {
                     animDuration = 3000;
                 } 
                 else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04') || desc.includes('구름')) {
-                    animClass = 'clouds-active';
-                    animDuration = 3000;
-                }
+    
+    // 🚨 [핵심 추가] 구름일 때만 구름 요소를 한 번 생성
+    if (!animationLayer.querySelector('.cloud-container')) { 
+        animationLayer.innerHTML = '<div class="cloud-container"><div class="cloud"></div></div>';
+    }
+    
+    animClass = 'clouds-active';
+    animDuration = 10000; // 구름은 길게 유지
+}
                 
                 if (animClass) {
                     // 1. 애니메이션 클래스 추가 (애니메이션 시작)
