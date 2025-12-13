@@ -128,23 +128,18 @@
 .cloud-2 .cloud:before { width: 45px; height: 45px; top: -20px; right: 5px; }
 /* ------------------ 누락된 구름 모양 CSS 추가 끝 ------------------ */
 
-/* ------------------ 구름 1 (대형) ------------------ */
-.cloud-1 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-150%, -150%); /* 🚨 [시작] 위젯 좌상단 밖으로 더 멀리 이동 */
-    animation: cloud-in-1 10s ease-out forwards; /* 🚨 [변경] 한 번만 실행하고 멈춤 (forwards) */
+/* 🚨 [핵심 수정] 덩어리 크기 및 위치 조정 (Cloud 2를 비대칭으로 만듦) */
+.cloud-2 .cloud:after { 
+    width: 45px; 
+    height: 45px; 
+    top: -20px; 
+    left: 15px; /* 좌측 덩어리를 더 중앙으로 이동 */
 }
-
-/* ------------------ 구름 2 (소형) ------------------ */
-.cloud-2 {
-    position: absolute;
-    top: 60%;
-    right: 50%;
-    transform: translate(150%, -150%); /* 🚨 [시작] 위젯 우상단 밖으로 더 멀리 이동 */
-    opacity: 0.6;
-    animation: cloud-in-2 10s ease-out forwards; /* 🚨 [변경] 한 번만 실행하고 멈춤 (forwards) */
+.cloud-2 .cloud:before { 
+    width: 30px; 
+    height: 30px; 
+    top: -10px; 
+    right: 5px; /* 우측 덩어리를 더 작게 만들고 위로 올림 */
 }
 
 /* 🚨 [키프레임 1] 사선 이동 + 페이드 인 */
