@@ -1,0 +1,123 @@
+/* weather-animation.css - 최종 통합 및 최적화 버전 */
+
+/* ---------------------------------------------------- */
+/* 1. 기본 레이어 설정 (모든 애니메이션에 공통 적용) */
+/* ---------------------------------------------------- */
+.weather-animation-layer {
+    position: absolute; 
+    top: 0;
+    left: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden !important; 
+    z-index: 99 !important; /* 🚨 [상향] 모든 요소 위에 보이도록 강제 상향 */
+    opacity: 0; 
+    transition: opacity 0.5s ease-in-out; 
+    pointer-events: none; 
+}
+
+/* ---------------------------------------------------- */
+/* 2. 비 애니메이션 (Rain) - CodeMyUI 기반 최적화 */
+/* ---------------------------------------------------- */
+
+.rain-active .weather-animation-layer {
+  opacity: 1.0 !important; /* 🚨 [강제 적용] 투명도 우선순위를 최상으로 높임 */
+}
+
+/* 개별 빗방울 (Drop) */
+.drop {
+  position: absolute;
+  top: -200px; /* 🚨 위젯 상단 밖(200px 위)에서 시작 */
+  width: 1px; /* 🚨 [핵심 수정] 빗줄기 너비를 1px로 최적화 */
+  height: 120px;
+  pointer-events: none;
+}
+
+@keyframes drop {
+  0% { transform: translateY(0); }
+  /* 🚨 [최종 수정] 위젯 하단 밖으로 사라지도록 400px 하강 */
+  75% { transform: translateY(400px); } 
+  100% { transform: translateY(400px); }
+}
+
+/* 빗방울 몸통 (Stem) */
+.stem {
+  width: 1px;
+  height: 60%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); /* 흰색 복구 */
+  animation: stem 0.5s linear infinite;
+}
+/* stem에 마진은 없습니다. */
+
+@keyframes stem {
+  0% { opacity: 1; }
+  65% { opacity: 1; }
+  75% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* 물 튀김 (Splat) */
+.splat {
+  width: 15px;
+  height: 10px;
+  border-top: 2px dotted rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  opacity: 1;
+  transform: scale(0);
+  animation: splat 0.5s linear infinite;
+  display: block; 
+}
+
+@keyframes splat {
+  0% { opacity: 1; transform: scale(0); }
+  80% { opacity: 1; transform: scale(0); }
+  90% { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* ---------------------------------------------------- */
+/* 3, 4, 5 섹션 (구름, 눈, 맑음) */
+/* ---------------------------------------------------- */
+
+/* 3. 구름 애니메이션 (Clouds) */
+.clouds-active .weather-animation-layer {
+    opacity: 0.3; 
+    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 50%, transparent 50%),
+                      linear-gradient(to bottom, rgba(255,255,255,0.05) 50%, transparent 50%);
+    background-size: 200px 200px;
+    background-repeat: repeat;
+    animation: cloud-drift 8s linear infinite alternate; 
+}
+@keyframes cloud-drift {
+    0% { background-position: -50px 0; }
+    100% { background-position: 50px 0; }
+}
+
+/* 4. 눈 애니메이션 (Snow Active) */
+.snow-active .weather-animation-layer {
+    opacity: 0.7; 
+    background-image: 
+        radial-gradient(circle at 50% 50%, #ffffff 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, #dddddd 1px, transparent 1px);
+    background-size: 10px 10px; 
+    animation: snow-drift 5s linear infinite; 
+}
+@keyframes snow-drift {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 50px; } 
+}
+
+/* 5. 맑음 애니메이션 (Sun Active) */
+.sun-active .weather-animation-layer {
+    opacity: 0.2; 
+    background: radial-gradient(circle at 50% 50%, 
+                rgba(255, 204, 0, 0.4) 0%, 
+                rgba(255, 140, 0, 0.2) 20%, 
+                transparent 70%);
+    background-size: 100% 100%; 
+    animation: sun-pulse 4s ease-in-out infinite alternate; 
+}
+@keyframes sun-pulse {
+    0% { transform: scale(1); opacity: 0.15; }
+    100% { transform: scale(1.05); opacity: 0.25; } 
+}
