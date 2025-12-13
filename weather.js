@@ -67,7 +67,10 @@ async function loadWeather() {
 
             // (3) 화면 업데이트
             const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
-
+            // 🚨 [새로운 로그 삽입] JS가 인식한 현재 날씨 코드와 설명을 확인합니다. 🚨
+console.log(`[ANIMATION CHECK] IconCode: ${iconCode}, Description: ${desc}`); 
+// 🚨 [새로운 로그 삽입] 어떤 애니메이션 클래스가 결정되었는지 확인합니다. 🚨
+console.log(`[ANIMATION CHECK] Chosen Class: ${animClass}`)
             animateValue(elTemp, 0, temp, 1000);
             if(elDesc) elDesc.textContent = desc;
             if(elIcon) elIcon.src = iconUrl;
