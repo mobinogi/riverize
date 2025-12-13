@@ -549,7 +549,7 @@ body.sidebar-collapsed #main-content-wrapper {
     box-shadow: 0 -4px 10px rgba(0,0,0,0.2); 
 
     display: flex;
-    align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
+    /*align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
     
     left: auto;
     width: auto;
@@ -560,7 +560,6 @@ body.sidebar-collapsed #main-content-wrapper {
 @media (min-width: 768px) {
     .news-ticker-wrap {
         display: flex !important; 
-        align-items: center;
         
         /* 사이드바(256px) 옆에 딱 붙이기 */
         left: 16rem; 
