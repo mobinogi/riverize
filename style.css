@@ -525,9 +525,9 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 1. 전체 틀 */
 .news-ticker-wrap {
     position: fixed !important;
-    bottom: -1px !important; 
+    bottom: 0px !important; 
     
-    height: 41px !important; /* 1px 내렸으니 높이도 1px 키워줍니다 (40 -> 41) */
+    height: 40px !important; /* 1px 내렸으니 높이도 1px 키워줍니다 (40 -> 41) */
     
     /* overflow: visible 유지 (팝업창 위해) */
     overflow: visible !important; 
