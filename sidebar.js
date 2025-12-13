@@ -227,7 +227,10 @@ function toggleSidebar() {
     const backdrop = document.getElementById('sidebar-backdrop');
     const handle = document.getElementById('sidebar-handle'); // 모바일용 손잡이
     const body = document.body;
-    
+
+    // ★ 뉴스 티커 가져오기
+    const ticker = document.getElementById('news-ticker');
+   
     if (!sidebar) return;
 
     // 현재 화면 너비 확인 (768px 미만이면 모바일)
@@ -262,12 +265,26 @@ function toggleSidebar() {
     } else {
         // 💻 [PC 로직] 평소에 열려있음 -> '.closed' 클래스로 닫음
         sidebar.classList.toggle('closed');
-        
-        // 메인 화면 넓이 조절 (body 클래스 토글)
-        if (sidebar.classList.contains('closed')) {
+
+        // 사이드바가 '닫혔는지' 확인
+        const isClosed = sidebar.classList.contains('closed');
+
+        if (isClosed) {
+            // [닫힘] 본문 넓히고, 티커도 꽉 채우기
             body.classList.add('sidebar-collapsed');
+            
+            if (ticker) {
+                ticker.style.left = '0px';
+                ticker.style.width = '100%';
+            }
         } else {
+            // [열림] 본문 좁히고, 티커도 사이드바만큼 비켜주기
             body.classList.remove('sidebar-collapsed');
+            
+            if (ticker) {
+                ticker.style.left = '256px'; // 사이드바 너비(16rem)
+                ticker.style.width = 'calc(100% - 256px)';
+            }
         }
     }
 }
