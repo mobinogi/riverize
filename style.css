@@ -550,7 +550,7 @@ body.sidebar-collapsed #main-content-wrapper {
     
     /* 2. 혹시 모를 내부 여백도 0으로 강제 초기화 */
     padding: 0 !important;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.2); 
+    box-shadow: none !important;
 
     display: flex;
     /*align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
