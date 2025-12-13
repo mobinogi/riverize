@@ -32,6 +32,8 @@ async function loadWeather() {
     
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric&lang=kr`;
 
+    let temp = 0;
+    
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`날씨 API 오류: ${response.status}`);
@@ -40,7 +42,7 @@ async function loadWeather() {
         if (data.list && data.list.length > 0) {
             // (1) 현재 날씨
             const current = data.list[0];
-            const temp = Math.round(current.main.temp);
+            temp = Math.round(current.main.temp);
             
             // 설명 교정 (온흐림 -> 흐림)
             let desc = current.weather[0].description;
@@ -142,3 +144,9 @@ else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.star
 // 🚨 [삽입 종료]
             
 console.log(`🌦️ 날씨 로드 완료: ${temp}°C, ${desc}`);
+}
+
+} catch (e) {
+        console.error("날씨 로드 실패:", e);
+    }
+}
