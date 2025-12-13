@@ -20,14 +20,13 @@
 /* ---------------------------------------------------- */
 
 /* weather-animation.css - 2. 비 애니메이션 (Rain) */
-.rain-active .weather-animation-layer {
-    opacity: 1.0; 
-    /* 🚨 [수정] URL 대신 CSS 그라데이션으로 빗줄기 패턴 생성 */
-    background-image: 
-        radial-gradient(circle at 50% 50%, #4f94d4 1px, transparent 1px),
-        radial-gradient(circle at 50% 50%, #76aee4 1px, transparent 1px);
-    background-size: 5px 25px; /* 빗줄기가 길게 보이도록 */
-    animation: rain-fall 0.5s linear infinite; 
+.drop {
+  position: absolute;
+  bottom: 100%;
+  width: 15px;
+  height: 120px;
+  pointer-events: none;
+  /* animation: drop 0.5s linear infinite; 🚨 이 줄을 제거합니다! */
 }
 
 @keyframes rain-fall {
