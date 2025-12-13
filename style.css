@@ -549,7 +549,7 @@ body.sidebar-collapsed #main-content-wrapper {
     box-shadow: 0 -4px 10px rgba(0,0,0,0.2); 
 
     display: flex;
-    /* 🚨 [삭제함] align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
+    align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
     
     left: auto;
     width: auto;
