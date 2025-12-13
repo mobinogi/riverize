@@ -9,9 +9,9 @@
     left: 0;
     width: 100%; 
     height: 100%; 
-    overflow: hidden !important; /* 위젯 경계 밖으로 나가지 않도록 강제 */
-    z-index: 99 !important; /* 모든 요소 위에 보이도록 강제 상향 */
-    opacity: 0; /* 평소에는 숨김 */
+    overflow: hidden !important; 
+    z-index: 99 !important; /* 🚨 [상향] 모든 요소 위에 보이도록 강제 상향 */
+    opacity: 0; 
     transition: opacity 0.5s ease-in-out; 
     pointer-events: none; 
 }
@@ -21,13 +21,13 @@
 /* ---------------------------------------------------- */
 
 .rain-active .weather-animation-layer {
-  opacity: 1.0 !important; /* 활성화되면 선명하게 보임 */
+  opacity: 1.0 !important; /* 🚨 [강제 적용] 투명도 우선순위를 최상으로 높임 */
 }
 
 /* 개별 빗방울 (Drop) */
 .drop {
   position: absolute;
-  top: -200px; /* 🚨 위젯 상단 밖에서 시작 */
+  top: -200px; /* 🚨 위젯 상단 밖(200px 위)에서 시작 */
   width: 1px; /* 🚨 [핵심 수정] 빗줄기 너비를 1px로 최적화 */
   height: 120px;
   pointer-events: none;
@@ -44,10 +44,10 @@
 .stem {
   width: 1px;
   height: 60%;
-  /* 🚨 [수정] 마진 제거 및 색상 복구 (흰색) */
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); 
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); /* 흰색 복구 */
   animation: stem 0.5s linear infinite;
 }
+/* stem에 마진은 없습니다. */
 
 @keyframes stem {
   0% { opacity: 1; }
@@ -76,7 +76,7 @@
 }
 
 /* ---------------------------------------------------- */
-/* 3, 4, 5 섹션 (구름, 눈, 맑음)은 이전 최종 버전과 동일하게 유지 */
+/* 3, 4, 5 섹션 (구름, 눈, 맑음) */
 /* ---------------------------------------------------- */
 
 /* 3. 구름 애니메이션 (Clouds) */
