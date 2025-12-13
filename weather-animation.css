@@ -10,7 +10,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden !important; 
-    z-index: 5; /* 날씨 텍스트보다 뒤에 깔리도록 */
+    z-index: 99; /* 날씨 텍스트보다 뒤에 깔리도록 */
     opacity: 0; /* 🚨 평소에는 숨김 (0으로 복구) */
     transition: opacity 0.5s ease-in-out; 
     pointer-events: none; /* 애니메이션이 마우스 클릭을 방해하지 않도록 */
@@ -21,7 +21,7 @@
 /* ---------------------------------------------------- */
 
 .rain-active .weather-animation-layer {
-  opacity: 1.0; /* 활성화되면 선명하게 보이게 (1.0으로 설정) */
+  opacity: 1.0; !important; /* 활성화되면 선명하게 보이게 (1.0으로 설정) */
 }
 
 /* 개별 빗방울 (Drop) */
