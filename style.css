@@ -603,7 +603,7 @@ body.sidebar-collapsed #main-content-wrapper {
     display: flex;       
     align-items: center; 
     
-    white-space: nowrap;
+    width: max-content;
     animation: ticker-slide 45s linear infinite;
 }
 
