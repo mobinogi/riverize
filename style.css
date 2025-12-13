@@ -526,21 +526,15 @@ body.sidebar-collapsed #main-content-wrapper {
 .news-ticker-wrap {
     position: fixed !important;
     bottom: 0 !important;
+    height: 40px !important; /* 높이 40px 고정 */
     
-    /* 1. 높이: 빨간 박스랑 똑같이 40px로 통일 */
-    height: 40px !important; 
-    
-    /* 2. ★ 핵심 복구: 팝업창이 잘리지 않게 visible로 변경! ★ */
+    /* overflow: visible 유지 (팝업창 위해) */
     overflow: visible !important; 
     
     z-index: 60 !important;
-    
-    /* 위치 및 애니메이션 */
     transition: left 0.3s ease-in-out, width 0.3s ease-in-out !important;
-    left: auto;
-    width: auto;
     
-    /* 디자인 (반투명 LED 스타일) */
+    /* 디자인 */
     background-color: rgba(17, 24, 39, 0.95) !important; 
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -555,7 +549,10 @@ body.sidebar-collapsed #main-content-wrapper {
     box-shadow: 0 -4px 10px rgba(0,0,0,0.2); 
 
     display: flex;
-    align-items: center;
+    /* 🚨 [삭제함] align-items: center; <-- 이놈이 범인이었습니다. 삭제! */
+    
+    left: auto;
+    width: auto;
     color: #ffffff;
 }
 
