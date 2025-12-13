@@ -142,11 +142,3 @@ else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.star
     }
 }
 // 🚨 [삽입 종료]
-            
-console.log(`🌦️ 날씨 로드 완료: ${temp}°C, ${desc}`);
-        }
-        
-    } catch (e) {
-        console.error("날씨 로드 실패:", e);
-    }
-}
