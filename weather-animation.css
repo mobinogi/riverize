@@ -84,23 +84,49 @@
 /* ---------------------------------------------------- */
 
 .clouds-active .weather-animation-layer {
-    opacity: 0.9; /* 구름이 잘 보이도록 불투명도 높임 */
+    opacity: 0.9; 
+    /* 기존의 배경 패턴 방식은 제거합니다. (삭제했으므로 생략) */
 }
 
 .cloud-container {
     position: absolute;
     z-index: 10;
-    opacity: 0; /* 🚨 [핵심] 기본 투명도 0으로 설정 */
+    opacity: 0; 
+}
+/* ------------------ 누락된 구름 모양 CSS 추가 시작 ------------------ */
+
+/* 공통 구름 모양 (작은 크기로 축소) */
+.cloud-1 .cloud, .cloud-2 .cloud {
+    width: 120px; /* 구름1 크기 */
+    height: 40px;
+    background: #fff;
+    border-radius: 200px;
+    position: relative;
+    box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* ---------------------------------------------------- */
-/* 3. 구름 애니메이션 (Clouds) - 최종 위젯 최적화 */
-/* ---------------------------------------------------- */
-
-.clouds-active .weather-animation-layer {
-    opacity: 0.9;
-    /* 기존의 배경 패턴 방식은 제거합니다. */
+.cloud-2 .cloud {
+    width: 70px; /* 구름2 크기 축소 */
+    height: 25px;
 }
+
+.cloud-1 .cloud:after, .cloud-1 .cloud:before,
+.cloud-2 .cloud:after, .cloud-2 .cloud:before {
+    content: '';
+    position: absolute;
+    background: #fff;
+    border-radius: 100px;
+    z-index: 10;
+}
+
+/* 덩어리 크기 조정 (Cloud 1) */
+.cloud-1 .cloud:after { width: 60px; height: 60px; top: -30px; left: 5px; }
+.cloud-1 .cloud:before { width: 80px; height: 80px; top: -40px; right: 10px; }
+
+/* 덩어리 크기 조정 (Cloud 2) */
+.cloud-2 .cloud:after { width: 35px; height: 35px; top: -15px; left: 3px; }
+.cloud-2 .cloud:before { width: 45px; height: 45px; top: -20px; right: 5px; }
+/* ------------------ 누락된 구름 모양 CSS 추가 끝 ------------------ */
 
 /* ------------------ 구름 1 (대형) ------------------ */
 .cloud-1 {
