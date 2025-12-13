@@ -9,7 +9,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden; 
+    overflow: hidden !important; 
     z-index: 5; /* 날씨 텍스트보다 뒤에 깔리도록 */
     opacity: 0; /* 🚨 평소에는 숨김 (0으로 복구) */
     transition: opacity 0.5s ease-in-out; 
