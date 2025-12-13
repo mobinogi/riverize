@@ -524,40 +524,39 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 1. 전체 틀 */
 .news-ticker-wrap {
-    display: none; 
-    position: fixed;
-    bottom: 0;
-    right: 0;
-    height: 40px !important;
-    max-height: 40px;
+    position: fixed !important;
+    bottom: 0 !important;
+    
+    /* 1. 높이: 빨간 박스랑 똑같이 40px로 통일 */
+    height: 40px !important; 
+    
+    /* 2. ★ 핵심 복구: 팝업창이 잘리지 않게 visible로 변경! ★ */
+    overflow: visible !important; 
+    
     z-index: 60 !important;
     
-    /* ★ 화면 너비 초과 방지 */
-    max-width: 100vw; 
-    overflow: visible !important;
+    /* 위치 및 애니메이션 */
+    transition: left 0.3s ease-in-out, width 0.3s ease-in-out !important;
+    left: auto;
+    width: auto;
     
-    /* ★ [디자인] 반투명 + 은은한 패턴으로 변경! */
-    
-    /* 1. 배경색: 완전 검정이 아니라 '투명도 90% 먹인 진한 남색/회색' */
-    background-color: rgba(17, 24, 39, 0.9) !important; 
-    
-    /* 2. 뒤가 은은하게 비치도록 블러 처리 (고급짐의 핵심) */
+    /* 디자인 (반투명 LED 스타일) */
+    background-color: rgba(17, 24, 39, 0.95) !important; 
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-
-    /* 3. 아주 희미한 점 패턴 (LED 느낌만 살짝 냄) */
+    
     background-image: 
         radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
         radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 4px 4px;
     background-position: 0 0, 2px 2px;
     
-    /* 테두리는 아주 얇고 투명하게 */
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 -4px 10px rgba(0,0,0,0.2); 
 
-    /* 글자색 */
-    color: #ffffff; 
+    display: flex;
+    align-items: center;
+    color: #ffffff;
 }
 
 /* PC 화면 설정 */
