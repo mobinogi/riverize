@@ -1,0 +1,49 @@
+/* weather-animation.css (새로 생성할 파일) */
+
+/* ---------------------------------------------------- */
+/* 1. 기본 설정 (모든 애니메이션에 공통 적용) */
+/* ---------------------------------------------------- */
+.weather-animation-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* 애니메이션이 튀어나가는 것을 막음 */
+    z-index: 5; /* 날씨 텍스트보다 뒤에 깔리도록 */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out; /* 부드럽게 나타나고 사라지게 */
+}
+
+/* ---------------------------------------------------- */
+/* 2. 비 애니메이션 (Rain) */
+/* ---------------------------------------------------- */
+
+.rain-active .weather-animation-layer {
+    opacity: 1; /* 활성화되면 불투명하게 */
+    background: url('data:image/png;base64, ... [빗방울 이미지 Base64 인코딩] ...');
+    background-size: 50px 100px; /* 빗방울 크기 */
+    animation: rain-fall 0.8s linear infinite; /* 빠르게 떨어짐 */
+}
+
+@keyframes rain-fall {
+    from { background-position: 0 0; }
+    to { background-position: 0 100px; } /* 빗방울이 아래로 100px 움직임 */
+}
+
+/* ---------------------------------------------------- */
+/* 3. 구름 애니메이션 (Clouds) */
+/* ---------------------------------------------------- */
+
+.clouds-active .weather-animation-layer {
+    opacity: 0.3; /* 구름은 배경이므로 투명하게 */
+    /* 구름 이미지 사용: 작고 밝은 구름 패턴 이미지 */
+    background: url('data:image/png;base64, ... [작은 구름 패턴 이미지] ...');
+    background-size: 200% 200%; /* 위젯보다 2배 크게 잡아 움직이게 함 */
+    animation: cloud-drift 8s linear infinite alternate; /* 천천히 양옆으로 이동 */
+}
+
+@keyframes cloud-drift {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 0%; } /* 오른쪽으로 이동 */
+}
