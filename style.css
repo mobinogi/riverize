@@ -532,7 +532,7 @@ body.sidebar-collapsed #main-content-wrapper {
     /* overflow: visible 유지 (팝업창 위해) */
     overflow: visible !important; 
     
-    z-index: 60 !important;
+    z-index: 40 !important;
     transition: left 0.3s ease-in-out, width 0.3s ease-in-out !important;
     
     /* 디자인 */
