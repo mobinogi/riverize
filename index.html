@@ -59,7 +59,7 @@
                 <span class="font-medium text-lg transition-colors">매출표</span>
             </a>
         </nav></div> 
-      <div class="w-full px-2 pb-6 pt-4 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
+      <div class="w-full px-2 pb-6 pt-3 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
         
         <div id="weather-widget" 
      class="px-2 mb-4 group cursor-default select-none flex flex-col items-center relative overflow-hidden">
@@ -87,8 +87,13 @@
                             💧 <span id="weather-humidity">--%</span>
                         </div>
                     </div>
+                     <div class="flex items-center gap-3 mt-2 text-[10px] font-bold tracking-tighter">
+                    <span class="text-red-400/90">최고 <span id="temp-max">--</span>°</span>
+                    <span class="text-blue-300/90">최저 <span id="temp-min">--</span>°</span>
+                   </div>
                 </div>
             </div>
+        </div>
         </div>
         <div class="mb-6 px-1">
             <div onclick="confirmOilStationNav()" 
@@ -2288,6 +2293,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
