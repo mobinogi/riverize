@@ -76,7 +76,10 @@
                     <span class="text-5xl font-black text-white tracking-tighter" id="weather-temp">--</span>
                     <span class="text-2xl text-blue-200 font-bold mt-1">°</span>
                 </div>
-                
+                <div class="flex items-center gap-3 mt-2 text-[13px] font-bold tracking-tighter">
+                    <span class="text-red-400/90">최고 <span id="temp-max">--</span>°</span>
+                    <span class="text-blue-300/90">최저 <span id="temp-min">--</span>°</span>
+                   </div>
                 <div class="mt-1 flex flex-col items-center">
                     <h3 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-1">
                         부산 강서구
@@ -87,10 +90,6 @@
                             💧 <span id="weather-humidity">--%</span>
                         </div>
                     </div>
-                     <div class="flex items-center gap-3 mt-2 text-[10px] font-bold tracking-tighter">
-                    <span class="text-red-400/90">최고 <span id="temp-max">--</span>°</span>
-                    <span class="text-blue-300/90">최저 <span id="temp-min">--</span>°</span>
-                   </div>
                 </div>
             </div>
         </div>
@@ -2293,6 +2292,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
