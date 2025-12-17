@@ -6,7 +6,22 @@ let currentBestStationData = null;
 const TMAP_APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // T맵 API 키
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 우선 기존 기능(강서구 정보 로드)을 실행합니다 (PC/모바일 공통)
     loadOilPrice();
+
+    // 2. 그 다음, 모바일인지 체크해서 라벨을 버튼으로 바꿉니다.
+    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    const oilLabel = document.getElementById('oil-label'); // index.html에 있는 ID
+
+    if (isMobile && oilLabel) {
+        // 모바일일 때만 클릭 가능한 버튼 스타일로 변경
+        oilLabel.style.cursor = 'pointer';
+        oilLabel.style.color = '#60a5fa'; // 파란색으로 포인트
+        oilLabel.innerHTML = '주변 최저가 찾기 📍';
+        
+        // 클릭 시 GPS 검색 함수 실행 (이 함수는 파일 하단에 따로 정의해주셔야 합니다!)
+        oilLabel.onclick = startMobileGpsSearch; 
+    }
 });
 
 async function loadOilPrice() {
@@ -197,4 +212,31 @@ function animateValue(obj, start, end, duration) {
         if (progress < 1) window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
+}
+
+// 모바일 전용 GPS 검색 함수
+function startMobileGpsSearch() {
+  const oilLabel = document.getElementById('oil-label');
+  oilLabel.innerText = "📍 위치 추적 중...";
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    // 서버의 GPS 전용 함수 호출
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (data) {
+          //  UI 업데이트 함수(예: renderOilPrice)를 호출합니다.
+          if (typeof renderOilPrice === 'function') {
+            renderOilPrice(data); 
+          }
+          oilLabel.innerText = "📍 주변 최저가 결과";
+        }
+      })
+      .getNearbyLowestOilPrice(lat, lng); // 이 함수는 code.gs에 새로 추가해야 함
+  }, function(err) {
+    alert("위치 권환을 허용해주세요!");
+    oilLabel.innerText = "내 주변 찾기 📍";
+  });
 }
