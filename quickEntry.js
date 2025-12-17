@@ -170,7 +170,7 @@ function attachMobileKeyboardFix() {
                 if (keyboardBlurTimer) clearTimeout(keyboardBlurTimer);
                 
                 modalWrapper.style.alignItems = 'flex-start';
-                modalWrapper.style.paddingTop = '40px'; 
+                modalWrapper.style.paddingTop = '20px'; 
             }
         });
 
@@ -202,4 +202,5 @@ function attachMobileKeyboardFix() {
 document.addEventListener('DOMContentLoaded', () => {
     attachMobileKeyboardFix();
 });
+
 
