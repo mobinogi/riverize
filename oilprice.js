@@ -221,28 +221,25 @@ function startMobileGpsSearch() {
   oilLabel.innerText = "📍 위치 추적 중...";
 
   navigator.geolocation.getCurrentPosition(function(pos) {
-    // 1. 좌표가 잘 잡혔는지 콘솔에 찍어봅니다.
-    console.log("내 위치:", pos.coords.latitude, pos.coords.longitude);
+    // [중요] GPS 검색 시에는 기존 캐시를 강제로 삭제하거나 무시합니다!
+    localStorage.removeItem('oil_data'); // 기존에 저장된 강서구 데이터를 삭제
 
     google.script.run
-      .withFailureHandler(function(err) { // 서버 에러 시 실행
-        alert("서버 통신 실패: " + err);
-        oilLabel.innerText = "주변 최저가 찾기 📍";
-      })
       .withSuccessHandler(function(data) {
         if (data) {
+          // 1. 화면 업데이트
           renderOilPrice(data); 
+          
+          // 2. [선택] GPS로 찾은 이 따끈따끈한 데이터를 새로 저장합니다.
+          const cacheData = {
+            data: data,
+            timestamp: new Date().getTime()
+          };
+          localStorage.setItem('oil_data', JSON.stringify(cacheData));
+          
           oilLabel.innerText = "📍 주변 결과 (5km)";
-        } else {
-          // 데이터가 null일 때 (오피넷 검색 결과 없음)
-          alert("주변 5km 내에 정보를 찾을 수 없습니다. (좌표계 확인 필요)");
-          oilLabel.innerText = "주변 최저가 찾기 📍";
         }
       })
       .getNearbyLowestOilPrice(pos.coords.latitude, pos.coords.longitude);
-  }, function(err) {
-    // 2. GPS 자체 실패 시 (권한 거부 등)
-    alert("GPS 오류: " + err.message);
-    oilLabel.innerText = "주변 최저가 찾기 📍";
-  }, { timeout: 10000 }); // 10초 지나면 타임아웃
+  });
 }
