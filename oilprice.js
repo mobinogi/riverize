@@ -215,28 +215,34 @@ function animateValue(obj, start, end, duration) {
 }
 
 // 모바일 전용 GPS 검색 함수
+// [oilprice.js] startMobileGpsSearch 함수 수정
 function startMobileGpsSearch() {
   const oilLabel = document.getElementById('oil-label');
   oilLabel.innerText = "📍 위치 추적 중...";
 
   navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
+    // 1. 좌표가 잘 잡혔는지 콘솔에 찍어봅니다.
+    console.log("내 위치:", pos.coords.latitude, pos.coords.longitude);
 
-    // 서버의 GPS 전용 함수 호출
     google.script.run
+      .withFailureHandler(function(err) { // 서버 에러 시 실행
+        alert("서버 통신 실패: " + err);
+        oilLabel.innerText = "주변 최저가 찾기 📍";
+      })
       .withSuccessHandler(function(data) {
         if (data) {
-          //  UI 업데이트 함수(예: renderOilPrice)를 호출합니다.
-          if (typeof renderOilPrice === 'function') {
-            renderOilPrice(data); 
-          }
-          oilLabel.innerText = "📍 주변 최저가 결과";
+          renderOilPrice(data); 
+          oilLabel.innerText = "📍 주변 결과 (5km)";
+        } else {
+          // 데이터가 null일 때 (오피넷 검색 결과 없음)
+          alert("주변 5km 내에 정보를 찾을 수 없습니다. (좌표계 확인 필요)");
+          oilLabel.innerText = "주변 최저가 찾기 📍";
         }
       })
-      .getNearbyLowestOilPrice(lat, lng); // 이 함수는 code.gs에 새로 추가해야 함
+      .getNearbyLowestOilPrice(pos.coords.latitude, pos.coords.longitude);
   }, function(err) {
-    alert("위치 권환을 허용해주세요!");
-    oilLabel.innerText = "내 주변 찾기 📍";
-  });
+    // 2. GPS 자체 실패 시 (권한 거부 등)
+    alert("GPS 오류: " + err.message);
+    oilLabel.innerText = "주변 최저가 찾기 📍";
+  }, { timeout: 10000 }); // 10초 지나면 타임아웃
 }
