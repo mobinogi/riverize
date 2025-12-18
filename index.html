@@ -2085,22 +2085,31 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 
 
 function startMobileGpsSearch() {
+  const oilLabel = document.getElementById('oil-label');
+  if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
+
+  // [수정 포인트] 여기에 본인의 GAS 웹 앱 배포 URL을 직접 넣으세요!
+  const gasUrl = "https://script.google.com/macros/s/사용자의_고유_배포_ID/exec"; 
+
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     
-    // URL 뒤에 action=getNearbyOil과 좌표를 실어서 보냅니다.
+    // 이제 gasUrl이 정의되었으므로 에러가 나지 않습니다.
     const requestUrl = `${gasUrl}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
     
     fetch(requestUrl)
       .then(res => res.json())
       .then(data => {
         if (data) {
-          renderOilPrice(data); // 화면 업데이트
-          document.getElementById('oil-label').innerText = "📍 주변 결과 (성공)";
+          renderOilPrice(data); 
+          if (oilLabel) oilLabel.innerText = "📍 주변 결과 (성공)";
         }
       })
-      .catch(err => alert("서버 응답 오류: " + err));
+      .catch(err => {
+        console.error(err);
+        alert("데이터 로드 실패: " + err);
+      });
   });
 }
   
@@ -2307,6 +2316,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
