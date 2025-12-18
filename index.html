@@ -2118,12 +2118,16 @@ function startMobileGpsSearch() {
         alert("데이터를 가져오지 못했습니다: " + err.message);
       });
   }, function(err) {
-    alert("GPS 권한을 허용해주세요: " + err.message);
-  }, {
-    enableHighAccuracy: true,
-    timeout: 5000
-  });
-}
+    .then(data => {
+  console.log("오피넷 전체 응답:", data); // 👈 콘솔에서 전체를 다 까봅니다.
+  if (data && data.RESULT && data.RESULT.CODE === "000") { // 오피넷 성공 코드 확인
+    renderOilPrice(data); 
+  } else {
+    // 오피넷이 보내준 실제 에러 메시지를 팝업에 띄웁니다.
+    const msg = data.RESULT ? data.RESULT.MESSAGE : "데이터 없음";
+    alert("오피넷 응답 에러: " + msg); 
+  }
+})
   
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
@@ -2328,6 +2332,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
