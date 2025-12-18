@@ -2092,42 +2092,44 @@ function startMobileGpsSearch() {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     
-    // 전역 변수 API_URL을 사용하여 요청 주소를 만듭니다.
+    // 1. 요청 주소 생성
     const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`; 
-
     console.log("서버로 쏘는 최종 주소:", requestUrl); 
 
+    // 2. 서버 통신 시작
     fetch(requestUrl)
       .then(res => {
         if (!res.ok) throw new Error('네트워크 응답이 좋지 않습니다.');
         return res.json();
       })
       .then(data => {
-        console.log("받은 데이터:", data);
-        // data 자체가 아니라 data.price가 있는지 확인하여 정확성을 높입니다.
-        if (data && data.price) {
-          renderOilPrice(data); 
+        console.log("오피넷 전체 응답:", data); // 디버깅용 로그
+
+        // 3. 오피넷 결과 분석
+        // 오피넷 응답이 정상(000)이고 주유소 데이터(OIL)가 있는지 확인합니다.
+        if (data && data.RESULT && data.RESULT.CODE === "000" && data.OIL && data.OIL.length > 0) {
+          const topOil = data.OIL[0]; 
+          renderOilPrice({
+            name: topOil.OS_NM,
+            price: topOil.PRICE
+          });
           if (oilLabel) oilLabel.innerText = "📍 주변 결과 (성공)";
         } else {
-          alert("주변 5km 내에 주유소가 없습니다.");
-          if (oilLabel) oilLabel.innerText = "주변 결과 없음";
+          // 에러 메시지 처리
+          const msg = (data && data.RESULT) ? data.RESULT.MESSAGE : "주변 5km 내 결과 없음";
+          alert("조회 결과: " + msg);
+          if (oilLabel) oilLabel.innerText = "조회 실패";
         }
       })
       .catch(err => {
         console.error("통신 에러:", err);
-        alert("데이터를 가져오지 못했습니다: " + err.message);
+        alert("데이터 로드 실패: " + err.message);
       });
   }, function(err) {
-    .then(data => {
-  console.log("오피넷 전체 응답:", data); // 👈 콘솔에서 전체를 다 까봅니다.
-  if (data && data.RESULT && data.RESULT.CODE === "000") { // 오피넷 성공 코드 확인
-    renderOilPrice(data); 
-  } else {
-    // 오피넷이 보내준 실제 에러 메시지를 팝업에 띄웁니다.
-    const msg = data.RESULT ? data.RESULT.MESSAGE : "데이터 없음";
-    alert("오피넷 응답 에러: " + msg); 
-  }
-})
+    // GPS 실패 시 처리
+    alert("위치 정보를 가져올 수 없습니다. GPS를 켜주세요.");
+  });
+}
   
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
@@ -2332,6 +2334,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
