@@ -2088,28 +2088,40 @@ function startMobileGpsSearch() {
   const oilLabel = document.getElementById('oil-label');
   if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
 
-  // [수정 포인트] 여기에 본인의 GAS 웹 앱 배포 URL을 직접 넣으세요!
-  const gasUrl = "https://script.google.com/macros/s/사용자의_고유_배포_ID/exec"; 
-
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     
-    // 이제 gasUrl이 정의되었으므로 에러가 나지 않습니다.
-    const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
-    
+    // 전역 변수 API_URL을 사용하여 요청 주소를 만듭니다.
+    const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`; 
+
+    console.log("서버로 쏘는 최종 주소:", requestUrl); 
+
     fetch(requestUrl)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('네트워크 응답이 좋지 않습니다.');
+        return res.json();
+      })
       .then(data => {
-        if (data) {
+        console.log("받은 데이터:", data);
+        // data 자체가 아니라 data.price가 있는지 확인하여 정확성을 높입니다.
+        if (data && data.price) {
           renderOilPrice(data); 
           if (oilLabel) oilLabel.innerText = "📍 주변 결과 (성공)";
+        } else {
+          alert("주변 5km 내에 주유소가 없습니다.");
+          if (oilLabel) oilLabel.innerText = "주변 결과 없음";
         }
       })
       .catch(err => {
-        console.error(err);
-        alert("데이터 로드 실패: " + err);
+        console.error("통신 에러:", err);
+        alert("데이터를 가져오지 못했습니다: " + err.message);
       });
+  }, function(err) {
+    alert("GPS 권한을 허용해주세요: " + err.message);
+  }, {
+    enableHighAccuracy: true,
+    timeout: 5000
   });
 }
   
@@ -2316,6 +2328,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
