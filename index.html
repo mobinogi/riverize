@@ -2082,6 +2082,31 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
         currentY = 0;
     });
 }
+
+
+function startMobileGpsSearch() {
+  const oilLabel = document.getElementById('oil-label');
+  if (!oilLabel) return;
+  
+  oilLabel.innerText = "📍최저가 찾는중...";
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    
+    // HTML 내부에서 직접 호출하면 google 객체가 반드시 잡힙니다!
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (data) {
+          renderOilPrice(data); 
+          oilLabel.innerText = "📍 주변 결과 (장유)";
+        }
+      })
+      .getNearbyLowestOilPrice(lat, lng);
+  }, function(err) {
+    alert("GPS 오류: " + err.message);
+  });
+}
   
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
@@ -2286,6 +2311,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
