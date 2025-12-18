@@ -214,4 +214,78 @@ function animateValue(obj, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
+/**
+ * ⛽ oilPrice.js - 모바일 주변 유가 검색 및 티맵 연동 로직
+ */
 
+// 1. 위치 추적 및 GAS 통신 엔진
+function startMobileGpsSearch() {
+  const oilLabel = document.getElementById('oil-label');
+  if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    
+    // 영점 보정 로직이 들어있는 GAS 액션 호출
+    const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`; 
+
+    fetch(requestUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.price) {
+          renderOilPrice(data); 
+          if (oilLabel) oilLabel.innerText = "📍 검색 완료!";
+        } else {
+          if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
+        }
+      })
+      .catch(err => {
+        console.error("통신 에러:", err);
+        if (oilLabel) oilLabel.innerText = "📍 통신 에러 발생";
+      });
+  }, function(err) {
+    alert("위치 권한을 허용해야 주변 유가 확인이 가능합니다: " + err.message);
+  });
+}
+
+// 2. 화면 렌더링 함수 (글래스모피즘 스타일 적용 가능 구조)
+function renderOilPrice(data) {
+  const oilContainer = document.getElementById('oil-result-container');
+  if (!oilContainer) return;
+
+  // 클릭 시 사용자님의 전매특허 티맵 강제 연동 실행
+  oilContainer.innerHTML = `
+    <div class="oil-card" onclick="startTmapNav('${data.name}')" style="cursor:pointer;">
+      <div class="brand-tag">${data.brand}</div>
+      <div class="price-val">${data.price}원</div>
+      <div class="station-name">${data.name}</div>
+      <div class="dist-info">직선거리 ${data.distance}</div>
+      <div class="nav-hint">👆 터치 시 티맵 즉시 안내</div>
+    </div>
+  `;
+}
+
+/**
+ * 주유소 클릭 시 실행되는 최종 내비 연동 함수
+ */
+async function handleNavClick(stationName) {
+  // 1. 오피넷 이름으로 티맵 API에서 '진짜 정보'를 먼저 캐냅니다.
+  // 특정 지역(김해 등)을 넣지 않아도, 티맵 API가 검색 결과 중 가장 타당한 곳을 줍니다.
+  const tmapInfo = await verifyWithTmap(stationName);
+
+  if (tmapInfo) {
+    // 2. 검증된 정보가 있다면, 티맵 API가 준 '정확한 명칭'으로 앱을 실행합니다.
+    // 이렇게 하면 검색 결과 리스트가 안 뜨고 바로 안내될 확률이 비약적으로 높아집니다!
+    startTmapNav(tmapInfo.name); 
+  } else {
+    // 3. 만약 API 검색 실패 시, 고육지책으로 오피넷 이름을 그대로 던집니다.
+    startTmapNav(stationName);
+  }
+}
+
+// 🚀 실제 앱을 깨우는 '집행' 함수 (절대 삭제 불가!)
+function startTmapNav(keyword) {
+  // 사용자님이 설계하신 "검색어 강제 삽입"의 최종 목적지입니다.
+  window.location.href = "tmap://search?name=" + encodeURIComponent(keyword);
+}
