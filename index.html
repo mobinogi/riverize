@@ -2096,7 +2096,7 @@ function startMobileGpsSearch() {
     const lng = pos.coords.longitude;
     
     // 이제 gasUrl이 정의되었으므로 에러가 나지 않습니다.
-    const requestUrl = `${gasUrl}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
+    const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
     
     fetch(requestUrl)
       .then(res => res.json())
@@ -2316,6 +2316,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
