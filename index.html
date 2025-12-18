@@ -2085,26 +2085,22 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 
 
 function startMobileGpsSearch() {
-  const oilLabel = document.getElementById('oil-label');
-  if (!oilLabel) return;
-  
-  oilLabel.innerText = "📍최저가 찾는중...";
-
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     
-    // HTML 내부에서 직접 호출하면 google 객체가 반드시 잡힙니다!
-    google.script.run
-      .withSuccessHandler(function(data) {
+    // URL 뒤에 action=getNearbyOil과 좌표를 실어서 보냅니다.
+    const requestUrl = `${gasUrl}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
+    
+    fetch(requestUrl)
+      .then(res => res.json())
+      .then(data => {
         if (data) {
-          renderOilPrice(data); 
-          oilLabel.innerText = "📍 주변 결과 (장유)";
+          renderOilPrice(data); // 화면 업데이트
+          document.getElementById('oil-label').innerText = "📍 주변 결과 (성공)";
         }
       })
-      .getNearbyLowestOilPrice(lat, lng);
-  }, function(err) {
-    alert("GPS 오류: " + err.message);
+      .catch(err => alert("서버 응답 오류: " + err));
   });
 }
   
@@ -2311,6 +2307,7 @@ function startMobileGpsSearch() {
 </div>
 </body>
 </html>
+
 
 
 
