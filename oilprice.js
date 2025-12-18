@@ -214,48 +214,4 @@ function animateValue(obj, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
-function startMobileGpsSearch() {
-  const oilLabel = document.getElementById('oil-label');
-  oilLabel.innerText = "📍 위치 추적 중...";
 
-  // [주의] navigator.geolocation.getCurrentPosition 안에서 데이터를 정확히 추출해야 합니다.
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    
-    // 1. 여기서 변수명을 lat, lng로 명확히 정의합니다.
-    const lat = pos.coords.latitude;  // latitude 오타 주의!
-    const lng = pos.coords.longitude; // longitude 오타 주의!
-    
-    // 2. 브라우저 콘솔에 숫자가 뜨는지 확인 (디버깅용)
-    console.log("획득 좌표:", lat, lng);
-
-    // 3. 서버 함수 호출 시 정의한 변수를 그대로 전달합니다.
-    google.script.run
-      .withSuccessHandler(function(data) {
-        if (data) {
-          renderOilPrice(data); 
-          oilLabel.innerText = "📍 주변 결과 (성공)";
-          
-          // 기존 캐시를 새 데이터로 갱신 (선택 사항)
-          localStorage.setItem('oil_data', JSON.stringify({
-            data: data,
-            timestamp: new Date().getTime()
-          }));
-        } else {
-          alert("주변 5km 내 결과가 없습니다.");
-          oilLabel.innerText = "검색 결과 없음";
-        }
-      })
-      .withFailureHandler(function(err) {
-        alert("서버 통신 실패: " + err);
-        oilLabel.innerText = "통신 에러";
-      })
-      .getNearbyLowestOilPrice(lat, lng); // <-- 여기 변수명이 위와 같아야 합니다!
-
-  }, function(err) {
-    alert("GPS 오류: " + err.message + " (권한을 확인하세요)");
-    oilLabel.innerText = "주변 최저가 찾기 📍";
-  }, {
-    enableHighAccuracy: true, // 정확도 향상
-    timeout: 10000            // 10초 타임아웃
-  });
-}
