@@ -233,12 +233,10 @@ function startMobileGpsSearch() {
     fetch(requestUrl)
         .then(res => res.json())
         .then(data => {
-          // 📍 [검수 완료] 서버가 보낸 status "success"를 정확히 체크합니다!
           if (data && data.status === "success") { 
             renderOilPrice(data); 
             if (oilLabel) oilLabel.innerText = "📍 검색 완료!";
           } else {
-            // 실패 시 서버가 준 구체적인 사유(message)를 로그로 확인
             if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
             console.log("서버 응답 실패 사유:", data.message);
           }
@@ -246,11 +244,12 @@ function startMobileGpsSearch() {
         .catch(err => {
           console.error("통신 에러:", err);
           if (oilLabel) oilLabel.innerText = "📍 통신 에러 발생";
-        });
-    }, function(err) {
-      alert("위치 권한을 허용해 주세요.: " + err.message);
-    });
-}
+        }); // 👈 fetch 닫기
+
+    }, function(err) { // 👈 위치 정보 성공 콜백 끝, 실패 콜백 시작
+      alert("위치 권한을 허용해야 주변 유가 확인이 가능합니다: " + err.message);
+    }); // 👈 getCurrentPosition 전체 닫기
+} // 👈 함수 전체 닫기
 
 // 2. 화면 렌더링 함수 (글래스모피즘 스타일 적용 가능 구조)
 function renderOilPrice(data) {
