@@ -236,42 +236,64 @@ function renderOilPrice(data) {
   `;
 }
 
-// 1. 위치 추적 및 GAS 통신 엔진
 function startMobileGpsSearch() {
-  var oilLabel = document.getElementById('oil-label'); // 사용자님 스타일인 var로 유지!
+  var oilLabel = document.getElementById('oil-label');
   if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
 
-  // 📍 getCurrentPosition 시작
-  navigator.geolocation.getCurrentPosition(
-    function(pos) { // ✅ 성공 콜백 시작
+  navigator.geolocation.getCurrentPosition(function(pos) {
       var lat = pos.coords.latitude;
       var lng = pos.coords.longitude;
       
-      // API URL 조립
+      // index.html에 있는 API_URL 사용
       var requestUrl = API_URL + "?action=getNearbyOil&lat=" + lat + "&lng=" + lng; 
 
       fetch(requestUrl)
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data && data.status === "success") { 
-            renderOilPrice(data); 
-            if (oilLabel) oilLabel.innerText = "📍 검색 완료!";
+            
+            // 📍 [핵심] 오피넷 원본(data.station)을 기존 위젯 양식(info)으로 변환!
+            var raw = data.station;
+            
+            var gpsInfo = {
+                // 1. 평균가 자리에 내 가격을 넣습니다 (비교 대상이 없으므로)
+                avgPrice: parseInt(raw.PRICE), 
+                
+                // 2. 최저가 자리에 내 가격
+                bestPrice: raw.PRICE,       
+                
+                // 3. 주유소 이름
+                bestName: raw.OS_NM,        
+                
+                // 4. [센스] 주소 대신 '거리'를 보여주면 GPS 느낌 물씬! 
+                bestAddr: "현위치에서 " + Math.floor(raw.DISTANCE) + "m", 
+                
+                // 5. 원본 주소 (길안내용)
+                rawAddr: raw.VAN_ADR,       
+                
+                // 6. 좌표 (있으면 넣고 없으면 null)
+                coords: null 
+            };
+
+            // 🚀 [재사용] 기존 강서구 위젯을 이 데이터로 덮어씌웁니다!
+            updateOilWidget(gpsInfo); 
+            
+            if (oilLabel) oilLabel.innerText = "📍 주변 검색 완료";
+            
           } else {
-            if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
-            console.log("서버 응답 실패 사유:", data.message);
+             if (oilLabel) oilLabel.innerText = "📍 결과 없음";
           }
         })
         .catch(function(err) {
-          console.error("통신 에러:", err);
-          if (oilLabel) oilLabel.innerText = "📍 통신 에러 발생";
-        }); 
+            console.error(err);
+            if (oilLabel) oilLabel.innerText = "📍 에러 발생";
+        });
     }, 
-    function(err) { // ✅ 실패 콜백 시작
-      alert("위치 권한을 허용해야 주변 유가 확인이 가능합니다: " + err.message);
-      if (oilLabel) oilLabel.innerText = "📍 위치 권한 필요";
+    function(err) {
+      alert("위치 권한 필요: " + err.message);
     }
-  ); // 📍 getCurrentPosition 끝
-} // 📍 함수 끝
+  );
+}
 
 
 /**
