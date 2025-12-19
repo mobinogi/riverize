@@ -214,8 +214,14 @@ function animateValue(obj, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
+// ==========================================
+// 2. 모바일 GPS 주변 유가 검색 로직 (구조대 버전)
+// ==========================================
+
 function startMobileGpsSearch() {
-  var oilLabel = document.getElementById('oil-label');
+  const oilLabel = document.getElementById('oil-label');
+  const titleLabel = document.querySelector('.text-gray-400.text-xs');
+
   if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
 
   if (!navigator.geolocation) {
@@ -223,75 +229,82 @@ function startMobileGpsSearch() {
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
-    function(pos) { 
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
-      
-      // index.html의 API_URL 사용
-      var requestUrl = API_URL + "?action=getNearbyOil&lat=" + lat + "&lng=" + lng; 
+  navigator.geolocation.getCurrentPosition(async function(pos) { 
+      try {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        
+        // 1. 서버 호출
+        const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`;
+        
+        const res = await fetch(requestUrl);
+        const data = await res.json(); // data 변수로 받음
 
-      fetch(requestUrl)
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          console.log("📦 서버에서 온 진짜 데이터:", data); // 콘솔에서 확인 가능
+        // 🚨 [핵심] 데이터를 찾아내는 3단 콤보 (구조대 출동!)
+        let rawStation = null;
 
-          // 🚨 [핵심 수정] 데이터를 꺼내는 3가지 방법을 다 시도합니다! (하나만 걸려라!)
-          var rawStation = null;
+        // CASE 1: 정상적으로 성공했을 때 (station이 바로 있는 경우)
+        if (data.station) {
+            rawStation = data.station;
+        }
+        // CASE 2: "실패"라고 떴지만, 메시지 안에 보물이 숨겨져 있을 때 (지금 상황!)
+        else if (data.status === "fail" && data.message && data.message.includes("RESULT")) {
+            console.log("🕵️‍♂️ 실패 메시지에서 데이터 구조 시도 중...");
+            try {
+                // "오피넷 응답 원본:" 같은 글자 떼고 JSON(`{...}`) 시작부터 잘라냄
+                const jsonStart = data.message.indexOf('{');
+                if (jsonStart > -1) {
+                    const jsonStr = data.message.substring(jsonStart);
+                    const parsed = JSON.parse(jsonStr);
+                    // 숨겨진 RESULT 상자를 염
+                    if (parsed.RESULT && parsed.RESULT.OIL && parsed.RESULT.OIL.length > 0) {
+                        rawStation = parsed.RESULT.OIL[0];
+                    }
+                }
+            } catch (err) {
+                console.error("구조 실패:", err);
+            }
+        }
 
-          // 1. 우리가 짠 'station' 포장지 방식
-          if (data.station) {
-             rawStation = data.station;
-          } 
-          // 2. 오피넷 원본 방식 (RESULT > OIL 배열)
-          else if (data.RESULT && data.RESULT.OIL && data.RESULT.OIL.length > 0) {
-             rawStation = data.RESULT.OIL[0];
-          }
-          // 3. 혹시나 OIL이 바로 있는 경우
-          else if (data.OIL && data.OIL.length > 0) {
-             rawStation = data.OIL[0];
-          }
+        // ✅ 데이터를 찾았다면 (성공이든 구조든) 화면 그림
+        if (rawStation) {
+            // 강서구 로직 공장(processOilData) 재가동
+            let processedData = processOilData([rawStation]);
 
-          // ✅ 데이터가 잡혔다면 화면 갱신!
-          if (rawStation) {
-            
-            // 기존 위젯 양식(info)으로 변환
-            var gpsInfo = {
-                avgPrice: parseInt(rawStation.PRICE), // 내 가격
-                bestPrice: rawStation.PRICE,          // 내 가격
-                bestName: rawStation.OS_NM,           // 주유소 이름
-                bestAddr: "현위치 반경 5km",          // 주소 대신 범위 표시
-                rawAddr: rawStation.VAN_ADR,          // 길안내용 주소
-                coords: null 
-            };
-            
-            // "부산 강서구" 제목도 "내 주변"으로 쓱 바꿈
-            var titleLabel = document.querySelector('.text-gray-400.text-xs'); 
-            if(titleLabel) titleLabel.innerText = "내 위치 기반 검색 결과";
+            // T맵 검증
+            const tmapInfo = await verifyWithTmap(processedData.bestName);
+            if (tmapInfo) {
+                processedData.bestName = tmapInfo.name;
+                processedData.coords = tmapInfo.coords; 
+            }
 
-            // 화면 그리기
-            updateOilWidget(gpsInfo); 
-            
-            if (oilLabel) oilLabel.innerText = "📍 검색 성공!";
-            
-          } else {
-             // 진짜로 데이터가 없는 경우
-             if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
-             console.log("데이터 추출 실패:", data);
-          }
-        })
-        .catch(function(err) {
-          console.error("통신 에러:", err);
-          if (oilLabel) oilLabel.innerText = "📍 에러 발생";
-        }); 
+            // 거리 정보 추가
+            if(rawStation.DISTANCE) {
+                processedData.bestAddr = `현위치에서 약 ${Math.floor(rawStation.DISTANCE)}m`;
+            }
+
+            // 화면 덮어쓰기
+            updateOilWidget(processedData);
+
+            if (oilLabel) oilLabel.innerText = "📍 주변 최저가 발견!";
+            if (titleLabel) titleLabel.innerText = "내 위치 기반 검색 결과";
+
+        } else {
+            // 진짜 데이터가 없는 경우
+            throw new Error(data.message || "반경 내 주유소 없음");
+        }
+
+      } catch (e) {
+        console.error("GPS 검색 최종 실패:", e);
+        if (oilLabel) oilLabel.innerText = "📍 결과 없음";
+      }
     }, 
     function(err) { 
-      alert("위치 권한 필요: " + err.message);
+      alert("위치 권한을 켜주세요: " + err.message);
       if (oilLabel) oilLabel.innerText = "📍 권한 필요";
     }
   );
 }
-
 
 /**
  * 주유소 클릭 시 실행되는 최종 내비 연동 함수
