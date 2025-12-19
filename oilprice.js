@@ -220,19 +220,21 @@ function animateValue(obj, start, end, duration) {
 
 // 1. 위치 추적 및 GAS 통신 엔진
 function startMobileGpsSearch() {
-  const oilLabel = document.getElementById('oil-label');
+  var oilLabel = document.getElementById('oil-label'); // 사용자님 스타일인 var로 유지!
   if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
 
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    
-    // 영점 보정 로직이 들어있는 GAS 액션 호출
-    const requestUrl = `${API_URL}?action=getNearbyOil&lat=${lat}&lng=${lng}`; 
+  // 📍 getCurrentPosition 시작
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { // ✅ 성공 콜백 시작
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      
+      // API URL 조립
+      var requestUrl = API_URL + "?action=getNearbyOil&lat=" + lat + "&lng=" + lng; 
 
-    fetch(requestUrl)
-        .then(res => res.json())
-        .then(data => {
+      fetch(requestUrl)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
           if (data && data.status === "success") { 
             renderOilPrice(data); 
             if (oilLabel) oilLabel.innerText = "📍 검색 완료!";
@@ -241,15 +243,17 @@ function startMobileGpsSearch() {
             console.log("서버 응답 실패 사유:", data.message);
           }
         })
-        .catch(err => {
+        .catch(function(err) {
           console.error("통신 에러:", err);
           if (oilLabel) oilLabel.innerText = "📍 통신 에러 발생";
-        }); // 👈 fetch 닫기
-
-    }, function(err) { // 👈 위치 정보 성공 콜백 끝, 실패 콜백 시작
+        }); 
+    }, 
+    function(err) { // ✅ 실패 콜백 시작
       alert("위치 권한을 허용해야 주변 유가 확인이 가능합니다: " + err.message);
-    }); // 👈 getCurrentPosition 전체 닫기
-} // 👈 함수 전체 닫기
+      if (oilLabel) oilLabel.innerText = "📍 위치 권한 필요";
+    }
+  ); // 📍 getCurrentPosition 끝
+} // 📍 함수 끝
 
 // 2. 화면 렌더링 함수 (글래스모피즘 스타일 적용 가능 구조)
 function renderOilPrice(data) {
