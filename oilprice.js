@@ -4,7 +4,7 @@
 
 let currentBestStationData = null;
 const TMAP_APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"; // T맵 API 키
-const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec";
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. 우선 기존 기능(강서구 정보 로드)을 실행합니다 (PC/모바일 공통)
     loadOilPrice();
