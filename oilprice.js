@@ -218,42 +218,6 @@ function animateValue(obj, start, end, duration) {
  * ⛽ oilPrice.js - 모바일 주변 유가 검색 및 티맵 연동 로직
  */
 
-// 1. 위치 추적 및 GAS 통신 엔진
-function startMobileGpsSearch() {
-  var oilLabel = document.getElementById('oil-label'); // 사용자님 스타일인 var로 유지!
-  if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
-
-  // 📍 getCurrentPosition 시작
-  navigator.geolocation.getCurrentPosition(
-    function(pos) { // ✅ 성공 콜백 시작
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
-      
-      // API URL 조립
-      var requestUrl = API_URL + "?action=getNearbyOil&lat=" + lat + "&lng=" + lng; 
-
-      fetch(requestUrl)
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data && data.status === "success") { 
-            renderOilPrice(data); 
-            if (oilLabel) oilLabel.innerText = "📍 검색 완료!";
-          } else {
-            if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
-            console.log("서버 응답 실패 사유:", data.message);
-          }
-        })
-        .catch(function(err) {
-          console.error("통신 에러:", err);
-          if (oilLabel) oilLabel.innerText = "📍 통신 에러 발생";
-        }); 
-    }, 
-    function(err) { // ✅ 실패 콜백 시작
-      alert("위치 권한을 허용해야 주변 유가 확인이 가능합니다: " + err.message);
-      if (oilLabel) oilLabel.innerText = "📍 위치 권한 필요";
-    }
-  ); // 📍 getCurrentPosition 끝
-} // 📍 함수 끝
 
 // 2. 화면 렌더링 함수 (글래스모피즘 스타일 적용 가능 구조)
 function renderOilPrice(data) {
