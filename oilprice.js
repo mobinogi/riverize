@@ -214,83 +214,80 @@ function animateValue(obj, start, end, duration) {
     window.requestAnimationFrame(step);
 }
 
-/**
- * ⛽ oilPrice.js - 모바일 주변 유가 검색 및 티맵 연동 로직
- */
-
-
-// 2. 화면 렌더링 함수 (글래스모피즘 스타일 적용 가능 구조)
-function renderOilPrice(data) {
-  const oilContainer = document.getElementById('oil-result-container');
-  if (!oilContainer) return;
-
-  // 클릭 시 사용자님의 전매특허 티맵 강제 연동 실행
-  oilContainer.innerHTML = `
-    <div class="oil-card" onclick="startTmapNav('${data.name}')" style="cursor:pointer;">
-      <div class="brand-tag">${data.brand}</div>
-      <div class="price-val">${data.price}원</div>
-      <div class="station-name">${data.name}</div>
-      <div class="dist-info">직선거리 ${data.distance}</div>
-      <div class="nav-hint">👆 터치 시 티맵 즉시 안내</div>
-    </div>
-  `;
-}
-
 function startMobileGpsSearch() {
   var oilLabel = document.getElementById('oil-label');
   if (oilLabel) oilLabel.innerText = "📍 위치 추적 중...";
 
-  navigator.geolocation.getCurrentPosition(function(pos) {
+  if (!navigator.geolocation) {
+    alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { 
       var lat = pos.coords.latitude;
       var lng = pos.coords.longitude;
       
-      // index.html에 있는 API_URL 사용
+      // index.html의 API_URL 사용
       var requestUrl = API_URL + "?action=getNearbyOil&lat=" + lat + "&lng=" + lng; 
 
       fetch(requestUrl)
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          if (data && data.status === "success") { 
+          console.log("📦 서버에서 온 진짜 데이터:", data); // 콘솔에서 확인 가능
+
+          // 🚨 [핵심 수정] 데이터를 꺼내는 3가지 방법을 다 시도합니다! (하나만 걸려라!)
+          var rawStation = null;
+
+          // 1. 우리가 짠 'station' 포장지 방식
+          if (data.station) {
+             rawStation = data.station;
+          } 
+          // 2. 오피넷 원본 방식 (RESULT > OIL 배열)
+          else if (data.RESULT && data.RESULT.OIL && data.RESULT.OIL.length > 0) {
+             rawStation = data.RESULT.OIL[0];
+          }
+          // 3. 혹시나 OIL이 바로 있는 경우
+          else if (data.OIL && data.OIL.length > 0) {
+             rawStation = data.OIL[0];
+          }
+
+          // ✅ 데이터가 잡혔다면 화면 갱신!
+          if (rawStation) {
             
-            // 📍 [핵심] 오피넷 원본(data.station)을 기존 위젯 양식(info)으로 변환!
-            var raw = data.station;
-            
+            // 기존 위젯 양식(info)으로 변환
             var gpsInfo = {
-                // 1. 평균가 자리에 내 가격을 넣습니다 (비교 대상이 없으므로)
-                avgPrice: parseInt(raw.PRICE), 
-                
-                // 2. 최저가 자리에 내 가격
-                bestPrice: raw.PRICE,       
-                
-                // 3. 주유소 이름
-                bestName: raw.OS_NM,        
-                
-                // 4. [센스] 주소 대신 '거리'를 보여주면 GPS 느낌 물씬! 
-                bestAddr: "현위치에서 " + Math.floor(raw.DISTANCE) + "m", 
-                
-                // 5. 원본 주소 (길안내용)
-                rawAddr: raw.VAN_ADR,       
-                
-                // 6. 좌표 (있으면 넣고 없으면 null)
+                avgPrice: parseInt(rawStation.PRICE), // 내 가격
+                bestPrice: rawStation.PRICE,          // 내 가격
+                bestName: rawStation.OS_NM,           // 주유소 이름
+                bestAddr: "현위치 반경 5km",          // 주소 대신 범위 표시
+                rawAddr: rawStation.VAN_ADR,          // 길안내용 주소
                 coords: null 
             };
+            
+            // "부산 강서구" 제목도 "내 주변"으로 쓱 바꿈
+            var titleLabel = document.querySelector('.text-gray-400.text-xs'); 
+            if(titleLabel) titleLabel.innerText = "내 위치 기반 검색 결과";
 
-            // 🚀 [재사용] 기존 강서구 위젯을 이 데이터로 덮어씌웁니다!
+            // 화면 그리기
             updateOilWidget(gpsInfo); 
             
-            if (oilLabel) oilLabel.innerText = "📍 주변 검색 완료";
+            if (oilLabel) oilLabel.innerText = "📍 검색 성공!";
             
           } else {
-             if (oilLabel) oilLabel.innerText = "📍 결과 없음";
+             // 진짜로 데이터가 없는 경우
+             if (oilLabel) oilLabel.innerText = "📍 주변 결과 없음";
+             console.log("데이터 추출 실패:", data);
           }
         })
         .catch(function(err) {
-            console.error(err);
-            if (oilLabel) oilLabel.innerText = "📍 에러 발생";
-        });
+          console.error("통신 에러:", err);
+          if (oilLabel) oilLabel.innerText = "📍 에러 발생";
+        }); 
     }, 
-    function(err) {
+    function(err) { 
       alert("위치 권한 필요: " + err.message);
+      if (oilLabel) oilLabel.innerText = "📍 권한 필요";
     }
   );
 }
