@@ -1808,10 +1808,13 @@ function getFactoryLedgerStatus(e) {
         // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
         if (!el19 || !el20 || !el21) return;
 
-        // 2. 로딩 중 표시 (...)
-        el19.textContent = '...';
-        el20.textContent = '...';
-        el21.textContent = '...';
+        // 1. [로딩 효과] 텍스트 대신 '반짝이는 회색 박스(스켈레톤)'를 보여줍니다.
+    // 사용자는 "아, 데이터를 가져오는 중이구나"라고 직관적으로 알게 됩니다.
+    const skeletonHTML = '<div class="h-8 w-20 bg-gray-200 rounded animate-pulse inline-block align-middle"></div>';
+    
+    el19.innerHTML = skeletonHTML;
+    el20.innerHTML = skeletonHTML;
+    el21.innerHTML = skeletonHTML;
 
         try {
             // 3. 서버에 데이터 요청
@@ -2307,6 +2310,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
