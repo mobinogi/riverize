@@ -183,24 +183,45 @@
                                 bg-[#f7f9fc] text-gray-700 
                                 shadow-[0px_-8px_15px_rgba(255,255,255,0.8),0px_8px_15px_rgba(204,204,204,0.5)]">
                       
-                      <div id="status-box" class="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
-                        <div class="flex justify-between items-center">
-                            <p class="font-semibold text-lg flex items-center gap-2">
-                                📅 <span id="current-date">불러오는 중...</span>
-                            </p>
-                            <button onclick="updateFactoryStatus()" class="text-xs text-blue-400 hover:text-blue-600 p-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            </button>
-                        </div>
-                        <div class="my-2 border-t border-blue-200/60"></div>
-                        <div class="flex justify-around items-center pt-1">
-                            <span class="text-2xl font-bold text-blue-600 font-mono tracking-tight" id="val-f19">-</span>
-                            <span class="text-blue-200 text-xl">|</span>
-                            <span class="text-2xl font-bold text-purple-600 font-mono tracking-tight" id="val-f20">-</span>
-                            <span class="text-blue-200 text-xl">|</span>
-                            <span class="text-2xl font-bold text-red-500 font-mono tracking-tight" id="val-f21">-</span>
-                        </div>
-                      </div>
+                      <div id="status-box" class="wide-switch-card w-full py-3 mb-8">
+
+    <div class="flex justify-between items-center px-6 mb-1"> 
+        <p class="font-bold text-lg text-gray-600 flex items-center gap-2">
+            <span id="current-date">불러오는 중...</span>
+        </p>
+        
+        <button onclick="updateFactoryStatus(); this.querySelector('svg').classList.add('animate-spin-once'); setTimeout(() => this.querySelector('svg').classList.remove('animate-spin-once'), 700);" 
+                class="p-1 text-gray-400 transition-colors duration-200 hover:text-gray-900 focus:outline-none">
+            
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="gradient-divider-h"></div>
+
+    <div class="flex flex-row h-10 items-center mt-1 w-full"> 
+        
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-gray-800 tracking-tight" id="val-f19">-</span>
+        </div>
+
+        <div class="gradient-divider-v"></div>
+
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-gray-800 tracking-tight" id="val-f20">-</span>
+        </div>
+
+        <div class="gradient-divider-v"></div>
+
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-red-500 tracking-tight" id="val-f21">-</span>
+        </div>
+
+    </div>
+
+</div>
 
                       <div class="flex w-full mt-4 rounded-xl overflow-hidden border-2 border-[#f7f9fc] shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
     
@@ -2286,6 +2307,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
