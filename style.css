@@ -675,3 +675,73 @@ body.sidebar-collapsed #main-content-wrapper {
 #nav-confirm-modal, #delete-confirm-modal {
     bottom: -1px !important; 
 }
+
+/* =========================================
+   📐 와이드 스위치 (Wedge / Ramp Effect)
+   ========================================= */
+
+.wide-switch-card {
+    position: relative;
+    background-color: #f7f9fc; /* 배경색 일치 */
+    
+    /* 📍 핵심 1: 상단부 '무(無)' 처리 */
+    /* 위쪽은 그림자를 아예 없애서 벽이랑 높이가 똑같아 보이게 만듭니다. */
+    box-shadow: none;
+    
+    /* 대신 상단 경계가 너무 안 보이면 어색하니 아주 연한 선 하나만 긋습니다. */
+    border-top: none;
+    border-bottom: none; /* 하단은 그림자와 섞이게 둡니다. */
+    
+    border-radius: 1.0rem;
+}
+
+/* 📍 핵심 2: 하단부 '점진적 돌출' (그라데이션 그림자) */
+.wide-switch-card::after {
+    content: "";
+    position: absolute;
+    z-index: -1; /* 박스 뒤로 */
+    
+    /* 정확히 허리(50%) 지점부터 그림자가 시작됩니다. */
+    top: 50%; 
+    bottom: 0;
+    
+    /* 양옆에서 살짝 안으로 들어와야 '붕 뜬' 느낌이 납니다. */
+    left: 1px; 
+    right: 1px;
+    
+    background: transparent;
+    border-radius: inherit;
+
+    /* 🎨 그림자 설정: 아래로 갈수록 더 넓고 진하게 퍼짐 */
+    /* Y축(30px)을 길게 줘서 바닥으로 쏠리게 합니다. */
+    /* Blur(40px)를 크게 줘서 부드럽게 퍼지게 합니다. */
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.45);
+}
+
+
+/* =========================================
+   ✨ 그라데이션 구분선 (레이아웃용)
+   ========================================= */
+/* 세로 구분선 */
+.gradient-divider-v {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+        rgba(0,0,0,0) 0%, 
+        rgba(0,0,0,0.2) 50%, 
+        rgba(0,0,0,0) 100%
+    );
+}
+
+/* 가로 구분선 */
+.gradient-divider-h {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(to right, 
+        rgba(0,0,0,0) 0%, 
+        rgba(0,0,0,0.2) 50%, 
+        rgba(0,0,0,0) 100%
+    );
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
