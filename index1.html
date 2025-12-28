@@ -27,6 +27,7 @@
   <script src="newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="chart.js"></script>
+  <?!= include('chart.js'); ?>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
     
@@ -306,7 +307,7 @@
                 </div>  
               </div> 
             </div>
-          <div id="dashboard-view" class="hidden w-full h-full p-6 overflow-y-auto">
+          <div id="dashboard-view" class="view-content hidden w-full h-full p-6 overflow-y-auto">
   
   <h1 class="text-2xl font-bold mb-6 dark:text-white">📈 연간 매출 분석 (YoY)</h1>
 
