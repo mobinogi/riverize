@@ -4,11 +4,11 @@
   <title>강서 도매소</title>
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com https://api.allorigins.win https://api.openweathermap.org;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://cdn.jsdelivr.net https://www.gstatic.com https://script.google.com https://script.googleusercontent.com;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com https://api.allorigins.win https://api.openweathermap.org https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
-    img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org;
+    img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org https://mobinogi.github.io;
     frame-src 'self' blob:; 
   ">
   <link rel="icon" href="favicon.ico" type="image/png">
@@ -25,6 +25,13 @@
   <script src="oilprice.js"></script>
   <script src="weather.js"></script>
   <script src="newsTicker.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="chart.js"></script>
+  <script>
+  tailwind.config = {
+    darkMode: 'class' 
+  }
+</script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
     
@@ -47,18 +54,25 @@
              style="text-shadow: 0 0 7px rgba(255, 255, 255, 0.6);">
             강서 도매소
         </div>
+<nav class="space-y-2">
+    
+    <a onclick="openSalesSheet()" id="menu-sales"
+       class="hover-line flex items-center px-4 py-3 cursor-pointer text-gray-400">
+       <span class="font-medium text-lg transition-colors">매출표</span>
+    </a>
 
-        <nav class="space-y-2">
-            <a onclick="changeView('consolidated')" id="menu-consolidated"
-               class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
-                <span class="font-medium text-lg transition-colors">일보 통합본</span>
-            </a>
-            
-            <a onclick="openSalesSheet()" id="menu-sales"
-               class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
-                <span class="font-medium text-lg transition-colors">매출표</span>
-            </a>
-        </nav></div> 
+    <a onclick="changeView('consolidated')" id="menu-consolidated"
+       class="hover-line flex items-center px-4 py-3 cursor-pointer text-gray-400">
+       <span class="font-medium text-lg transition-colors">일보 통합본</span>
+    </a>
+
+    <a onclick="showSalesDashboard()" id="menu-dashboard"
+       class="hover-line flex items-center px-4 py-3 cursor-pointer text-gray-400">
+       <span class="font-medium text-lg transition-colors">매출 현황 분석</span>
+    </a>
+
+</nav>
+         </div> 
       <div class="w-full px-2 pb-6 pt-1 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
         <div id="weather-widget" class="px-2 -mt-4 mb-8 group cursor-default select-none flex flex-col items-center relative overflow-hidden">
     <div class="weather-animation-layer"></div>        
@@ -258,7 +272,7 @@
                       <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
                     </div>
 
-                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg relative">
+                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative">
                       
                       
                       <div class="flex justify-between items-center mb-4">
@@ -297,30 +311,94 @@
                    </div>
                 </div>  
               </div> 
-            </div> 
-          <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
-                 
-              <div class="flex justify-between items-center mb-8">
-                  <button onclick="changeConsolidatedYear(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                  </button>
-                  <h2 id="consolidated-header" 
-                      class="text-3xl font-extrabold text-gray-800 text-center mx-4 pb-4 border-b-2 border-gray-100">
-                      <span id="consolidated-header-year">2025년</span> 통합본
-                  </h2>
-                  <button onclick="changeConsolidatedYear(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                  </button>
-              </div>
-              
-              <div id="consolidated-list" 
-                   class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
-                  <p class="text-gray-500 col-span-full">통합본 목록을 불러오는 중...</p>
-              </div>
-              
-              <p id="consolidated-status" class="text-sm text-gray-400 mt-8 py-3 text-center border-t border-gray-100/70">상태: 불러오는 중...</p>
+            </div>
+         <div id="dashboard-view" class="view-content hidden w-full h-full p-6 overflow-y-auto dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+  
+  <h1 class="text-2xl font-bold mb-6">  연간 매출현황 분석 </h1>
+
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-6 flex justify-between items-center border border-gray-100 dark:border-gray-700 transition-colors">
+    <div>
+      <h3 class="font-bold text-gray-700 dark:text-gray-200">담당자 선택</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400">작년(점선) vs 올해(실선) 비교</p>
+    </div>
+    
+    <select id="dashboardUserSelect" onchange="updateDashboardChart()" 
+        class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg 
+               bg-gray-50 dark:bg-gray-700 
+               text-gray-900 dark:text-white 
+               outline-none focus:ring-0 focus:border-gray-400 dark:focus:border-gray-500
+               cursor-pointer transition-colors">
+      <option value="김원대" selected>김원대</option>
+      <option value="정병준">정병준</option>
+    </select>
+  </div>
+
+  <div id="chartSkeleton" class="hidden w-full h-[500px] bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 animate-pulse flex flex-col transition-colors">
+      
+      <div class="space-y-3 mb-10">
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div> <div class="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div> </div>
+
+      <div class="flex-1 flex items-end justify-between space-x-2 px-2">
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[20%]"></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-t-sm h-[40%]"></div>
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[30%]"></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-t-sm h-[50%]"></div>
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[35%]"></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-t-sm h-[60%]"></div>
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[45%]"></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-t-sm h-[75%]"></div>
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[55%]"></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-t-sm h-[80%]"></div>
+          <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-t-sm h-[60%]"></div>
+          <div class="w-full bg-gray-300 dark:bg-gray-500 rounded-t-sm h-[90%]"></div> </div>
+
+      <div class="flex justify-between mt-6 px-2">
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div class="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+
+  </div>
+
+  <div id="chartContainer" class="hidden bg-white p-6 rounded-xl shadow-lg border border-gray-200 transition-colors">
+    <div class="relative w-full h-[500px]">
+      <canvas id="salesStatusChart"></canvas>
+    </div>
+  </div>
+
+</div>
+          <div id="view-consolidated" 
+     class="view-content hidden p-6 min-h-[600px] 
+            bg-white dark:bg-gray-900 
+            rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 
+            transition-colors">
+            
+      <div class="flex justify-between items-center mb-8">
+          <button onclick="changeConsolidatedYear(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
           
-          </div> 
+          <h2 id="consolidated-header" 
+              class="text-3xl font-extrabold text-gray-800 dark:text-white text-center mx-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+              <span id="consolidated-header-year">2025년</span> 통합본
+          </h2>
+          
+          <button onclick="changeConsolidatedYear(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+      </div>
+      
+      <div id="consolidated-list" 
+           class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
+          <p class="text-gray-500 dark:text-gray-400 col-span-full">통합본 목록을 불러오는 중...</p>
+      </div>
+      
+      <p id="consolidated-status" class="text-sm text-gray-400 dark:text-gray-500 mt-8 py-3 text-center border-t border-gray-100/70 dark:border-gray-700/70">상태: 불러오는 중...</p>
+  
+</div>
           <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
   
   <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
@@ -2310,38 +2388,3 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
