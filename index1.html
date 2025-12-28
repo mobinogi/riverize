@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>강서 도매소</title>
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com https://api.allorigins.win https://api.openweathermap.org;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' data: https://fonts.gstatic.com;
+    img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org;
+    frame-src 'self' blob:; 
+  ">
+  <link rel="icon" href="favicon.ico" type="image/png">
+  <base target="_top">
+  <meta name="theme-color" content="#f7f9fc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" viewport-fit=cover">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="truck.css">
+  <link rel="stylesheet" href="weather-animation.css">
+  <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
+  <script src="sidebar.js"></script>
+  <script src="oilprice.js"></script>
+  <script src="weather.js"></script>
+  <script src="newsTicker.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50 block md:flex font-sans">
+    
+    <div id="sidebar" 
+     class="fixed left-0 top-0 h-full flex w-64 flex-shrink-0 flex-col z-50
+            transition-transform duration-300 ease-in-out
+            bg-gradient-to-b from-gray-700 to-gray-900 text-gray-200
+            
+            /* 🚨 패딩(p-4) 제거! (내용물 div로 이동) */
+            shadow-none border-none
+            md:shadow-[5px_0_25px_rgba(0,0,0,0.5)] 
+            md:border-r md:border-gray-500/50">
+
+    <div class="flex-1 w-full h-full overflow-y-auto overflow-x-hidden p-4 flex flex-col">
+        
+        <div onclick="changeView('write')"
+             class="text-2xl font-bold text-white mb-8 pb-4 
+                    select-none cursor-pointer hover:text-gray-100 transition-all text-center
+                    border-b border-black/20 shadow-[0_1px_0_rgba(255,255,255,0.1)]"
+             style="text-shadow: 0 0 7px rgba(255, 255, 255, 0.6);">
+            강서 도매소
+        </div>
+
+        <nav class="space-y-2">
+            <a onclick="changeView('consolidated')" id="menu-consolidated"
+               class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
+                <span class="font-medium text-lg transition-colors">일보 통합본</span>
+            </a>
+            
+            <a onclick="openSalesSheet()" id="menu-sales"
+               class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
+                <span class="font-medium text-lg transition-colors">매출표</span>
+            </a>
+        </nav></div> 
+      <div class="w-full px-2 pb-6 pt-1 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
+        <div id="weather-widget" class="px-2 -mt-4 mb-8 group cursor-default select-none flex flex-col items-center relative overflow-hidden">
+    <div class="weather-animation-layer"></div>        
+            <div class="relative w-full flex justify-center mb-1">
+                <img id="weather-icon" src="" alt="Weather" 
+                     class="w-20 h-20 filter drop-shadow-xl opacity-90 transition-transform group-hover:scale-110 animate-float">
+            </div>
+            <div class="text-center z-10">
+                <div class="flex items-start justify-center leading-none">
+                    <span class="text-5xl font-black text-white tracking-tighter" id="weather-temp">--</span>
+                    <span class="text-2xl text-blue-200 font-bold mt-1">°</span>
+                </div>
+                <div class="flex items-center justify-center gap-3 mt-2 w-full text-[13px] font-bold tracking-tighter">
+                    <span class="text-red-400/90">최고 <span id="temp-max">--</span>°</span>
+                    <span class="text-blue-300/90">최저 <span id="temp-min">--</span>°</span>
+                   </div>
+                <div class="mt-1 flex flex-col items-center">
+                    <h3 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-1">
+                        부산 강서구
+                    </h3>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[11px] text-blue-400 font-bold" id="weather-desc">--</span>
+                        <div class="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-gray-400">
+                            💧 <span id="weather-humidity">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-6 px-1">
+            <div onclick="confirmOilStationNav()" 
+                 class="relative overflow-hidden rounded-2xl p-3 border border-white/10 shadow-lg group bg-gradient-to-br from-gray-800 to-gray-900 cursor-pointer hover:bg-white/5 transition-colors">
+                
+                <div class="absolute -right-4 -top-4 text-white/5 group-hover:text-yellow-500/10 transition-colors duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12v2h1.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 .5-.5H10v-2H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2.5ZM12 5H6v9h6V5Zm7.5 4.5h-1a.5.5 0 0 0-.5.5v5a.5.5 0 0 0 .5.5h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1Z"/></svg>
+                </div>
+
+                <div class="relative z-10 px-1">
+                    <div onclick="event.stopPropagation(); refreshOilPrice(this);" class="flex justify-between items-start mb-1 cursor-pointer active:scale-95 transition-transform" title="누르면 정보를 갱신합니다">
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <p id="oil-label" class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">경유 기준</p>
+                                <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </div>
+                            <h3 class="text-xs font-bold text-gray-200">부산 강서구 평균</h3>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-black text-white tracking-tighter" id="diesel-avg-price">--</div>
+                            <div class="text-[10px] text-blue-400 font-bold flex justify-end items-center gap-0.5">▼ 12원</div>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-px bg-white/10 my-2"></div>
+
+                    <div class="flex justify-between items-end">
+                        <div class="flex-1 min-w-0 mr-2">
+                            <div class="mb-1">
+                                <span class="text-[10px] text-yellow-400 font-bold border border-yellow-500/30 px-1 py-0.5 rounded bg-yellow-500/10 inline-block">👑 최저가 TOP 1</span>
+                            </div>
+                            <div class="station-name-wrapper w-full">
+                                <h4 class="text-sm font-bold text-white leading-tight station-name-text" id="cheapest-st-name">정보 수신 중...</h4>
+                            </div>
+                            <div class="flex items-center gap-1 mt-0.5">
+                                <p class="text-[10px] text-gray-400 truncate w-full" id="cheapest-st-addr">-</p>
+                                <div class="flex items-center text-[10px] text-blue-300 font-bold animate-pulse whitespace-nowrap">
+                                    <span>길안내</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-lg font-black text-yellow-400 tracking-tighter" id="cheapest-price">--</span>
+                            <span class="text-[10px] text-yellow-600 font-bold">원</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+       <button id="sidebar-toggle-handle" onclick="toggleSidebar()"
+            class="absolute -right-5 w-5 h-16 -translate-y-1/2 
+                   
+                   /* 👇 여기가 핵심! (모바일은 위로, PC는 중앙으로) */
+                   top-[30%] md:top-1/2
+                   
+                   bg-gray-700/50 text-gray-400 
+                   rounded-r-lg
+                  cursor-pointer 
+                   flex items-center justify-center
+                   hover:bg-gray-600 hover:text-white transition-colors z-50">
+        
+        <svg id="sidebar-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+    </button>
+    </div>  
+    <div id="main-content-wrapper" 
+         class="flex-grow pt-4 ml-0 md:ml-64 transition-all duration-300 w-full">
+        
+        <div class="max-w-4xl mx-auto p-4">
+
+            <div id="view-write" class="view-content space-y-6">
+                
+                <h1 class="text-3xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center">
+                  <img src="logo.png" alt="생탁 로고" class="h-14 w-auto mr-3 select-none pointer-events-none">
+                  강서 도매소
+                </h1>
+               <div class="flex mb-0"> 
+                    <button id="tab-write" onclick="toggleSubTab('write')" 
+                            class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 tab-active rounded-tl-xl rounded-tr-none text-gray-700">
+                      <span>일보 작성</span>
+                    </button>
+                    <button id="tab-review" onclick="toggleSubTab('review')" 
+                            class="flex-1 py-3 text-lg font-medium border-b-2 border-transparent hover:border-green-500 text-gray-500 rounded-tr-xl rounded-tl-none">
+                      <span>날짜 검색</span>
+                    </button>
+                </div>
+                <div id="tab-content">
+                    
+                    <div id="content-write" 
+                         class="sub-tab-content space-y-6 p-6 rounded-xl 
+                                bg-[#f7f9fc] text-gray-700 
+                                shadow-[0px_-8px_15px_rgba(255,255,255,0.8),0px_8px_15px_rgba(204,204,204,0.5)]">
+                      
+                      <div id="status-box" class="wide-switch-card w-full py-3 mb-8">
+
+    <div class="flex justify-between items-center px-6 mb-1"> 
+        <p class="font-bold text-lg text-gray-600 flex items-center gap-2">
+            <span id="current-date">불러오는 중...</span>
+        </p>
+        
+        <button onclick="updateFactoryStatus(); this.querySelector('svg').classList.add('animate-spin-once'); setTimeout(() => this.querySelector('svg').classList.remove('animate-spin-once'), 700);" 
+                class="p-1 text-gray-400 transition-colors duration-200 hover:text-gray-900 focus:outline-none">
+            
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="gradient-divider-h"></div>
+
+    <div class="flex flex-row h-10 items-center mt-1 w-full"> 
+        
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-gray-800 tracking-tight" id="val-f19">-</span>
+        </div>
+
+        <div class="gradient-divider-v"></div>
+
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-gray-800 tracking-tight" id="val-f20">-</span>
+        </div>
+
+        <div class="gradient-divider-v"></div>
+
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-red-500 tracking-tight" id="val-f21">-</span>
+        </div>
+
+    </div>
+
+</div>
+
+                      <div class="flex w-full mt-4 rounded-xl overflow-hidden border-2 border-[#f7f9fc] shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
+    
+    <button onclick="generateTodayReport()" 
+            class="flex-1 py-4 bg-green-500 text-white font-bold 
+                   hover:bg-green-600 transition-colors 
+                   active:bg-green-700 flex items-center justify-center gap-2 text-xl"> 
+        생성&열기
+    </button>
+    
+    <button onclick="openQuickEntryModal()" 
+            class="flex-1 py-4 bg-red-500 text-white font-bold 
+                   hover:bg-red-600 transition-colors 
+                   active:bg-red-700 flex items-center justify-center gap-2 text-xl">
+        ⚡ 간편 작성
+    </button>
+
+</div>
+
+                      <h2 class="text-2xl font-light text-gray-700 pt-4">거래처 현황 지도</h2>
+                      <div class="p-4 rounded-lg bg-gray-100 border border-gray-300 text-gray-700">
+                        <p class="font-semibold">현재 등록된 모든 거래처의 위치를 지도로 확인 및 T맵 길찾기 연동 됩니다.</p>
+                      </div>
+                      <button onclick="openMapOverlay()" 
+        class="w-full mt-4 py-4 
+               bg-blue-600 text-white font-bold text-xl 
+               rounded-xl border-2 border-[#f7f9fc] 
+               hover:bg-blue-700 transition-colors 
+               active:bg-blue-800 
+               shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
+    거래처 현황 지도 보기
+</button>
+
+                      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
+                    </div>
+
+                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg relative">
+                      
+                      
+                      <div class="flex justify-between items-center mb-4">
+                          <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                          </button>
+                          <div id="current-month-display" onclick="reloadCurrentMonth()" title="누르면 달력을 새로고침합니다" class="text-2xl font-bold text-green-700 cursor-pointer hover:text-green-900 transition-all select-none active:scale-95">
+                                불러오는 중...
+                           </div>
+                          <button onclick="changeMonth(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                      </div>
+
+                      <div class="calendar-grid text-center text-sm font-medium">
+                          <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
+                            <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
+                            <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
+                            <div class="p-2">토</div>
+                          </div>
+                          <div id="calendar-days" class="grid grid-cols-7 gap-y-1">
+                          </div>
+                         
+                      </div>
+                  
+                      <button id="generate-summary-button" onclick="createMonthlySummary()" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-400">
+                        <span id="summary-button-text">XX월 매출현황표 생성</span>
+                      </button>
+
+                      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 불러오는 중...</p>
+                    <div id="calendar-loader" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl hidden">
+                    <div class="w-12 h-12 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin mb-3"></div>
+                    <p class="text-sm font-bold text-gray-600 animate-pulse">
+                                    📅 달력 정보를 불러오는 중...
+                       </p>
+                   </div>
+                </div>  
+              </div> 
+            </div> 
+          <div id="view-consolidated" class="view-content hidden p-6 bg-white rounded-xl shadow-2xl min-h-[600px]">
+                 
+              <div class="flex justify-between items-center mb-8">
+                  <button onclick="changeConsolidatedYear(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <h2 id="consolidated-header" 
+                      class="text-3xl font-extrabold text-gray-800 text-center mx-4 pb-4 border-b-2 border-gray-100">
+                      <span id="consolidated-header-year">2025년</span> 통합본
+                  </h2>
+                  <button onclick="changeConsolidatedYear(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+              </div>
+              
+              <div id="consolidated-list" 
+                   class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
+                  <p class="text-gray-500 col-span-full">통합본 목록을 불러오는 중...</p>
+              </div>
+              
+              <p id="consolidated-status" class="text-sm text-gray-400 mt-8 py-3 text-center border-t border-gray-100/70">상태: 불러오는 중...</p>
+          
+          </div> 
+          <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
+  
+  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
+      <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
+          <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
+          <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
+          <div class="flex justify-end space-x-3">
+              <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">아니오</button>
+              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
+          </div>
+      </div>
+  </div>
+
+ <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center w-full h-full transition-opacity duration-300">
+    
+    <div class="tr-scene transform scale-75 md:scale-100"> 
+        <div class="tr-mountain"></div>
+        <div class="tr-hill"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-tree"></div>
+        <div class="tr-rock"></div>
+        <div class="tr-truck"></div>
+        <div class="tr-wheels"></div>
+    </div>
+
+    <div id="loading-message-display" style="margin-top: 30px; text-align: center; min-height: 30px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+        </div>
+
+</div>
+          
+<div id="map-overlay" class="fixed inset-0 z-[100] flex flex-col hidden bg-white" aria-modal="true">
+  <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[110]">
+        <button onclick="openManualAddModal()" class="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg active:scale-95 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="font-bold text-lg">거래처 추가</span>
+        </button>
+    </div>
+  
+  <button id="btn-restore-sidebar" onclick="restoreSidebar()" class="hidden absolute top-20 left-4 z-[55] bg-white p-3 rounded-full shadow-lg border border-gray-200 text-blue-600 active:scale-95 transition-transform">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  
+  <div class="flex-1 relative"> 
+    
+<button onclick="closeMapOverlay()" class="map-close-button-new">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    
+    <div id="map_overlay_content" class="w-full h-full">
+    </div>
+      <div id="map_overlay_content" class="w-full h-full"></div>
+
+<div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-sm flex justify-center pointer-events-none">
+        
+        <div class="search-pill group pointer-events-auto relative flex items-center bg-white/90 backdrop-blur-md rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-200/50 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
+            
+            <div class="pl-3 pr-2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+
+            <input type="text" id="map-search-input" 
+                   placeholder="주소 검색..." 
+                   onkeydown="if(event.key === 'Enter') searchMapLocation()"
+                   class="w-full bg-transparent outline-none text-sm font-medium text-gray-700 placeholder-gray-400 h-10 pr-4">
+                   
+            </div>
+    </div>
+    <div id="client-list-panel" class="p-4 overflow-y-auto border-r border-gray-200">
+      
+      <div class="flex flex-col mb-4 p-3 bg-white/80 backdrop-blur-md rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300">
+        
+        <div class="flex justify-between items-center mb-3 px-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Manager</span>
+            
+            <button id="btn-toggle" onclick="togglePanelMinimize()" class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
+                <svg id="toggle-icon-svg" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 bg-gray-100/50 p-1 rounded-xl">
+            <button id="btn-kim" onclick="toggleClientList('김원대', this)" class="manager-btn py-2.5 text-sm font-bold text-gray-500 rounded-lg transition-all duration-200 hover:text-gray-700">
+              김원대
+            </button>
+            <button id="btn-jung" onclick="toggleClientList('정병준', this)" class="manager-btn py-2.5 text-sm font-bold text-gray-500 rounded-lg transition-all duration-200 hover:text-gray-700">
+              정병준
+            </button>
+        </div>
+        
+      </div>
+
+      <div id="client-list-container">
+        <p class="text-sm text-gray-500">담당자를 선택해주세요.</p>
+      </div>
+
+    </div>
+    
+  </div>
+</div>
+  <div id="add-client-modal" class="fixed inset-0 z-[110] flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+    
+    <h3 class="text-xl font-bold text-gray-800 text-center">📍 신규 거래처 등록</h3>
+    
+    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <label class="block text-xs text-gray-500 mb-1">주소 입력</label>
+      <input type="text" id="new-client-address" placeholder="예: 부산 강서구 대저동 123-4" class="w-full bg-transparent outline-none text-sm font-medium text-gray-800 placeholder-gray-400">
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-gray-700 mb-1">상호명 (거래처 이름)</label>
+      <input type="text" id="new-client-name" placeholder="예: 대박식당" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+    </div>
+
+    <div class="flex space-x-3 pt-2">
+      <button onclick="closeAddClientModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">취소</button>
+      <button onclick="saveNewClient()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 shadow-md">등록하기</button>
+    </div>
+
+  </div>
+</div>
+<div id="nav-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl transform translate-y-full transition-transform duration-300 z-50 pb-10 touch-none">
+  
+  <div id="drag-handle" class="w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing">
+      <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
+  </div>
+  
+  <div class="px-6 pb-6 flex flex-col items-center space-y-4">
+    <h3 class="text-lg font-bold text-gray-800 text-center">
+      <span id="nav-target-name" class="text-blue-600">거래처명</span>(으)로<br>
+      길안내를 시작할까요?
+    </h3>
+    
+    <div class="flex w-full space-x-3 mt-2">
+      <button onclick="closeNavPrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+        취소
+      </button>
+      <button onclick="executeNavigation()" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+        T맵 실행
+      </button>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<div id="delete-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl transform translate-y-full transition-transform duration-300 z-[70] pb-10">
+  
+  <div class="w-full flex justify-center pt-4 pb-2">
+      <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
+  </div>
+  
+  <div class="px-6 pb-6 flex flex-col items-center space-y-4">
+    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    </div>
+
+    <h3 class="text-lg font-bold text-gray-900 text-center">
+      <span id="delete-target-name" class="text-red-600">거래처명</span>을(를)<br>
+      정말 삭제하시겠습니까?
+    </h3>
+    
+    <p class="text-sm text-gray-500 text-center">
+      삭제하면 복구할 수 없으며,<br>
+      스프레드시트에서도 즉시 지워집니다.
+    </p>
+    
+    <div class="flex w-full space-x-3 mt-2">
+      <button onclick="closeDeletePrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+        취소
+      </button>
+      <button onclick="executeDelete()" class="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors shadow-md">
+        삭제하기
+      </button>
+    </div>
+  </div>
+</div>
+  <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center bg-white/95 backdrop-blur shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-5 py-3 rounded-full border border-gray-100 transition-all duration-500 opacity-0 -translate-y-10 pointer-events-none">
+  <div id="toast-icon" class="mr-3 flex items-center justify-center">
+    </div>
+  <span id="toast-message" class="text-sm font-bold text-gray-800 whitespace-nowrap">알림 메시지</span>
+</div>
+  <div id="report-option-modal" class="fixed inset-0 z-[9999] hidden">
+    
+    <div id="ro-backdrop" class="absolute inset-0 bg-black/40 transition-opacity opacity-0" onclick="closeReportOptionModal()"></div>
+
+    <div id="ro-sheet" class="absolute bottom-0 left-0 w-full bg-white rounded-t-3xl transform translate-y-full transition-transform duration-300 ease-out flex flex-col pb-10">
+        
+        <div class="w-full flex justify-center pt-3 pb-2">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <div class="px-6 pt-2">
+            <h3 id="option-date-title" class="text-xl font-bold text-center mb-6 text-gray-900 border-b border-gray-100 pb-4">
+                2025년 11월 27일
+            </h3>
+
+            <div class="space-y-3">
+                <button id="btn-open-report" class="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg rounded-2xl transition shadow-md flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+                    <span>열기</span>
+                </button>
+
+                <button id="btn-delete-report" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold text-lg rounded-2xl transition shadow-md flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>삭제</span>
+                </button>
+            </div>
+
+            <button onclick="closeReportOptionModal()" class="w-full mt-4 py-4 bg-gray-100 text-gray-600 font-bold text-lg rounded-2xl hover:bg-gray-200 transition">
+                취소
+            </button>
+        </div>
+    </div>
+</div>
+<script src="quickEntry.js"></script>
+<script>
+    // ===============================================
+    // 1. 전역 변수 및 초기 설정
+    // ===============================================
+    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+  
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
+    let isDataLoading = false; 
+
+    let isMapInitialized = false;     
+    let currentMapInstance = null;
+    let currentMarker = null; 
+    let tempMarker = null;      // [최신] 등록용 임시 핀
+    let tempInfoWindow = null;  // [최신] 등록용 임시 말풍선
+
+    // 거래처 데이터 변수
+    let loadedClientData = {};       
+    let activeClientUser = null;     
+    let isPanelMinimized = false;    
+
+    const markerColors = {
+        '김원대': 'blue', 
+        '정병준': 'red'   
+    };
+
+    // ===============================================
+    // 2. 유틸리티 & UI 헬퍼 함수
+    // ===============================================
+
+    function formatDate(date) {
+      return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일';
+    }
+    
+/**
+ * [업그레이드] 로딩 화면 표시 함수
+ * @param {string} message - 표시할 텍스트
+ * @param {boolean} useTruck - 트럭 애니메이션 사용 여부 (true면 트럭 등장, false면 심플 로딩)
+ */
+function showLoader(message, useTruck = false) { // 기본값은 false(트럭 안 나옴)로 설정
+    const overlay = document.getElementById('loading-overlay');
+    const loadingTextContainer = document.getElementById('loading-message-display');
+    const truckScene = document.querySelector('.tr-scene'); // 트럭 장면 요소 찾기
+    
+    if (!overlay) return;
+
+    // 1. 오버레이 보이기
+    overlay.classList.remove('hidden');
+    
+    // 2. 트럭 보이기/숨기기 결정
+    if (useTruck) {
+        if(truckScene) truckScene.style.display = 'block'; // 트럭 보임
+    } else {
+        if(truckScene) truckScene.style.display = 'none';  // 트럭 숨김 (글자만 나옴)
+    }
+    
+    // 3. 텍스트 애니메이션 세팅
+    if (loadingTextContainer) {
+        loadingTextContainer.innerHTML = '';
+        loadingTextContainer.classList.add('flowing-text');
+
+        [...message].forEach((char, index) => {
+            const span = document.createElement('span');
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            const delay = index * 0.12; 
+            span.style.animationDelay = `${delay}s`;
+            loadingTextContainer.appendChild(span);
+        });
+    }
+}
+    function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
+    function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
+
+    function getMobileOS() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "Android";
+      if (/iPad|iPhone|iPod/.test(ua)) return "iOS"; 
+      return "Other";
+    }
+
+    // [최신] 예쁜 토스트 알림 (기존 alert 대체)
+    let toastTimer;
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const iconEl = document.getElementById('toast-icon');
+        const msgEl = document.getElementById('toast-message');
+
+        msgEl.textContent = message;
+
+        if (type === 'success') {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+        } else {
+            iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+        }
+
+        container.classList.remove('opacity-0', '-translate-y-10'); 
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            container.classList.add('opacity-0', '-translate-y-10');
+        }, 2500);
+    }
+
+    function openSheetApp(url, targetWindow) {
+      const os = getMobileOS();
+      if (os === "iOS" || os === "Android") {
+          if (targetWindow) targetWindow.close();
+          window.location.href = url;
+      } else {
+          if (targetWindow) targetWindow.location.href = url;
+          else window.open(url, '_blank');
+      }
+    }
+    
+    // 탭 변경 함수
+    function changeTab(tabName) {
+      document.getElementById('tab-write').classList.remove('tab-active');
+      document.getElementById('tab-review').classList.remove('tab-active');
+      document.getElementById('content-write').classList.add('hidden');
+      document.getElementById('content-review').classList.add('hidden');
+
+      if (tabName === 'write') {
+        document.getElementById('tab-write').classList.add('tab-active');
+        document.getElementById('content-write').classList.remove('hidden');
+        // ✅ [추가] 탭 변경 로그
+        logClientActionAsync('일보 작성 탭 클릭');
+      } else if (tabName === 'review') {
+        document.getElementById('tab-review').classList.add('tab-active');
+        document.getElementById('content-review').classList.remove('hidden');
+        if (isDataLoading) showLoader(currentMonth + '월 달력 정보를 불러오는 중...');
+        else renderCalendar();
+        // ✅ [추가] 탭 변경 로그
+        logClientActionAsync('날짜 검색 탭 클릭');
+      }
+    }
+
+    // ===============================================
+    // 3. 지도 핵심 기능 (초기화, 롱프레스, UI제어)
+    // ===============================================
+
+    // [최종 수정] 지도 열기 + 강력한 터치 감지 (Capture 모드)
+    function openMapOverlay() {
+      console.log("지도 열기 버튼 클릭.");
+
+      // 👇 [추가] 지도가 열릴 때 사이드바를 강제로 닫습니다!
+      const sidebar = document.getElementById('sidebar');
+      const body = document.body;
+
+      // 👇 안전장치 추가: TMap이 아직 로드 안 됐으면 경고
+      if (typeof Tmapv2 === 'undefined') {
+          showToast("지도 엔진 로딩 중입니다. 잠시 후 다시 시도해주세요.", "error");
+          return;
+      }
+      
+      // 🚀 [추가된 로직 1] 모바일 사이드바가 열려있다면? -> 닫기! (클래스 제거)
+      if (sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+      }
+      if (!sidebar.classList.contains('closed')) {
+        sidebar.classList.add('closed');
+        body.classList.add('sidebar-collapsed');
+      }
+      
+      document.getElementById('map-overlay').classList.remove('hidden');
+
+      // ★★★ [여기 추가] 지도가 열리면 뉴스 티커를 숨깁니다 ★★★
+      const ticker = document.querySelector('.news-ticker-wrap'); // 혹은 document.getElementById('news-ticker')
+      if (ticker) ticker.style.display = 'none';
+      
+      // ✅ [추가] 지도 열기 행동 로그를 비동기적으로 기록
+      logClientActionAsync('지도 화면 열기');
+      
+      if (!isMapInitialized) {
+        console.log("맵 생성 시작...");
+        try {
+          // 1. 지도 생성
+          currentMapInstance = new Tmapv2.Map("map_overlay_content", {
+            center: new Tmapv2.LatLng(35.2128, 128.9806),
+            width: "100%",
+            height: "100%",
+            zoom: 12
+          });
+          
+          // 2. 롱프레스 기능 활성화
+          enableMapLongPress(); 
+
+          // -----------------------------------------------------------
+          // ✋ [핵심] 지도를 만지면 사이드바 숨기기 (Capture 모드)
+          // -----------------------------------------------------------
+          const mapDiv = document.getElementById("map_overlay_content");
+
+          // (1) 모바일 터치 (Zoom, 이동 포함)
+          // { capture: true } -> 지도가 알기 전에 우리가 먼저 챘습니다!
+          mapDiv.addEventListener("touchstart", function() {
+              hideSidebarMode();
+          }, { capture: true, passive: true });
+
+          // (2) PC 마우스 클릭
+          mapDiv.addEventListener("mousedown", function() {
+              hideSidebarMode();
+          }, { capture: true });
+
+          // (3) PC 마우스 휠
+          mapDiv.addEventListener("wheel", function() {
+              hideSidebarMode();
+          }, { capture: true, passive: true });
+          
+          // (4) [보험용] TMap API 자체 이벤트도 한 번 더 걸어둠
+          currentMapInstance.addListener("dragstart", hideSidebarMode);
+          currentMapInstance.addListener("zoomstart", hideSidebarMode);
+
+          isMapInitialized = true; 
+
+        } catch (e) {
+          console.error("지도 생성 실패:", e);
+          document.getElementById('map_overlay_content').textContent = "지도 생성 실패: " + e.message;
+        }
+      }
+    }
+
+    /**
+     * '닫기' 버튼
+     */
+    function closeMapOverlay() {
+      document.getElementById('map-overlay').classList.add('hidden');
+
+    // ★★★ [여기 추가] 지도를 닫으면 뉴스 티커를 다시 보여줍니다 (PC 화면만) ★★★
+    if (window.innerWidth >= 768) {
+        const ticker = document.querySelector('.news-ticker-wrap'); // 혹은 document.getElementById('news-ticker')
+        if (ticker) ticker.style.display = 'flex';
+    }
+
+     // 🚀 [추가된 핵심 로직] 맵 닫을 때 하단 길안내 팝업도 강제로 닫기!
+    // (closeNavPrompt 함수가 있으면 실행해서 스르륵 내려가게 함)
+    if (typeof closeNavPrompt === 'function') {
+        closeNavPrompt();
+    }
+    
+    // (선택사항) 거래처 등록 모달도 혹시 열려있다면 닫기
+    if (typeof closeAddClientModal === 'function') {
+        closeAddClientModal();
+    }
+
+    // 2. 💻 [PC 전용] 사이드바 다시 꺼내기 (원상복구)
+    // 화면 너비가 768px 이상(PC)일 때만 작동
+    if (window.innerWidth >= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body;
+        
+        // '닫힘' 클래스 제거 -> 다시 나옴
+        sidebar.classList.remove('closed');
+        body.classList.remove('sidebar-collapsed');
+    }
+  }
+  
+    // [최신] 롱프레스 활성화 함수
+    function enableMapLongPress() {
+        const LONG_PRESS_DURATION = 500;
+        const MOVE_THRESHOLD = 20;
+        let pressTimer;
+        let startPixel = null;
+        let startLatLng = null;
+
+        const stopTimer = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+
+        const onStart = (e) => {
+            if (!e.pixel || !e.latLng) return;
+            stopTimer();
+            startPixel = e.pixel;
+            startLatLng = e.latLng;
+            pressTimer = setTimeout(() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                // 좌표만 넘겨서 처리 (중복 호출 방지)
+                onMapLongPressTrigger(startLatLng.lat(), startLatLng.lng());
+            }, LONG_PRESS_DURATION);
+        };
+
+        const onMove = (e) => {
+            if (!pressTimer || !startPixel || !e.pixel) return;
+            if (Math.abs(e.pixel.x - startPixel.x) > MOVE_THRESHOLD || Math.abs(e.pixel.y - startPixel.y) > MOVE_THRESHOLD) {
+                stopTimer();
+            }
+        };
+
+        const onEnd = () => stopTimer();
+
+        // TMap 이벤트 연결
+        currentMapInstance.addListener("touchstart", onStart);
+        currentMapInstance.addListener("touchmove", onMove);
+        currentMapInstance.addListener("touchend", onEnd);
+        currentMapInstance.addListener("mousedown", onStart);
+        currentMapInstance.addListener("mousemove", onMove);
+        currentMapInstance.addListener("mouseup", onEnd);
+        currentMapInstance.addListener("dragstart", onEnd);
+    }
+
+    // [최신] 롱프레스/클릭/검색 시 실행되는 트리거 (담당자 체크 로직 제거됨)
+    function onMapLongPressTrigger(lat, lon) {
+        // 기존 마커/말풍선 안전하게 정리
+        if (tempMarker) { try { tempMarker.setMap(null); } catch (e) {} tempMarker = null; }
+        if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch (e) {} tempInfoWindow = null; }
+        
+        // 파란 핀 찍기
+        tempMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
+            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            map: currentMapInstance
+        });
+        
+        currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+        // 등록 모드로 말풍선 띄우기
+        findAddressAndShowBubble(lat, lon, "위치 정보", null, 'register');
+    }
+
+    // 지도 클릭 시에도 롱프레스와 동일하게 작동
+    function onMapClick(e) {
+        onMapLongPressTrigger(e.latLng.lat(), e.latLng.lng());
+    }
+
+    // ===============================================
+    // 4. 주소 검색 및 말풍선 (등록/길안내)
+    // ===============================================
+
+    // [최신] 말풍선 띄우기 (인자 5개, 버튼 터치 씹힘 방지 적용됨)
+    async function findAddressAndShowBubble(lat, lon, title, address, mode = 'register') {
+        let markerPoint;
+        try { markerPoint = currentMapInstance.realToScreen(new Tmapv2.LatLng(lat, lon)); } catch (e) { return; }
+        
+        const mapDiv = document.getElementById("map_overlay_content");
+        const isTop = markerPoint.y < 220;
+        const isLeft = markerPoint.x < 160;
+        const isRight = markerPoint.x > (mapDiv.clientWidth - 160);
+
+        let displayName = title || "위치 정보"; 
+        let displayAddress = address; 
+
+        if (!displayAddress) {
+            try {
+                const url = `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${lat}&lon=${lon}&coordType=WGS84GEO&addressType=A10&appKey=${APP_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.addressInfo) {
+                    const info = data.addressInfo;
+                    if (info.roadName) displayAddress = `${info.city_do} ${info.gu_gun} ${info.roadName} ${info.buildingIndex}`.trim();
+                    else displayAddress = info.fullAddress.split(",")[0];
+                }
+            } catch (e) { displayAddress = "주소 정보 없음"; }
+        }
+
+        let buttonHtml = "";
+        // [중요] 모바일 터치 이벤트 전파 방지(stopPropagation) 적용
+        if (mode === 'navigate') {
+            const safeName = displayName.replace(/'/g, "").replace(/"/g, "");
+            buttonHtml = `
+                <div style="margin-top: 8px;">
+                    <button onclick="startDirectNav('${safeName}', ${lat}, ${lon})" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();" onmousedown="event.stopPropagation();" onmouseup="event.stopPropagation();" style="background: #e11d48; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.3);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>T맵 길안내
+                    </button>
+                </div>`;
+        } else if (mode === 'register') {
+            buttonHtml = `
+                <div style="margin-top: 8px;">
+                    <button onclick="openRegistrationModal('${displayAddress}')" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();" onmousedown="event.stopPropagation();" onmouseup="event.stopPropagation();" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);">이 위치 등록</button>
+                </div>`;
+        }
+
+        let boxStyle = isTop ? "top: 10px;" : "bottom: 45px;";
+        let tailStyle = isTop ? "top: -10px; border-bottom: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;" : "bottom: -10px; border-top: 10px solid white; border-left: 10px solid transparent; border-right: 10px solid transparent;";
+        
+        if (isLeft) { boxStyle += " left: 0px;"; tailStyle += " left: 22px; transform: translateX(-50%);"; }
+        else if (isRight) { boxStyle += " right: 0px;"; tailStyle += " right: 22px; transform: translateX(50%);"; }
+        else { boxStyle += " left: 50%; transform: translateX(-50%);"; tailStyle += " left: 50%; transform: translateX(-50%);"; }
+
+        const content = `
+            <div style="position: absolute; ${boxStyle} width: max-content; z-index: 5000; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2)); pointer-events: auto;">
+                <div style="background: white; border-radius: 12px; padding: 12px 14px; text-align: center; min-width: 160px; max-width: 240px;">
+                    <p style="font-size: 14px; color: #111827; margin: 0 0 2px 0; font-weight: 800; word-break: keep-all; line-height: 1.4;">${displayName}</p>
+                    <p style="font-size: 12px; color: #6b7280; margin: 0; font-weight: 500; word-break: keep-all;">${displayAddress}</p>
+                    ${buttonHtml}
+                </div>
+                <div style="position: absolute; width: 0; height: 0; ${tailStyle}"></div>
+            </div>`;
+
+        if (tempInfoWindow) { try { tempInfoWindow.setMap(null); } catch(e) {} }
+        
+        tempInfoWindow = new Tmapv2.InfoWindow({
+            position: new Tmapv2.LatLng(lat, lon),
+            content: content, type: 2, map: currentMapInstance, border: '0px solid white', background: false 
+        });
+    }
+
+    // ===============================================
+    // 5. 사이드바 및 거래처 목록 제어
+    // ===============================================
+
+    // [최신] 아이콘 회전 기능 포함
+    function togglePanelMinimize() {
+        const panel = document.getElementById('client-list-panel');
+        const iconSvg = document.getElementById('toggle-icon-svg');
+        panel.classList.toggle('client-list-minimized');
+        isPanelMinimized = !isPanelMinimized;
+        iconSvg.style.transform = isPanelMinimized ? "rotate(180deg)" : "rotate(0deg)";
+    }
+
+    // [최신] 사이드바 숨김 공통 함수
+    function hideSidebarMode() {
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        if (panel && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+            if (restoreBtn) restoreBtn.classList.remove('hidden');
+        }
+    }
+
+    // [최신] 사이드바 복구 함수
+    function restoreSidebar() {
+        const panel = document.getElementById('client-list-panel');
+        const restoreBtn = document.getElementById('btn-restore-sidebar');
+        panel.classList.remove('hidden');
+        restoreBtn.classList.add('hidden');
+    }
+
+    async function toggleClientList(user, buttonElement) {
+        if (typeof closeNavPrompt === 'function') closeNavPrompt();
+        
+        const container = document.getElementById('client-list-container');
+        const allButtons = document.querySelectorAll('#client-list-panel button');
+        allButtons.forEach(btn => { if (btn.id !== 'btn-toggle') btn.classList.remove('toggle-active'); });
+        
+        if (activeClientUser === user) {
+            activeClientUser = null;
+            container.innerHTML = '<p class="text-sm text-gray-500 p-2">담당자를 선택해주세요.</p>';
+            if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+            return;
+        }
+        
+        buttonElement.classList.add('toggle-active');
+        activeClientUser = user;
+        container.innerHTML = `<p class="text-sm text-gray-500 p-2">목록 불러오는 중... (${user})</p>`;
+        
+        if (!loadedClientData[user]) await fetchClientList(user);
+        displayClientList(user, loadedClientData[user]);
+        if (isPanelMinimized) togglePanelMinimize();
+    }
+
+    async function fetchClientList(user) {
+        try {
+            const result = await callAppsScript('getClients', { user: user });
+            if (result.status === 'success' && result.clients.length > 0) {
+                loadedClientData[user] = result.clients.map(client => ({ ...client, coords: null })); 
+            } else { loadedClientData[user] = []; }
+        } catch (e) { loadedClientData[user] = []; }
+    }
+
+// [최종 수정] 왼쪽 여백 확보 + 폰트 축소 + ...삭제
+    function displayClientList(user, clients) {
+        const container = document.getElementById('client-list-container');
+        
+        // 부모 여백 무시하고 배경은 꽉 채우기
+        container.style.cssText = "margin-left: -24px; margin-right: -24px; width: calc(100% + 48px); padding: 0;";
+        
+        if (clients.length === 0) {
+            container.innerHTML = `<p class="text-red-600 text-sm p-4 text-center">거래처 목록이 없습니다 (${user}).</p>`;
+            return;
+        }
+
+        const listUl = document.createElement('ul');
+        listUl.id = `list-${user}`;
+        listUl.className = "w-full p-0 m-0 list-none block"; 
+        
+        for (const client of clients) {
+            const li = document.createElement('li');
+            
+            // [디자인 수정]
+            // pl-7: 왼쪽 여백을 넉넉하게 줘서(약 28px) 글자가 짤리지 않게 함
+            // pr-4: 오른쪽 여백
+            li.className = 'w-full pl-5 pr-4 py-3 border-b border-gray-400/30 flex items-center bg-transparent hover:bg-white/20 transition-colors select-none touch-manipulation';
+            
+            // --- 이름 영역 (6자 이상이면 흐름 - 기준 낮춤) ---
+            const isLongText = client.name.length > 7;
+            let nameHtml = '';
+            
+            if (isLongText) {
+                nameHtml = `
+                    <div class="marquee-container pointer-events-none">
+                        <div class="marquee-content do-scroll">
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
+                            <span class="inline-block w-8"></span>
+                            <span class="text-sm font-bold text-gray-900">${client.name}</span>
+                        </div>
+                    </div>`;
+            } else {
+                // [수정] truncate 제거 -> ... 안 찍히고 다 나옴
+                nameHtml = `<div class="text-sm font-bold text-gray-900 leading-snug pointer-events-none whitespace-nowrap">${client.name}</div>`;
+            }
+
+            li.innerHTML = `
+                <div class="flex-1 min-w-0 text-left pr-3 overflow-hidden pointer-events-none">
+                    ${nameHtml}
+                </div>
+
+                <div class="nav-icon-target flex-shrink-0 w-9 h-9 flex items-center justify-center text-blue-600 bg-white/40 rounded-full active:scale-90 transition-transform shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 7" />
+                    </svg>
+                </div>
+            `;
+            
+            // --- 터치 로직 ---
+            let listTouchTimer;
+            let isLongPress = false;
+            let startX = 0;
+            let startY = 0;
+            let isMoved = false; 
+            // ---------------------------------------------------------
+            // 1. [핵심 추가] 클릭(Click) 이벤트 (PC & 모바일 공용)
+            // ---------------------------------------------------------
+         
+          li.addEventListener('click', (e) => {
+                // 파란색 화살표 아이콘을 눌렀을 때 -> 하단 팝업(길안내)
+                if (e.target.closest('.nav-icon-target')) {
+                    openNavPrompt(client, user);
+                } 
+                // 그 외 영역(이름 등)을 눌렀을 때 -> 지도 이동 + 말풍선
+                else {
+                    showClientOnMapWithBubble(client, user);
+                }
+            });
+        
+          li.addEventListener('touchstart', (e) => {
+                isLongPress = false;
+                isMoved = false; 
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                li.classList.add('bg-white/30');
+
+                listTouchTimer = setTimeout(() => {
+                    if (!isMoved) { 
+                        isLongPress = true;
+                        navigator.vibrate(50); 
+                        closeNavPrompt(); 
+                        openDeletePrompt(client, user); 
+                        li.classList.remove('bg-white/30');
+                    }
+                }, 800); 
+            }, { passive: false });
+
+            li.addEventListener('touchmove', (e) => {
+                if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
+                    isMoved = true;        
+                    clearTimeout(listTouchTimer); 
+                    li.classList.remove('bg-white/30');
+                }
+            }, { passive: false });
+
+            li.addEventListener('touchend', (e) => {
+                clearTimeout(listTouchTimer);
+                li.classList.remove('bg-white/30');
+                
+                if (isMoved || isLongPress) return;
+
+                if (e.target.closest('.nav-icon-target')) {
+                    openNavPrompt(client, user);
+                } else {
+                    showClientOnMapWithBubble(client, user);
+                }
+            }, { passive: true });
+            
+            li.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                closeNavPrompt();
+                openDeletePrompt(client, user);
+            });
+
+            listUl.appendChild(li);
+        }
+        container.innerHTML = ''; 
+        container.appendChild(listUl);
+    }
+
+    async function showClientOnMapWithBubble(client, user) {
+        openMapOverlay();
+        try {
+            const markerPos = await geocodeAndSetMarker(client.address, user);
+            const lat = parseFloat(markerPos.lat());
+            const lon = parseFloat(markerPos.lng());
+            currentMapInstance.setCenter(new Tmapv2.LatLng(lat, lon));
+            currentMapInstance.setZoom(16); 
+            currentMapInstance.panBy(120, 0); 
+            if (tempMarker) tempMarker.setMap(null);
+            tempMarker = new Tmapv2.Marker({ position: new Tmapv2.LatLng(lat, lon), icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", map: currentMapInstance });
+            findAddressAndShowBubble(lat, lon, client.name, client.address, 'navigate');
+        } catch (e) { showToast("위치 정보 로드 실패", "error"); }
+    }
+
+    // ===============================================
+    // 6. 거래처 추가 / 삭제 / 길안내 (모달 로직)
+    // ===============================================
+
+    // [최신] 플로팅 버튼용
+    function openManualAddModal() {
+        // 일단 열리게 허용 (등록할 때만 체크함)
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = ''; 
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
+
+    // [최신] 말풍선 등록 버튼용 (말풍선 유지)
+    function openRegistrationModal(address) {
+        if (!activeClientUser) { 
+            showToast("담당자를 선택해주세요.", "error"); 
+            const panel = document.getElementById('client-list-panel');
+            if (panel.classList.contains('hidden')) restoreSidebar();
+            return; 
+        }
+        document.getElementById('new-client-name').value = '';
+        document.getElementById('new-client-address').value = address; 
+        document.getElementById('add-client-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('new-client-name').focus(), 100);
+    }
+
+    function closeAddClientModal() {
+        document.getElementById('add-client-modal').classList.add('hidden');
+    }
+
+    // [최신] 저장 버튼 (여기서 담당자 필수 체크)
+    async function saveNewClient() {
+        if (!activeClientUser) { showToast("담당자 선택 필요", "error"); return; }
+        const name = document.getElementById('new-client-name').value.trim();
+        const address = document.getElementById('new-client-address').value.trim() || document.getElementById('new-client-address').textContent; 
+        const user = activeClientUser;
+
+        if (!name) { showToast("상호명 입력 필요", "error"); return; }
+        if (!address) { showToast("주소 입력 필요", "error"); return; }
+
+        showLoader("등록 중...");
+        closeAddClientModal(); 
+
+        try {
+            const result = await callAppsScript('addNewClient', { user, name, address });
+            if (result.status === 'success') {
+                showToast("등록 완료!", "success");
+                loadedClientData[user] = null; 
+                toggleClientList(user, user === '김원대' ? document.getElementById('btn-kim') : document.getElementById('btn-jung'));
+                if(tempMarker) tempMarker.setMap(null); 
+            } else { showToast("등록 실패: " + result.message, "error"); }
+        } catch(e) { showToast("오류: " + e.message, "error"); } finally { hideLoader(); }
+    }
+
+    // [최신] 길안내 실행 함수
+    function startDirectNav(name, lat, lon) {
+        const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
+        window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
+    }
+
+    function executeNavigation() {
+        if (currentNavClient && currentNavUser) {
+            startDirectNav(currentNavClient.name, currentNavClient.coords.lat(), currentNavClient.coords.lng());
+            closeNavPrompt();
+        }
+    }
+    // ===============================================
+    // 🚑 [복구] T맵 연동 바텀 시트 (변수 + 함수 통합)
+    // ===============================================
+
+    // 1. 상태 저장 변수 (누구를 안내할지 기억)
+    let currentNavClient = null;
+    let currentNavUser = null;
+
+    // 2. 팝업 열기 (애니메이션 초기화 포함)
+    function openNavPrompt(client, user) {
+        currentNavClient = client;
+        currentNavUser = user;
+        
+        // 텍스트 업데이트
+        const nameEl = document.getElementById('nav-target-name');
+        if (nameEl) nameEl.textContent = client.name;
+        
+        const modal = document.getElementById('nav-confirm-modal');
+        if (modal) {
+           
+          modal.classList.add('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+          
+          // 드래그로 망가진 스타일 초기화
+            modal.style.transform = ''; 
+            modal.style.transition = ''; 
+            
+            // 스르륵 올라오게 함
+            setTimeout(() => {
+                modal.classList.remove('translate-y-full');
+            }, 10);
+        }
+    }
+
+    // 3. 팝업 닫기 (취소)
+    function closeNavPrompt() {
+        const modal = document.getElementById('nav-confirm-modal');
+        if (modal) {
+          modal.classList.remove('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+          
+          modal.classList.add('translate-y-full');
+            // 애니메이션 후 스타일 초기화
+            setTimeout(() => { modal.style.transform = ''; }, 300);
+        }
+        currentNavClient = null;
+        currentNavUser = null;
+    }
+
+    // 4. 'T맵 실행' 버튼 클릭 시
+    async function executeNavigation() {
+        if (currentNavClient && currentNavUser) {
+            // 좌표 확인 후 실행
+            await launchTMapApp(currentNavClient, currentNavUser);
+            closeNavPrompt();
+        } else {
+            showToast("선택된 거래처 정보가 없습니다.", "error");
+        }
+    }
+
+    // 5. [최종 진화] 스마트 T맵 실행 (주소 보정 기능 탑재)
+    async function launchTMapApp(client, user) {
+        let lat, lon;
+        
+        // (A) 이미 좌표가 있으면 바로 실행 (0초 컷)
+        if (client.coords) {
+            startDirectNav(client.name, client.coords.lat(), client.coords.lng());
+            return;
+        } 
+
+        // (B) 좌표가 없으면 찾아야 함
+        showToast("위치 정보를 확인 중입니다...", "success");
+
+        try {
+            // -----------------------------------------------------
+            // 1단계: 원본 주소로 시도 ("부산 강서구...")
+            // -----------------------------------------------------
+            let markerPos = await geocodeAndSetMarker(client.address, user);
+            
+            // 성공하면 바로 저장하고 출발!
+            saveAndGo(client, user, markerPos);
+
+        } catch (e1) {
+            console.warn("1차 좌표 찾기 실패. 주소 보정 시도...");
+
+            // -----------------------------------------------------
+            // 2단계: 주소 보정 ("부산" -> "부산광역시") 사장님 아이디어! 💡
+            // -----------------------------------------------------
+            let fixedAddress = client.address;
+            
+            // "부산 "으로 시작하면 "부산광역시 "로 변경
+            if (fixedAddress.startsWith("부산 ")) {
+                fixedAddress = fixedAddress.replace("부산 ", "부산광역시 ");
+            } 
+            // "부산"이 아예 없으면 앞에 붙여줌
+            else if (!fixedAddress.includes("부산")) {
+                fixedAddress = "부산광역시 " + fixedAddress;
+            }
+
+            try {
+                const markerPos = await geocodeAndSetMarker(fixedAddress, user);
+                console.log(`주소 보정 성공! (${client.address} -> ${fixedAddress})`);
+                
+                // 성공하면 바로 저장하고 출발!
+                saveAndGo(client, user, markerPos);
+
+            } catch (e2) {
+                // -----------------------------------------------------
+                // 3단계: 그래도 안 되면 검색창으로 (최후의 수단)
+                // -----------------------------------------------------
+                console.warn("2차 시도 실패. 검색창으로 이동.", e2);
+                showToast("정확한 위치를 못 찾아 '이름'으로 검색합니다.", "success");
+                
+                const cleanName = client.name.replace(/[^\w\s가-힣]/g, "").trim();
+                setTimeout(() => {
+                    window.location.href = `tmap://search?name=${encodeURIComponent(cleanName)}`;
+                }, 800);
+            }
+        }
+    }
+
+    // [헬퍼 함수] 좌표 저장 및 길안내 시작
+    function saveAndGo(client, user, markerPos) {
+        // 찾은 좌표 캐싱 (다음번엔 바로 가게)
+        if(loadedClientData[user]) {
+            const userData = loadedClientData[user].find(c => c.name === client.name);
+            if (userData) userData.coords = markerPos;
+        }
+        // 길안내 시작
+        startDirectNav(client.name, markerPos.lat(), markerPos.lng());
+    }
+
+    // 6. URL 스키마로 앱 열기
+    function startDirectNav(name, lat, lon) {
+        const safeName = name ? name.replace(/'/g, "").replace(/"/g, "") : "목적지";
+        // 아이폰/안드로이드 공통 URL 스키마
+        window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
+    }
+   
+    // ===============================================
+    // 9. [최종 통합] 초기화 및 이벤트 리스너
+    // ===============================================
+    document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- (A) 초기 변수 및 UI 설정 ---
+    const today = new Date();
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth() + 1;
+    document.getElementById('current-date').textContent = formatDate(today);
+    document.getElementById('app-status').textContent = '상태: 준비 완료.';
+
+    // 2. 그냥 바로 시작합니다 (지도는 헤드에서 이미 로딩됨)
+    console.log("🚀 앱 시작");
+
+            // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
+            if (typeof changeView === 'function') changeView('write');
+
+            fetchReportsForMonth(currentYear, currentMonth, true); // 캘린더 데이터 로드
+            updateFactoryStatus(); // 공장 잔량 채우기
+
+            // 검색창 이벤트
+            const searchInput = document.getElementById('map-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('focus', () => {
+                document.getElementById('client-list-panel').classList.add('hidden');
+                document.getElementById('btn-restore-sidebar').classList.remove('hidden');
+            });
+           }
+            // 🚀 [신규] 스무스 스와이프 엔진
+            setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
+            setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
+            setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
+            
+            // ⛽ [추가] 유가 정보 로드 (키가 준비된 후 실행)
+            if (typeof loadOilPrice === 'function') loadOilPrice();
+    });
+    
+    function openDeletePrompt(client, user) {
+        deleteTargetClient = client; deleteTargetUser = user;
+        document.getElementById('delete-target-name').textContent = client.name;
+        document.getElementById('delete-confirm-modal').classList.remove('translate-y-full');
+    }
+    function closeDeletePrompt() {
+        document.getElementById('delete-confirm-modal').classList.add('translate-y-full');
+        deleteTargetClient = null;
+    }
+
+    async function executeDelete() {
+        if (!deleteTargetClient || !deleteTargetUser) return;
+        const name = deleteTargetClient.name, user = deleteTargetUser;
+        closeDeletePrompt(); showLoader("삭제 중...");
+        try {
+            const result = await callAppsScript('deleteClient', { user, name });
+            if (result.status === 'success') {
+                showToast("삭제되었습니다.", "success");
+                loadedClientData[user] = null; 
+                toggleClientList(user, user === '김원대' ? document.getElementById('btn-kim') : document.getElementById('btn-jung'));
+                if(currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+            } else { showToast("삭제 실패", "error"); }
+        } catch (e) { showToast("오류 발생", "error"); } finally { hideLoader(); }
+    }
+
+    // ===============================================
+    // 7. 검색 및 지오코딩 API
+    // ===============================================
+
+    async function searchMapLocation() {
+        const searchInput = document.getElementById('map-search-input');
+        const query = searchInput.value.trim();
+        if (!query) { showToast("검색어 입력 필요", "error"); return; }
+        searchInput.blur(); showToast("검색 중...", "success");
+
+        try {
+            const encodedQuery = encodeURIComponent(query);
+            const url = `https://apis.openapi.sk.com/tmap/pois?version=1&format=json&callback=result&appKey=${APP_KEY}&searchKeyword=${encodedQuery}&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.searchPoiInfo && data.searchPoiInfo.pois.poi.length > 0) {
+                const poi = data.searchPoiInfo.pois.poi[0];
+                const lat = parseFloat(poi.noorLat);
+                const lon = parseFloat(poi.noorLon);
+                onMapLongPressTrigger(lat, lon);
+            } else { showToast("결과 없음", "error"); }
+        } catch (e) { showToast("검색 오류", "error"); }
+    }
+
+    // ===============================================
+    // 3. T맵 통신 및 데이터 처리 함수 (Fetch API 사용)
+    // ===============================================
+
+    /**
+     * ✅ [수정] T맵 지오코딩 함수 (jQuery/$.ajax 제거, Fetch API 사용)
+     */
+    async function geocodeAndSetMarker(address, user) {
+        if (!currentMapInstance) return;
+
+        if (currentMarker) {
+            currentMarker.setMap(null);
+            currentMarker = null;
+        }
+
+        const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
+        const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+        
+        // TMAP API URL (Fetch용)
+        const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
+
+        try {
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                 throw new Error(`API 호출 실패 (${response.status})`);
+            }
+            
+            const data = await response.json();
+            
+            const resultInfo = data.coordinateInfo;
+            if (!resultInfo || !resultInfo.coordinate || resultInfo.coordinate.length === 0) {
+                throw new Error("요청 데이터가 올바르지 않거나 좌표를 찾을 수 없습니다.");
+            }
+            
+            let lon, lat;
+            const resultCoordinate = resultInfo.coordinate[0];
+            
+            if (resultCoordinate.lon && resultCoordinate.lon.length > 0) {
+                lon = resultCoordinate.lon;
+                lat = resultCoordinate.lat;
+            } else if (resultCoordinate.newLon && resultCoordinate.newLon.length > 0) {
+                lon = resultCoordinate.newLon;
+                lat = resultCoordinate.newLat;
+            } else {
+                throw new Error("좌표를 찾을 수 없습니다.");
+            }
+
+            const markerPosition = new Tmapv2.LatLng(Number(lat), Number(lon));
+            
+            currentMarker = new Tmapv2.Marker({
+                position: markerPosition,
+                icon: markerImageUrl,
+                iconSize: new Tmapv2.Size(24, 38),
+                map: currentMapInstance,
+                title: address
+            });
+            
+            currentMapInstance.setCenter(markerPosition);
+            currentMapInstance.setZoom(15);
+            
+            console.log(`[지오코딩 성공] ${address} -> Lat:${lat}, Lon:${lon}`);
+            return markerPosition; // Promise<LatLng> 반환
+
+        } catch (error) {
+            console.error("Geocoding API 오류:", error);
+            throw new Error(`API 호출 실패 (${error.message})`);
+        }
+    }
+
+
+    // ===============================================
+    // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
+    // ===============================================
+
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
+    }
+  
+    async function callAppsScript(action, params = {}) {
+        const url = new URL(API_URL);
+        url.searchParams.set('action', action);
+        for (const key in params) url.searchParams.set(key, params[key]);
+        const response = await fetch(url.toString());
+        return await response.json();
+    }
+
+    async function generateTodayReport() {
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        showLoader('새 일일 보고서 배송 중...', true);
+    
+        try {
+            const result = await callAppsScript('generate'); 
+            if (result.status === 'success' && result.url) {
+                openSheetApp(result.url, newWindow); 
+                reloadCurrentMonth();
+            } else { 
+              if(newWindow) newWindow.close(); alert('실패: ' + result.message); }
+        } catch (e) { 
+          if(newWindow) newWindow.close(); alert('오류: ' + e.message); } 
+        finally { hideLoader(); }
+    }
+
+    async function createMonthlySummary() {
+      showLoader(currentMonth + '월 매출현황 보고서를 배달중...', true);
+      try {
+        const result = await callAppsScript('createSummary', {
+          year: currentYear,
+          month: currentMonth
+        });
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url);
+        } else {
+          hideLoader();
+          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        hideLoader();
+        alert('월별 통계 생성 오류: ' + error.message);
+      }
+    }
+  
+    async function confirmGenerateReport() {
+        if (!selectedDateForGeneration) { closeModal(); return; }
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        const [year, month, day] = selectedDateForGeneration.split('-').map(Number);
+        closeModal(); showLoader('보고서 생성 중...');
+        try {
+            const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
+            if (result.status === 'success') {
+                if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
+                renderCalendar();
+                openSheetApp(result.url, newWindow);
+            } else { if(newWindow) newWindow.close(); alert('실패'); }
+        } catch (e) { if(newWindow) newWindow.close(); alert('오류'); } finally { hideLoader(); }
+    }
+
+    /**
+     * [신규] 보고서 옵션 모달/시트 닫기
+     */
+    function closeReportOptionModal() {
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+        const modal = document.getElementById('report-option-modal');
+
+        // ✅ [제거] 모달이 닫힐 때 그림자 클래스를 제거합니다.
+        sheet.classList.remove('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+      
+        // 1. 애니메이션 (스르륵 내려감)
+        // TailwindCSS 트랜지션 클래스를 사용하여 애니메이션 실행
+        backdrop.classList.add('opacity-0');
+        sheet.classList.add('translate-y-full');
+
+        // 2. 애니메이션 완료 후 완전히 숨기기
+        // 300ms(0.3s)는 CSS의 duration-300과 일치해야 자연스러움
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); 
+    }
+
+  
+    // 캘린더 렌더링 관련
+    async function fetchReportsForMonth(year, month, isInitial = false) {
+    const key = year + '-' + month;
+    
+    // 1. 이미 로딩된 데이터면 바로 보여주고 끝냄 (로딩 안 띄움)
+    if (reportsMap[key] === 'completed') { 
+        renderCalendar(); 
+        return; 
+    }
+    
+    // 🚨 [수정 포인트] 전체 화면 로딩(showLoader) 삭제!
+    // 대신 '달력 박스 전용 로딩막'을 찾아서 켭니다.
+    const localLoader = document.getElementById('calendar-loader');
+    if (localLoader) localLoader.classList.remove('hidden'); // 로딩막 켜기
+
+    try {
+        const result = await callAppsScript('getReportFilesByMonth', { year, month });
+        if (Array.isArray(result)) { 
+            result.forEach(r => reportsMap[r.date] = r); 
+            reportsMap[key] = 'completed'; 
+        }
+    } finally { 
+        // 🚨 [수정 포인트] 작업 끝났으니 로컬 로딩막 끄기
+        if (localLoader) localLoader.classList.add('hidden'); // 로딩막 끄기
+        
+        renderCalendar(); 
+        
+        const statusEl = document.getElementById('review-status');
+        if(statusEl) statusEl.textContent = '상태: 월별 보고서 정보 로딩 완료.';
+    }
+}
+  
+     function renderCalendar() {
+        const container = document.getElementById('calendar-days');
+        if (!container) return;
+        container.innerHTML = '';
+        document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
+        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성';
+        
+        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        
+        // 빈 공간 채우기
+        for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+        
+        // 날짜 채우기
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+            const hasReport = reportsMap[dateKey];
+            let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
+            
+            let clickHandler = '';
+            
+            if (hasReport) {
+                // ✅ 보고서가 있으면 롱프레스/터치 이벤트 연결
+                const reportId = hasReport.id;
+                const reportUrl = hasReport.url;
+                const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+                
+                // 롱프레스 관련 이벤트 핸들러
+                clickHandler = `
+                    onclick="handleReportClick('${reportUrl}')"
+                    onmousedown="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
+                    onmouseup="endPressReport()"
+                    onmouseleave="endPressReport()"
+                    ontouchstart="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
+                    ontouchend="endPressReport()"
+                `;
+            } else if (!isSunday) {
+                // ✅ 보고서가 없으면 기존 onDateClick 연결 (생성 모달)
+                clickHandler = `onclick="onDateClick(${day})"`;
+            } else {
+                // ✅ 일요일은 아무 것도 없음
+                clickHandler = ``;
+            }
+            
+            // 최종 HTML 생성
+            container.innerHTML += `
+                <div class="p-2 flex justify-center">
+                    <div class="${cls}" ${clickHandler}>${day}</div>
+                </div>
+            `;
+        }
+   }
+  
+    function preloadAdjacentMonths(year, month) {
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMonthKey = prevYear + '-' + prevMonth;
+        const nextDate = new Date(year, month, 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = nextDate.getMonth() + 1;
+        const nextMonthKey = nextYear + '-' + nextMonth;
+        if (!reportsMap[prevMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+                if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[prevMonthKey] = 'completed';
+                }
+            });
+        }
+        if (!reportsMap[nextMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+                 if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[nextMonthKey] = 'completed';
+                }
+            });
+        }
+    }
+  
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url);
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
+    }
+
+/**
+ * [수정] 공장 장부용 합계 조회 (현재 좌표 F26~28 유지 + 오늘 파일만 확인)
+ */
+function getFactoryLedgerStatus(e) {
+  try {
+    const today = new Date();
+    const scriptTimeZone = Session.getScriptTimeZone();
+    
+    // 1. 오늘 날짜 파일명 (예: "2025년 11월 27일 일보")
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const dateString = Utilities.formatDate(today, scriptTimeZone, 'yyyy년 MM월 dd일');
+    const fileName = dateString + ' 일보';
+    
+    // 2. 파일 찾기
+    const folder = getOrCreateMonthlyFolder(year, month);
+    const files = folder.getFilesByName(fileName);
+
+    // 🚨 파일 없으면 0 리턴 (과거 조회 X)
+    if (!files.hasNext()) {
+      return {
+        status: 'success',
+        isKimDone: false,
+        isJungDone: false,
+        isAllDone: false,
+        totals: { f19: 0, f20: 0, f21: 0 }
+      };
+    }
+
+    // 3. 파일 열기
+    const file = files.next();
+    const sheet = SpreadsheetApp.openById(file.getId()).getSheets()[0];
+
+    // --- [좌표 설정: 현재 버전] ---
+    // 김원대: D5 (그대로)
+    // 정병준: D19 (현재 위치)
+    
+    const kimVal = sheet.getRange('D5').getValue();
+    const jungVal = sheet.getRange('D19').getValue(); 
+
+    const isKimDone = (kimVal !== "" && kimVal !== null);
+    const isJungDone = (jungVal !== "" && jungVal !== null);
+
+    // --- [공장 합계: 현재 버전 F26~F28] ---
+    const totalF26 = sheet.getRange('F19').getValue() || 0; 
+    const totalF27 = sheet.getRange('F20').getValue() || 0; 
+    const totalF28 = sheet.getRange('F21').getValue() || 0; 
+
+    return {
+      status: 'success',
+      isKimDone: isKimDone,
+      isJungDone: isJungDone,
+      isAllDone: (isKimDone && isJungDone),
+      totals: {
+        f19: totalF19, 
+        f20: totalF20,
+        f21: totalF21
+      }
+    };
+
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+  // ===============================================
+    // 🏭 [누락된 함수 복구] 공장 합계 데이터 가져오기
+    // ===============================================
+    async function updateFactoryStatus() {
+        // 1. 숫자가 들어갈 자리 찾기
+        const el19 = document.getElementById('val-f19');
+        const el20 = document.getElementById('val-f20');
+        const el21 = document.getElementById('val-f21');
+
+        // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
+        if (!el19 || !el20 || !el21) return;
+
+        // 1. [로딩 효과] 텍스트 대신 '반짝이는 회색 박스(스켈레톤)'를 보여줍니다.
+    // 사용자는 "아, 데이터를 가져오는 중이구나"라고 직관적으로 알게 됩니다.
+    const skeletonHTML = '<div class="h-8 w-20 bg-gray-200 rounded animate-pulse inline-block align-middle"></div>';
+    
+    el19.innerHTML = skeletonHTML;
+    el20.innerHTML = skeletonHTML;
+    el21.innerHTML = skeletonHTML;
+
+        try {
+            // 3. 서버에 데이터 요청
+            const result = await callAppsScript('getFactoryStatus');
+            
+            if (result.status === 'success') {
+                // 4. 받아온 숫자 채워넣기
+                el19.textContent = result.totals.f19;
+                el20.textContent = result.totals.f20;
+                el21.textContent = result.totals.f21;
+            } else {
+                el19.textContent = '?'; // 실패 시 물음표
+            }
+        } catch (e) {
+            console.error("공장 현황 로드 실패:", e);
+            el19.textContent = '-'; // 에러 시 하이픈
+        }
+    }
+
+    // ===============================================
+    // 🗂️ 보고서 옵션 팝업 제어 (바텀 시트 애니메이션 적용)
+    // ===============================================
+    let selectedReportId = null;
+
+    function openReportOptionModal(id, url, dateStr) {
+        selectedReportId = id;
+        document.getElementById('option-date-title').textContent = dateStr;
+        
+        // 버튼 이벤트 연결
+        document.getElementById('btn-open-report').onclick = function() {
+            openSheetApp(url);
+            closeReportOptionModal();
+        };
+        
+        document.getElementById('btn-delete-report').onclick = function() {
+            // 삭제 확인 (시스템 confirm 사용)
+            if (confirm("정말 삭제하시겠습니까? (휴지통으로 이동)")) {
+                deleteReportAction(id, dateStr);
+            }
+        };
+
+        const modal = document.getElementById('report-option-modal');
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+
+        // ✅ [추가] 모달이 열릴 때 그림자 클래스를 추가합니다.
+        sheet.classList.add('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+
+        // 1. 껍데기 보이기
+        modal.classList.remove('hidden');
+
+        // 2. 애니메이션 (스르륵 올라옴)
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            sheet.classList.remove('translate-y-full');
+        }, 10);
+    }
+
+    // ===============================================
+    // 🖱️ [복구] 달력 꾹 누르기 (Long Press) 로직
+    // ===============================================
+    let reportPressTimer;
+    let isLongPressed = false; // 꾹 누르기 성공 여부 플래그
+
+    /**
+     * 1. 누르기 시작 (타이머 시작)
+     */
+    function startPressReport(el, id, url, dateStr) {
+        // 이전 타이머 취소 (안전장치)
+        clearTimeout(reportPressTimer);
+        
+        // 꾹 누르기 시작
+        isLongPressed = false;
+        
+        // 눌렸을 때 살짝 작아지는 효과 (눌리는 모션)
+        el.style.transform = "scale(0.9)"; 
+
+        // 🚨 [타이머 시작] 0.8초 뒤에 팝업을 띄우도록 예약
+        reportPressTimer = setTimeout(() => {
+            isLongPressed = true; // 롱프레스 성공!
+            if (navigator.vibrate) navigator.vibrate(50); 
+            
+            // 옵션 팝업창 띄우기
+            openReportOptionModal(id, url, dateStr);
+            
+            // 팝업이 뜨면 스타일 복귀 (다음 동작을 위해)
+            el.style.transform = "";
+        }, 800); // 0.8초 설정
+    }
+
+    /**
+     * 2. 손 뗌 (타이머 취소)
+     */
+    function endPressReport() {
+        clearTimeout(reportPressTimer);
+        // 눌렀을 때 변했던 스타일 복귀
+        const activeEls = document.querySelectorAll('.date-box');
+        activeEls.forEach(el => {
+            // 🚨 [수정됨] 여기서도 "scale(1)" 대신 빈 값("")으로 초기화!
+            // 그래야 스타일 속성이 사라지고, 다시 CSS hover 효과(scale 1.1)가 먹힙니다.
+            el.style.transform = ""; 
+        });
+    }
+
+    /**
+     * 3. 짧은 클릭 처리 (롱프레스가 성공했으면 클릭 무시)
+     */
+    function handleReportClick(url) {
+        // 롱프레스 플래그가 참이면 (이미 팝업이 떴으면)
+        if (isLongPressed) {
+            isLongPressed = false; // 플래그 리셋 후
+            return; // 클릭 무시
+        }
+        // 짧은 클릭 액션
+        openSheetApp(url); 
+    }
+
+   /**
+ * UI 작업 로그를 서버에 비동기적으로 전송합니다. (로그 기록용)
+ */
+function logClientActionAsync(actionName) {
+    // 느린 로깅 함수가 메인 앱의 속도를 방해하지 않도록 Promise를 무시합니다.
+    callAppsScript('logUIAction', { uiActionName: actionName })
+        .catch(e => console.error("UI Log Failed", e));
+}
+ 
+  
+  function openSalesSummary(url) {
+    if (typeof openSheetApp === 'function') {
+        openSheetApp(url);
+    } else {
+        window.open(url, '_blank');
+    }
+}
+
+/**
+ * [수정됨] 달력 강제 새로고침 (메모리 초기화 기능 추가)
+ */
+function reloadCurrentMonth() {
+    // 1. 이번 달 상태 키 (예: '2025-12')
+    const key = currentYear + '-' + currentMonth;
+    
+    // 2. '로딩 완료' 도장 지우기
+    delete reportsMap[key]; 
+    
+    // 3. 🚨 [핵심 추가] 이번 달에 해당하는 '날짜별 데이터'도 싹 지워야 합니다!
+    // 예: '2025-12-01', '2025-12-04' 등...
+    const prefix = currentYear + '-' + String(currentMonth).padStart(2, '0');
+    
+    Object.keys(reportsMap).forEach(dateKey => {
+        if (dateKey.startsWith(prefix)) {
+            delete reportsMap[dateKey]; // 메모리에서 삭제!
+        }
+    });
+    
+    // 4. 안내 메시지
+    showToast(`${currentMonth}월 데이터를 최신으로 갱신합니다.`, 'success');
+    
+    // 5. 이제 깨끗한 상태에서 다시 받아옴
+    fetchReportsForMonth(currentYear, currentMonth);
+}
+/**
+ * [복구됨] 보고서 삭제 실행 함수
+ */
+async function deleteReportAction(fileId, dateStr) {
+    showLoader(`"${dateStr}" 보고서 삭제 중...`);
+    closeReportOptionModal(); 
+    
+    try {
+        const result = await callAppsScript('deleteReportFile', { fileId: fileId });
+        
+        if (result.status === 'success') {
+            showToast("보고서가 삭제되었습니다.", "success");
+            
+            // ✅ 삭제 후 달력 새로고침 (아까 추가한 기능 포함)
+            reloadCurrentMonth(); 
+            
+        } else {
+            showToast("삭제 실패: " + result.message, "error");
+        }
+    } catch (e) {
+        showToast("서버 오류: " + e.message, "error");
+    } finally {
+        hideLoader();
+    }
+}
+  /**
+ * [수정됨] 보고서 삭제 함수 (캐시 삭제 기능 추가)
+ */
+function deleteReportFile(e) {
+  try {
+    const fileId = e.parameter.fileId;
+    const file = DriveApp.getFileById(fileId);
+    const fileName = file.getName(); // 파일 이름 미리 저장 (날짜 파악용)
+    
+    // 1. 휴지통으로 이동
+    file.setTrashed(true);
+    
+    // 2. 🚨 [핵심] 서버 캐시 삭제 (이게 없어서 갱신이 안 됐던 겁니다!)
+    // 파일명 예시: "2025년 12월 04일 일보" -> 여기서 연, 월 추출
+    const dateMatch = fileName.match(/(\d{4})년\s*(\d{1,2})월/);
+    
+    if (dateMatch) {
+      const year = parseInt(dateMatch[1], 10);
+      const month = parseInt(dateMatch[2], 10);
+      
+      const cache = CacheService.getScriptCache();
+      const cacheKey = `reports_folder_${year}_${month}`;
+      
+      cache.remove(cacheKey); // 해당 월의 장부를 찢어버림 (다음 요청 때 새로 만듦)
+      Logger.log(`[Delete] ${fileName} 삭제 완료. ${year}-${month} 캐시 초기화.`);
+    }
+    
+    return { status: 'success', message: '보고서 파일이 휴지통으로 이동되었습니다.' };
+    
+  } catch (err) {
+    Logger.log("파일 삭제 오류: " + err.toString());
+    return { status: 'error', message: '삭제 실패: ' + err.toString() };
+  }
+}
+
+ /**
+ * 🕹️ 스무스 스와이프 공통 함수
+ * @param {string} modalId - 모달의 ID
+ * @param {function} closeAction - 닫기 함수
+ * @param {string} targetId - (옵션) 실제로 움직일 요소 ID. 없으면 modalId가 움직임
+ */
+function setupSmoothSwipe(modalId, closeAction, targetId = null) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    // 움직일 대상(Sheet)이 따로 있으면 그걸 쓰고, 없으면 모달 자체를 움직임
+    const sheet = targetId ? document.getElementById(targetId) : modal;
+    
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+    
+    // 1. 터치 시작
+    sheet.addEventListener('touchstart', (e) => {
+        // 맨 위쪽 핸들바나 빈 공간을 잡았을 때만 드래그 시작 (내부 스크롤 방해 방지)
+        // 하지만 지금 같은 확인창은 전체가 드래그 영역이어도 무방함
+        
+        startY = e.touches[0].clientY;
+        isDragging = true;
+        
+        // 🚨 [핵심] 드래그 중에는 애니메이션 끄기! (그래야 손가락에 딱 붙음)
+        sheet.style.transition = 'none'; 
+    }, { passive: true });
+
+    // 2. 터치 이동
+    sheet.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        
+        currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        // 아래로 내릴 때만 작동 (위로는 못 올리게)
+        if (diff > 0) {
+            // e.preventDefault(); // (옵션) 브라우저 스크롤 막기 (필요하면 주석 해제)
+            
+            // CSS Transform으로 즉시 이동 (GPU 가속)
+            sheet.style.transform = `translateY(${diff}px)`;
+        }
+    }, { passive: false }); // preventDefault를 쓰려면 false여야 함
+
+    // 3. 터치 끝
+    sheet.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        // 🚨 [핵심] 손 뗐으니까 다시 부드러운 애니메이션 켜기
+        sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
+
+        const diff = currentY - startY;
+        
+        // 100px 이상 내렸거나, 빠르게 튕겼으면 닫기
+        if (diff > 120) {
+            closeAction();
+            // 닫기 함수가 실행되더라도 시각적으로 확실히 내려가게 밀어버림
+            sheet.style.transform = `translateY(100%)`; 
+        } else {
+            // 조금만 내렸으면 다시 원위치 (탱~ 하고 돌아감)
+            sheet.style.transform = ''; 
+        }
+        
+        // 변수 초기화
+        startY = 0;
+        currentY = 0;
+    });
+}
+
+</script>
+<div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
+    
+    <div class="absolute inset-0 bg-transparent" onclick="closeQuickEntryModal()"></div>
+
+    <div class="relative w-full max-w-sm mx-4 p-6 text-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up"
+         style="
+            background: rgba(110, 110, 110, 0.85); 
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+         ">
+        
+ <button id="qe-close-btn" 
+        onclick="closeQuickEntryModal()" 
+        class="absolute top-4 right-4 z-50 p-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-red-500/40 active:scale-90 transition-all cursor-pointer border border-white/10">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+</button>
+
+        <div id="qe-form-content">
+            
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
+                <span>🔥</span> 간편 일보 작성
+            </h2>
+
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">
+                    담당자 선택 (필수)
+                </label>
+                <div class="flex gap-3">
+                    <button id="qe-btn-kim" 
+                            onclick="selectQuickManager('김원대')" 
+                            class="flex-1 py-3 rounded-xl border border-white/10 bg-black/30 text-gray-300 font-bold hover:bg-white/10 transition-all shadow-inner">
+                        김원대
+                    </button>
+                    <button id="qe-btn-jung" 
+                            onclick="selectQuickManager('정병준')" 
+                            class="flex-1 py-3 rounded-xl border border-white/10 bg-black/30 text-gray-300 font-bold hover:bg-white/10 transition-all shadow-inner">
+                        정병준
+                    </button>
+                </div>
+                <input type="hidden" id="qe-manager">
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
+                        1. 생탁 금일 출고
+                    </label>
+                    <input type="number" id="qe-input-1" placeholder="0" 
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
+                        2. 국산쌀 생탁 출고
+                    </label>
+                    <input type="number" id="qe-input-2" placeholder="0" 
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
+                        3. 미출고 잔량
+                    </label>
+                    <input type="number" id="qe-input-3" placeholder="0" 
+                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                </div>
+            </div>
+
+            <button id="qe-submit-btn" 
+                    onclick="submitQuickDailyReport()" 
+                    class="w-full mt-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-red-500/40 active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/10">
+                 입력 완료
+            </button>
+        </div>
+
+        <div id="qe-result-content" class="hidden text-center py-4">
+            
+            <div class="mb-8 flex justify-center">
+                <div class="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.4)] border border-green-500/50 animate-bounce-once">
+                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="bg-black/40 rounded-3xl p-6 border border-white/10 text-left space-y-5 shadow-inner">
+                
+                <div class="flex justify-between items-end border-b border-white/10 pb-3">
+                    <span class="text-gray-400 text-sm pb-1">담당자</span>
+                    <span class="text-2xl font-bold text-white" id="res-manager">-</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300 font-medium">생탁 출고</span>
+                    <span class="text-2xl font-mono font-bold text-white" id="res-val1">0</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300 font-medium">국산쌀 출고</span>
+                    <span class="text-2xl font-mono font-bold text-white" id="res-val2">0</span>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                    <span class="text-gray-300 font-medium">미출고 잔량</span>
+                    <span class="text-2xl font-mono font-bold text-white" id="res-val3">0</span>
+                </div>
+                
+                <div class="flex justify-between items-center pt-2">
+                    <span class="text-green-400 font-bold text-lg" id="res-balance-label">최종 재고</span>
+                    <span class="text-5xl font-bold text-white font-mono tracking-tighter drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]" id="res-balance">0</span>
+                </div>
+            </div>
+
+            <button onclick="closeQuickEntryModal()" 
+                    class="w-full mt-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-red-500/40 active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/10">
+                확인 (닫기)
+            </button>
+        </div>
+
+    </div>
+</div>
+      <div id="news-ticker" class="news-ticker-wrap hidden">
+    
+    <div class="ticker-label h-full flex items-center relative cursor-pointer hover:bg-red-600 transition-colors select-none" z-[10000] border-l border-red-800 onclick="toggleNewsSettings(event)">
+        
+        <span class="animate-pulse font-black mr-2 tracking-wider">LIVE</span>
+        <span id="current-news-cate" class="font-bold">부산·강서</span>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-6 ml-1 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+
+        <div id="news-settings-popup" class="hidden absolute bottom-full left-4 mb-6 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 text-gray-800 z-[9999] cursor-default" onclick="event.stopPropagation()">
+            <div class="absolute -bottom-2 left-8 w-4 h-4 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <h3 class="font-bold text-sm text-gray-700">🗞️ 뉴스 채널 구독</h3>
+                <button onclick="closeNewsSettings()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-4 space-y-3 max-h-60 overflow-y-auto custom-scrollbar text-left">
+                
+                <label class="flex items-center cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1 transition">
+                    <input type="checkbox" name="news-cat" value="gangseo" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <span class="ml-3 text-sm font-bold text-gray-800">🏡 부산 강서구 (기본)</span>
+                </label>
+
+                <label class="flex items-center cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1 transition">
+                    <input type="checkbox" name="news-cat" value="busan" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <span class="ml-3 text-sm font-bold text-gray-800">🌊 부산시 전체</span>
+                </label>
+
+                <hr class="border-gray-100">
+
+                <label class="flex items-start cursor-pointer group mt-2">
+                    <input type="checkbox" name="news-cat" value="national" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <div class="ml-3">
+                        <span class="block text-sm font-medium text-gray-700 group-hover:text-red-500 transition">🇰🇷 국내 뉴스 전체</span>
+                        <span class="block text-[10px] text-gray-400 mt-0.5">모든 언론사의 주요 속보</span>
+                    </div>
+                </label>
+
+                <label class="flex items-center cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1 transition">
+                    <input type="checkbox" name="news-cat" value="politics" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <span class="ml-3 text-sm font-medium text-gray-700">⚖️ 정치</span>
+                </label>
+
+                <label class="flex items-center cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1 transition">
+                    <input type="checkbox" name="news-cat" value="economy" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <span class="ml-3 text-sm font-medium text-gray-700">💰 경제</span>
+                </label>
+
+                <label class="flex items-center cursor-pointer hover:bg-gray-50 rounded p-1 -ml-1 transition">
+                    <input type="checkbox" name="news-cat" value="society" class="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500">
+                    <span class="ml-3 text-sm font-medium text-gray-700">📢 사회</span>
+                </label>
+            </div>
+            
+            <div class="p-2 bg-gray-50 rounded-b-xl text-[10px] text-center text-gray-400 border-t border-gray-100">
+                창을 닫으면 저장됩니다
+            </div>
+        </div>
+    </div> 
+    
+    <div class="ticker-content" id="ticker-text">
+        <div style="padding-left:20px; color:#aaa; font-size:13px;">뉴스 로딩 중...</div>
+    </div>
+</div>
+    <div id="global-tooltip" class="hidden fixed z-[99999] bg-gray-900/95 backdrop-blur text-white text-xs px-3 py-2 rounded-lg shadow-2xl pointer-events-none border border-gray-700 whitespace-nowrap flex items-center gap-2" style="font-family: sans-serif;">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+    <span class="font-bold text-gray-100">클릭 시 해당 기사로 이동합니다.🔗</span>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
