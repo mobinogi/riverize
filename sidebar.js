@@ -318,3 +318,24 @@ document.addEventListener('touchend', e => {
         }
     }
 }, {passive: true});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. '.hover-line' 클래스를 가진 모든 메뉴 버튼을 찾습니다.
+    const menuItems = document.querySelectorAll('.hover-line');
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // (1) 딴 놈들 불 끄기 (기존 active-tab 제거)
+            menuItems.forEach(el => {
+                el.classList.remove('active-tab');
+                el.classList.add('text-gray-400'); // 회색으로
+                el.classList.remove('text-white', 'font-bold'); // 흰색 제거
+            });
+
+            // (2) 누른 놈 불 켜기 (active-tab 추가)
+            this.classList.remove('text-gray-400');
+            this.classList.add('active-tab'); // ✨ CSS가 작동해서 밑줄 고정됨
+            this.classList.add('text-white', 'font-bold');
+        });
+    });
+});
