@@ -128,3 +128,19 @@ function updateDashboardChart() {
     }
   });
 }
+
+// 💀 스켈레톤 켜기 (로딩 시작)
+function showSkeleton() {
+    const sk = document.getElementById('chartSkeleton');
+    const ct = document.getElementById('chartContainer');
+    if(sk) sk.classList.remove('hidden');
+    if(ct) ct.classList.add('hidden');
+}
+
+// 😀 스켈레톤 끄기 (로딩 완료)
+function hideSkeleton() {
+    const sk = document.getElementById('chartSkeleton');
+    const ct = document.getElementById('chartContainer');
+    if(sk) sk.classList.add('hidden');
+    if(ct) ct.classList.remove('hidden');
+}
