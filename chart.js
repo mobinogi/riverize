@@ -7,8 +7,10 @@ let dashboardChart = null; // 차트 객체
 
 // 1. [화면 전환] 사이드바 버튼 누르면 실행
 function showSalesDashboard() {
-  // (1) 다른 화면들 다 숨기기 (ID는 사용자님 코드에 맞춰 수정 필요할 수 있음)
-  const views = ['calendar-view', 'map-view', 'report-view', 'daily-report-list']; 
+  // (1) 다른 화면들 다 숨기기 (ID를 현재 index1.html에 맞게 수정!)
+  // 기존: const views = ['calendar-view', 'map-view', 'report-view', 'daily-report-list']; 
+  const views = ['view-write', 'view-consolidated']; // ✅ 이렇게 바꿔주세요!
+  
   views.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.classList.add('hidden');
