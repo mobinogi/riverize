@@ -56,12 +56,12 @@
         </div>
 <nav class="space-y-2">
     
-    <a onclick="openSalesSheet()" id="menu-sales"
+    <a onclick="openSalesSheet(); updateActiveNavItem('menu-sales')" id="menu-sales"
        class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
        <span class="font-medium text-lg transition-colors">매출표</span>
     </a>
 
-    <a onclick="changeView('consolidated')" id="menu-consolidated"
+    <a onclick="changeView('consolidated'); updateActiveNavItem('menu-consolidated')" id="menu-consolidated"
        class="hover-line flex items-center px-4 py-3 rounded-xl cursor-pointer text-gray-300">
        <span class="font-medium text-lg transition-colors">일보 통합본</span>
     </a>
