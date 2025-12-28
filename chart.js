@@ -19,24 +19,6 @@ function switchView(viewId) {
     }
 }
 
-// 사이드바 메뉴 활성화 함수 (선택된 것만 하얗게/진하게)
-function updateActiveNavItem(activeId) {
-    // 모든 메뉴 버튼의 '활성화 스타일' 제거
-    const navItems = document.querySelectorAll('nav a');
-    navItems.forEach(item => {
-        // 기존 스타일 복구 (text-gray-300 등)
-        item.classList.remove('bg-white/10', 'text-white', 'font-bold');
-        item.classList.add('text-gray-300');
-    });
-
-    // 선택된 버튼만 '활성화 스타일' 추가
-    const activeItem = document.getElementById(activeId);
-    if (activeItem) {
-        activeItem.classList.remove('text-gray-300');
-        activeItem.classList.add('bg-white/10', 'text-white', 'font-bold');
-    }
-}
-
 // ==========================================
 // 2. 스켈레톤 UI 제어 (로딩 효과)
 // ==========================================
@@ -68,10 +50,9 @@ function showSalesDashboard() {
   // 1. 화면 전환
   switchView('dashboard-view');
   
-  // 2. 사이드바 메뉴 불 들어오게 하기
-  updateActiveNavItem('menu-dashboard');
 
-  // 3. 기존 차트가 있으면 일단 초기화 (잔상 방지)
+
+  // 2. 기존 차트가 있으면 일단 초기화 (잔상 방지)
   if (salesChartInstance) {
       salesChartInstance.destroy();
       salesChartInstance = null;
