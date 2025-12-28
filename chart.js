@@ -32,25 +32,20 @@ function showSalesDashboard() {
   }
 }
 
-function initDashboard(result) { // 'data'가 아니라 'result'로 받음
-  // 1. 통신 성공 여부 확인
-  if (result.status !== 'success') {
-     alert("서버 오류: " + (result.message || "원인 불명")); 
-     return; 
+function initDashboard(response) {
+  // 1. 서버가 "실패"라고 했거나, 데이터가 없으면 에러 처리
+  if (!response || response.status !== 'success') {
+    alert("데이터를 불러오지 못했습니다. (서버 응답 오류)");
+    return;
   }
 
-  // 2. 진짜 알맹이 데이터 꺼내기
-  const data = result; // (주의: 사장님 코드 구조상 result 자체가 데이터일 수도 있지만, 보통 result.data나 result 안에 섞여 옴.
-                       // 하지만 getSalesDashboardData 함수는 바로 객체를 리턴하므로,
-                       // callAppsScript가 어떻게 처리하느냐에 따라 다릅니다.)
-  
-  // 🚨 [중요] code.gs의 getSalesDashboardData는 { 김원대:..., 정병준:... } 객체를 바로 줍니다.
-  // callAppsScript가 이걸 그대로 뱉어낸다면 아래 코드가 맞습니다.
-  
-  dashboardData = result; // 바로 넣기
-  updateDashboardChart(); // 차트 그리기
-}
+  // 2. 포장지(response.data)를 뜯어서 진짜 데이터를 꺼냅니다.
+  // 🚨 여기가 핵심입니다! 아까는 이게 안 맞아서 "데이터 없음"이 떴던 겁니다.
+  dashboardData = response.data; 
 
+  // 3. 이제 차트를 그립니다.
+  updateDashboardChart();
+}
 // 3. 차트 그리기 (업데이트)
 function updateDashboardChart() {
   const selectedUser = document.getElementById('dashboardUserSelect').value;
