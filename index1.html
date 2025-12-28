@@ -272,7 +272,7 @@
                       <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
                     </div>
 
-                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white p-6 rounded-xl shadow-lg relative">
+                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative">
                       
                       
                       <div class="flex justify-between items-center mb-4">
@@ -371,14 +371,13 @@
 
 </div>
           <div id="view-consolidated" 
-     class="view-content hidden p-6 min-h-[600px]
+     class="view-content hidden p-6 min-h-[600px] 
             bg-white dark:bg-gray-900 
-            rounded-xl shadow border border-gray-200 dark:border-gray-700 
+            rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 
             transition-colors">
-                  
+            
       <div class="flex justify-between items-center mb-8">
-          <button onclick="changeConsolidatedYear(-1)" 
-                  class="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onclick="changeConsolidatedYear(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
           
@@ -387,8 +386,7 @@
               <span id="consolidated-header-year">2025년</span> 통합본
           </h2>
           
-          <button onclick="changeConsolidatedYear(1)" 
-                  class="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onclick="changeConsolidatedYear(1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
       </div>
