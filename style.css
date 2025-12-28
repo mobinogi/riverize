@@ -384,6 +384,16 @@
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
+/* ✨ 선택된 탭: 호버 효과를 강제로 고정시킴 */
+.hover-line.active-tab::after {
+    width: calc(100% - 32px) !important; /* 선이 쫙 뻗은 상태 유지 */
+}
+
+/* 선택된 탭: 글자도 계속 빛나게 */
+.hover-line.active-tab span {
+    color: #ffffff !important;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5) !important;
+}
 /* =========================================
    📱 & 💻 사이드바 통합 제어 시스템 (풀옵션)
    ========================================= */
