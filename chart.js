@@ -7,24 +7,24 @@ let dashboardChart = null; // 차트 객체
 
 // 1. [화면 전환] 사이드바 버튼 누르면 실행
 function showSalesDashboard() {
-  // (1) 다른 화면들 다 숨기기 (ID를 현재 index1.html에 맞게 수정!)
-  // 기존: const views = ['calendar-view', 'map-view', 'report-view', 'daily-report-list']; 
-  const views = ['view-write', 'view-consolidated']; // ✅ 이렇게 바꿔주세요!
-  
-  views.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.classList.add('hidden');
-  });
+  // (1) [핵심] 'view-content' 명찰이 붙은 모든 화면을 찾아서 숨깁니다.
+  // (일보 작성, 통합본 등 다른 화면들이 싹 꺼집니다)
+  const allViews = document.querySelectorAll('.view-content');
+  allViews.forEach(el => el.classList.add('hidden'));
 
-  // (2) 대시보드 화면만 보여주기
-  document.getElementById('dashboard-view').classList.remove('hidden');
+  // (2) 대시보드 화면만 짠! 하고 보여줍니다.
+  const dashboard = document.getElementById('dashboard-view');
+  if(dashboard) dashboard.classList.remove('hidden');
 
   // (3) 데이터가 비어있으면 서버에서 가져오기 (최초 1회)
   if (Object.keys(dashboardData).length === 0) {
     // 로딩 중 표시 (선택사항)
-    const ctx = document.getElementById('salesStatusChart').getContext('2d');
-    ctx.font = "20px Pretendard";
-    ctx.fillText("데이터를 불러오는 중입니다...", 50, 50);
+    const canvas = document.getElementById('salesStatusChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.font = "20px Pretendard";
+      ctx.fillText("데이터를 불러오는 중입니다...", 50, 50);
+    }
 
     google.script.run
       .withSuccessHandler(initDashboard)
