@@ -26,16 +26,28 @@ function showSalesDashboard() {
       ctx.fillText("데이터를 불러오는 중입니다...", 50, 50);
     }
 
-    google.script.run
-      .withSuccessHandler(initDashboard)
-      .getSalesDashboardData(); // code.gs에 있는 함수 실행
+    callAppsScript('getSalesDashboardData')
+      .then(data => initDashboard(data))
+      .catch(err => alert("데이터 불러오기 실패: " + err));
   }
 }
 
-// 2. 데이터 도착하면 초기화
-function initDashboard(data) {
-  if (data.error) { alert("데이터 오류: " + data.error); return; }
-  dashboardData = data;
+function initDashboard(result) { // 'data'가 아니라 'result'로 받음
+  // 1. 통신 성공 여부 확인
+  if (result.status !== 'success') {
+     alert("서버 오류: " + (result.message || "원인 불명")); 
+     return; 
+  }
+
+  // 2. 진짜 알맹이 데이터 꺼내기
+  const data = result; // (주의: 사장님 코드 구조상 result 자체가 데이터일 수도 있지만, 보통 result.data나 result 안에 섞여 옴.
+                       // 하지만 getSalesDashboardData 함수는 바로 객체를 리턴하므로,
+                       // callAppsScript가 어떻게 처리하느냐에 따라 다릅니다.)
+  
+  // 🚨 [중요] code.gs의 getSalesDashboardData는 { 김원대:..., 정병준:... } 객체를 바로 줍니다.
+  // callAppsScript가 이걸 그대로 뱉어낸다면 아래 코드가 맞습니다.
+  
+  dashboardData = result; // 바로 넣기
   updateDashboardChart(); // 차트 그리기
 }
 
