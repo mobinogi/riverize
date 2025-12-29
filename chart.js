@@ -43,6 +43,7 @@ function hideSkeleton() {
 
 // 전역 변수: 차트 객체와 데이터를 담아둘 곳
 let salesChartInstance = null;
+let currentRange = '1Y';
 let dashboardData = {}; 
 
 // 👉 [사장님 요청하신 함수] 이걸로 교체하시면 됩니다!
@@ -90,43 +91,23 @@ function initDashboard(response) {
 }
 
 // 실제 차트를 그리는 함수 (Chart.js)
-function updateDashboardChart() {
-  const canvas = document.getElementById('salesStatusChart'); // 캔버스 요소 가져오기
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext('2d'); // 🖌️ 그라데이션을 위해 붓(context)을 꺼냅니다.
-
-  // 셀렉트 박스에서 현재 선택된 담당자 가져오기
-  const userSelect = document.getElementById('dashboardUserSelect');
-  const selectedUser = userSelect ? userSelect.value : '김원대';
-   
-  // 데이터가 없으면 중단
-  if (!dashboardData || !dashboardData[selectedUser]) return;
-
-  const userData = dashboardData[selectedUser]; // { thisYear: [...], lastYear: [...] }
-
-  // 기존 차트가 있으면 삭제 (중복 생성 방지)
-  if (salesChartInstance) {
-    salesChartInstance.destroy();
-  }
-
-   // ✨ [디자인] 그라데이션 (위쪽 파랑 -> 아래 투명)
+// ============================================================
+  // 🎨 차트 그리기 (옵션은 사장님 취향대로 유지)
+  // ============================================================
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
-  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');  
- 
-    
-  // 새 차트 생성
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
+
   salesChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+      labels: chartLabels,
       datasets: [
         {
-          label: `올해 (2025)`,
-          data: userData.thisYear,
+          label: currentRange === '1Y' ? '올해 (2025)' : '매출',
+          data: thisYearData,
           borderColor: '#3b82f6',
-          backgroundColor: gradient, // 그라데이션 적용
+          backgroundColor: gradient,
           borderWidth: 3,
           tension: 0.4,
           pointBackgroundColor: '#ffffff',
@@ -137,14 +118,16 @@ function updateDashboardChart() {
           fill: true
         },
         {
-          label: `작년 (2024)`,
-          data: userData.lastYear,
-          borderColor: '#9ca3af', // 회색 (Tailwind gray-400)
+          // 1Y일 때만 작년 데이터 표시
+          label: '작년 (2024)',
+          data: lastYearData,
+          borderColor: '#9ca3af',
           borderWidth: 2,
-          borderDash: [5, 5], // 점선
+          borderDash: [5, 5],
           tension: 0.3,
-          pointRadius: 0, // 점 숨김
-          fill: false
+          pointRadius: 0,
+          fill: false,
+          hidden: currentRange !== '1Y' // 1M, 1D에서는 숨김
         }
       ]
     },
@@ -156,43 +139,36 @@ function updateDashboardChart() {
         intersect: false,
       },
       plugins: {
-        legend: {
-          labels: {
-            color: '#6b7280', // 범례 글씨색 (다크모드 대응 필요시 여기서 분기처리 가능하지만, 기본 회색이 무난함)
-            font: { family: 'Pretendard', size: 12 }
-          }
-        },
+        legend: { display: false }, // 커스텀 범례 쓰니까 끔
         tooltip: {
-          backgroundColor: 'rgba(17, 24, 39, 0.9)', // 툴팁 배경 (진한 검정)
-          titleColor: '#fff',
-          bodyColor: '#e5e7eb',
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
           padding: 10,
-          cornerRadius: 8,
+          cornerRadius: 6,
           displayColors: false,
-
-          // ✨ [핵심 수정]
-          // 1. 점과 말풍선 사이의 공백(Gap) 제거 -> 딱 붙음!
-          caretPadding: 0,   
-
-          // 2. yAlign 강제 설정 삭제 (주석 처리 또는 삭제)
-          // yAlign: 'bottom',  <-- 이거 지웠습니다!
-          // 이제 차트가 알아서 위, 아래, 옆 중 넓은 곳에 띄웁니다.
-          
-          // (참고) 꼬리 크기 (기본값 5~6)
-          caretSize: 6,
+          caretPadding: 0,
+          filter: function(tooltipItem) { return tooltipItem.raw > 0; } // 0인 값 숨기기
         }
       },
       scales: {
         x: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)' }, // 연한 격자
-          ticks: { color: '#9ca3af' }
+          // ✨ [가로축 격자] 아주 연하게 (0.1)
+          grid: { 
+              color: 'rgba(200, 200, 200, 0.1)', 
+              drawBorder: false // 축의 진한 테두리 선은 제거 (더 깔끔하게)
+          },
+          ticks: { color: '#9ca3af' } // 글자색 (회색)
         },
         y: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)' },
+          // ✨ [세로축 격자] 아주 연하게 (0.1)
+          grid: { 
+              color: 'rgba(200, 200, 200, 0.1)',
+              borderDash: [4, 4], // (선택사항) 점선으로 하고 싶으면 이 줄 유지, 실선이 좋으면 삭제
+              drawBorder: false 
+          },
           ticks: { color: '#9ca3af' },
-          beginAtZero: true
+          beginAtZero: true,
+          grace: '15%' // 천장 여유 (말풍선 공간 확보)
         }
       }
-    }
   });
 }
