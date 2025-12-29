@@ -4,7 +4,7 @@
 
 // 전역 변수
 let salesChartInstance = null;
-let dashboardData = {}; 
+let dashboardData = {};
 let currentRange = '1Y'; 
 
 // 현재 보고 있는 기준 날짜 (1M, 1Y용)
@@ -243,12 +243,12 @@ const getOrCreateTooltip = (chart) => {
 };
 
 // ============================================================
-// 🎨 [커스텀 툴팁] 2. 내용 채우기 & 꼬리 방향 조종
+// 🎨 [커스텀 툴팁] 2. 내용 채우기 & 꼬리 방향 조종 (최종_1D지난주수정)
 // ============================================================
 const externalTooltipHandler = (context) => {
   const { chart, tooltip } = context;
   const tooltipEl = getOrCreateTooltip(chart);
-  const arrowEl = tooltipEl.querySelector('.tooltip-arrow'); // 꼬리 가져오기
+  const arrowEl = tooltipEl.querySelector('.tooltip-arrow');
 
   if (tooltip.opacity === 0) {
     tooltipEl.style.opacity = 0;
@@ -259,24 +259,33 @@ const externalTooltipHandler = (context) => {
     const idx = tooltip.dataPoints[0].dataIndex;
     const datasets = chart.data.datasets;
 
-    // 데이터셋 & 값 찾기
-    const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해') || d.label === '선택 기간');
-    const prevMonthSet = datasets.find(d => d.label === '전월 동기');
+    // 1. 데이터셋 찾기
+    const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해'));
     const lastYearSet = datasets.find(d => d.label === '작년 동기');
+    
+    // 🚨 [핵심 수정] 1D일 땐 '지난주', 그 외엔 '전월 동기'를 찾음
+    let prevSet = datasets.find(d => d.label === '지난주'); // 1D용
+    let prevLabelName = '지난주';
+    
+    if (!prevSet) {
+        prevSet = datasets.find(d => d.label === '전월 동기'); // 1M, 1Y용
+        prevLabelName = '전월';
+    }
 
+    // 2. 값 가져오기
     const currVal = currentSet ? currentSet.data[idx] : 0;
-    const prevVal = prevMonthSet ? prevMonthSet.data[idx] : 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
+    const prevVal = prevSet ? prevSet.data[idx] : 0; // 지난주 또는 전월 데이터
 
-    // 🚨 [신규] 모든 데이터가 0이거나 없으면 툴팁 생성 막기!
+    // 데이터 없음(0) 체크
     if ((!currVal && !prevVal && !lastVal) || (currVal === 0 && prevVal === 0 && lastVal === 0)) {
         tooltipEl.style.opacity = 0;
         return;
-    }  
-    
+    }
+
     const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
 
-    // 증감 표시
+    // 3. 증감 HTML 생성
     const getDiffHtml = (base, target) => {
       const diff = base - target;
       if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲${diff}</span>`;
@@ -288,7 +297,7 @@ const externalTooltipHandler = (context) => {
     const diffYear = getDiffHtml(currVal, lastVal);
     const title = chart.data.labels[idx];
 
-    // HTML 내용
+    // 4. HTML 조립
     const innerHtml = `
       <div style="padding: 12px;">
         <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 5px; color: #f3f4f6;">
@@ -307,13 +316,17 @@ const externalTooltipHandler = (context) => {
               ${currVal}개
             </div>
           </div>
+          
           <div style="width: 1px; background: #4b5563; opacity: 0.5;"></div>
+          
           <div style="flex: 1.1;">
             <div style="font-size: 11px; color: #9ca3af; margin-bottom: 6px;">성과 비교</div>
+            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 11px; color: #c084fc;">전월(${prevVal})</span>
+              <span style="font-size: 11px; color: #c084fc;">${prevLabelName}(${prevVal})</span>
               <span style="font-size: 11px;">${diffPrev}</span>
             </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 11px; color: #9ca3af;">작년(${lastVal})</span>
               <span style="font-size: 11px;">${diffYear}</span>
@@ -325,6 +338,30 @@ const externalTooltipHandler = (context) => {
     tooltipEl.querySelector('table').innerHTML = innerHtml;
   }
 
+  // 좌표 및 꼬리 로직 (기존 유지)
+  const position = chart.canvas.getBoundingClientRect();
+  const rootLeft = position.left + window.pageXOffset;
+  const rootTop = position.top + window.pageYOffset;
+  const chartWidth = chart.width;
+  const bgColor = 'rgba(17, 24, 39, 0.95)';
+
+  if (tooltip.caretX > chartWidth / 2) {
+      tooltipEl.style.transform = 'translate(-105%, 0)'; 
+      tooltipEl.style.left = (rootLeft + tooltip.caretX - 10) + 'px';
+      arrowEl.style.left = 'auto'; arrowEl.style.right = '-16px';
+      arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`;
+      arrowEl.style.borderLeftColor = bgColor; arrowEl.style.borderRightColor = 'transparent';
+  } else {
+      tooltipEl.style.transform = 'translate(5%, 0)';
+      tooltipEl.style.left = (rootLeft + tooltip.caretX + 10) + 'px';
+      arrowEl.style.right = 'auto'; arrowEl.style.left = '-16px';
+      arrowEl.style.borderColor = `transparent transparent transparent ${bgColor}`; 
+      arrowEl.style.borderRightColor = bgColor; arrowEl.style.borderLeftColor = 'transparent';
+  }
+
+  tooltipEl.style.top = (rootTop + tooltip.caretY - 20) + 'px';
+  tooltipEl.style.opacity = 1;
+};
   // 좌표 계산
   const position = chart.canvas.getBoundingClientRect();
   const rootLeft = position.left + window.pageXOffset;
@@ -497,38 +534,84 @@ function updateDashboardChart() {
       lastYearData.push(getVal(lyData));
     }
 
-  } else if (currentRange === '1D') {
-    // 🚨 [1D] 주간 (핵심 수정!)
+} else if (currentRange === '1D') {
+    // 🚨 [1D] 주간 (지난주 비교 + 툴팁용 작년/전월 계산)
+    
+    // 1. 주차 표시 텍스트 계산 (예: 2025.12월 셋째주)
     const y = baseDate.getFullYear();
     const m = baseDate.getMonth() + 1;
     const firstDayOfMonth = new Date(y, m - 1, 1);
     const offset = firstDayOfMonth.getDay();
     const dateNum = baseDate.getDate();
-    // 몇 번째 주인지 계산 (N주차)
-    const weekNum = Math.ceil((dateNum + offset) / 7);
+    const weekNum = Math.ceil((dateNum + offset) / 7); // 몇 번째 주인지
     const weekName = ['첫째주', '둘째주', '셋째주', '넷째주', '다섯째주', '여섯째주'][weekNum - 1] || (weekNum + '주');
     
     if (dateDisplay) dateDisplay.textContent = `${y}.${m}월 ${weekName}`;
 
-    // 이번 주 날짜 범위 (월~토)
+    // 2. 날짜 기준 잡기 (이번 주 월요일 찾기)
     const dayNum = baseDate.getDay();
     const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
     const thisMon = new Date(baseDate);
     thisMon.setDate(baseDate.getDate() + diffToMon);
 
-    // 1. 지난주 (Chart 표시용) - 정확히 7일 전
+    // 3. 지난주 월요일 (비교 그래프용)
     const prevWeekStart = new Date(thisMon);
     prevWeekStart.setDate(thisMon.getDate() - 7);
 
-    // 2. 전월 같은 주차 (Tooltip용)
-    // 현재 달이 m월, 전월은 m-1월 (JS는 0부터 시작하므로 m-2)
-    const prevMonthDate = new Date(y, m - 2, 1);
-    const pmY = prevMonthDate.getFullYear();
-    const pmM = prevMonthDate.getMonth() + 1;
+    // 4. 툴팁용 날짜 기준 (전월/작년 같은 요일, 같은 주차)
+    // 🛠️ [Helper] N번째 주, 특정 요일의 날짜 구하기
+    const getNthWeekDate = (year, month, nth, dayIdx) => {
+        const firstDay = new Date(year, month - 1, 1);
+        const firstDayIdx = firstDay.getDay(); 
+        let dayOffset = dayIdx - firstDayIdx;
+        if (dayOffset < 0) dayOffset += 7;
+        const targetDate = 1 + dayOffset + (nth - 1) * 7;
+        
+        // 달을 넘어가면 그 달 마지막 해당 요일로
+        const lastDay = new Date(year, month, 0).getDate();
+        if (targetDate > lastDay) return new Date(year, month - 1, targetDate - 7);
+        return new Date(year, month - 1, targetDate);
+    };
 
-    // 3. 작년 같은 주차 (Tooltip용)
-    const lyY = y - 1;
-    const lyM = m; // 같은 월
+    const prevMonthDate = new Date(y, m - 2, 1);
+    const pmY = prevMonthDate.getFullYear(), pmM = prevMonthDate.getMonth() + 1;
+    const lyY = y - 1, lyM = m;
+
+    for (let i = 0; i < 6; i++) {
+      // (1) 이번 주 데이터
+      const tDay = new Date(thisMon);
+      tDay.setDate(thisMon.getDate() + i);
+      const ty = tDay.getFullYear(), tm = String(tDay.getMonth()+1).padStart(2,'0'), td = String(tDay.getDate()).padStart(2,'0');
+      chartLabels.push(`${tDay.getDate()}일${dayNames[tDay.getDay()]}`);
+
+      const key = `${ty}-${tm}-${td}`;
+      const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
+      const val = getVal(d); // 선택된 상품(생탁/우리쌀/전체) 값
+      
+      mainData.push(val);
+      mainDetails.push({ s: d.s, r: d.r });
+
+      // (2) ✨ 지난주 데이터 (그래프용 회색 점선)
+      const pwDay = new Date(prevWeekStart);
+      pwDay.setDate(prevWeekStart.getDate() + i);
+      const pwy = pwDay.getFullYear(), pwm = String(pwDay.getMonth()+1).padStart(2,'0'), pwd = String(pwDay.getDate()).padStart(2,'0');
+      const pwKey = `${pwy}-${pwm}-${pwd}`;
+      const pwdData = (userData.daily && userData.daily[pwKey]) || { t: 0, s: 0, r: 0 };
+      prevWeekData.push(getVal(pwdData));
+
+      // (3) ✨ 전월 같은 주차 (툴팁용)
+      const curDayIdx = tDay.getDay();
+      const targetPm = getNthWeekDate(pmY, pmM, weekNum, curDayIdx);
+      const pmKey = `${targetPm.getFullYear()}-${String(targetPm.getMonth()+1).padStart(2,'0')}-${String(targetPm.getDate()).padStart(2,'0')}`;
+      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0, s: 0, r: 0 };
+      prevMonthData.push(getVal(pmData));
+
+      // (4) ✨ 작년 같은 주차 (툴팁용)
+      const targetLy = getNthWeekDate(lyY, lyM, weekNum, curDayIdx);
+      const lyKey = `${targetLy.getFullYear()}-${String(targetLy.getMonth()+1).padStart(2,'0')}-${String(targetLy.getDate()).padStart(2,'0')}`;
+      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0, s: 0, r: 0 };
+      lastYearData.push(getVal(lyData));
+    }
 
     for (let i = 0; i < 6; i++) {
       // (1) 이번 주 날짜
