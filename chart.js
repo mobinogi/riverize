@@ -269,7 +269,7 @@ const externalTooltipHandler = (context) => {
 
 
 // ============================================================
-// 📊 [차트 그리기] 데이터 가공부터 그리기까지 (최종 수정본)
+// 📊 [chart.js] 차트 그리기 함수 (최종_격자복구+요약알림판.ver)
 // ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -278,6 +278,7 @@ function updateDashboardChart() {
 
   const userSelect = document.getElementById('dashboardUserSelect');
   const selectedUser = userSelect ? userSelect.value : '김원대';
+  
   if (!dashboardData || !dashboardData[selectedUser]) return;
   const userData = dashboardData[selectedUser];
 
@@ -286,7 +287,7 @@ function updateDashboardChart() {
   const dateDisplay = document.getElementById('currentDateDisplay');
   const dayNames = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
 
-  // 데이터셋 4개 준비
+  // 데이터셋 준비
   let chartLabels = [];
   let mainData = []; 
   let mainDetails = []; 
@@ -295,7 +296,7 @@ function updateDashboardChart() {
   let lastYearData = [];  
 
   // ------------------------------------------------
-  // 1. 날짜별 데이터 가공 로직
+  // 1. 데이터 가공 로직
   // ------------------------------------------------
   if (currentRange === '1Y') {
     // [1Y] 연간
@@ -316,32 +317,29 @@ function updateDashboardChart() {
     prevMonthData = Array(12).fill(null);
 
   } else if (currentRange === '1M') {
-    // [1M] 월간 (3단 비교)
+    // [1M] 월간
     const y = baseDate.getFullYear();
     const m = baseDate.getMonth() + 1;
     if (dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
 
     const lastDay = new Date(y, m, 0).getDate();
-    const prevDate = new Date(y, m - 2, 1); // 지난달
+    const prevDate = new Date(y, m - 2, 1); 
     const pmY = prevDate.getFullYear();
     const pmM = prevDate.getMonth() + 1;
 
     for (let i = 1; i <= lastDay; i++) {
       chartLabels.push(`${i}일`);
 
-      // 이번 달
       const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
       mainData.push(d.t);
       mainDetails.push({ s: d.s, r: d.r });
       trendData.push(d.t === 0 ? null : d.t);
 
-      // 지난 달
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0 };
       prevMonthData.push(pmData.t);
 
-      // 작년 동기
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
       lastYearData.push(lyData.t);
@@ -385,6 +383,74 @@ function updateDashboardChart() {
   }
 
   // ------------------------------------------------
+  // ✨ [NEW] 차트 내 요약 알림판 (Summary Overlay) 생성
+  // ------------------------------------------------
+  // 1. 합계 계산 함수
+  const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
+  
+  const currentTotal = sum(mainData);
+  const prevTotal = sum(prevMonthData);
+  const lastTotal = sum(lastYearData);
+
+  // 2. 증감 HTML 생성 함수
+  const getDiffHtml = (curr, old, label) => {
+      const diff = curr - old;
+      let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af');
+      let icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '-');
+      let val = Math.abs(diff);
+      return `<div style="font-size:12px; color:#6b7280; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                <span>${label}</span> 
+                <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
+              </div>`;
+  };
+
+  // 3. 내용 조립
+  let summaryTitle = '';
+  let summaryContent = '';
+  
+  if (currentRange === '1D') {
+      summaryTitle = '이번 주 합계';
+      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  } else if (currentRange === '1M') {
+      summaryTitle = '이번 달 합계';
+      summaryContent = getDiffHtml(currentTotal, prevTotal, '전월 대비') + 
+                       getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  } else {
+      summaryTitle = '올해 합계';
+      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  }
+
+  // 4. HTML 요소 만들어서 차트 위에 띄우기
+  const container = canvas.parentNode;
+  let overlay = container.querySelector('.chart-summary-overlay');
+  
+  if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'chart-summary-overlay';
+      // 스타일 설정 (차트 왼쪽 상단에 띄움)
+      Object.assign(overlay.style, {
+          position: 'absolute',
+          top: '20px',
+          left: '20px', // 왼쪽 상단 고정
+          background: 'rgba(255, 255, 255, 0.9)', // 반투명 흰색
+          padding: '12px 16px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(229, 231, 235, 0.5)',
+          zIndex: '10',
+          pointerEvents: 'none' // 마우스 통과 (차트 툴팁 방해 안 하도록)
+      });
+      container.appendChild(overlay);
+  }
+
+  overlay.innerHTML = `
+      <div style="font-size:12px; color:#6b7280; font-weight:500;">${summaryTitle}</div>
+      <div style="font-size:24px; color:#111827; font-weight:800; line-height:1.2;">${currentTotal}<span style="font-size:14px; color:#9ca3af; font-weight:normal;">개</span></div>
+      <div style="margin-top:4px;">${summaryContent}</div>
+  `;
+
+
+  // ------------------------------------------------
   // 2. 차트 그리기 설정
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
@@ -399,7 +465,6 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
-  // (1) 메인 데이터 (연간 vs 월간/주간)
   if (isYearly) {
     // [연간] 영역 그래프
     finalDatasets.push({
@@ -430,7 +495,7 @@ function updateDashboardChart() {
       order: 3
     });
     
-    // [월간/주간] 추세선 (직선)
+    // [월간/주간] 추세선
     finalDatasets.push({
       type: 'line',
       label: '추세',
@@ -446,7 +511,6 @@ function updateDashboardChart() {
     });
   }
 
-  // (2) [전월 동기] 보라색 실선 (1M 전용)
   if (currentRange === '1M') {
     finalDatasets.push({
       type: 'line',
@@ -461,7 +525,6 @@ function updateDashboardChart() {
     });
   }
 
-  // (3) [작년 동기] 회색 점선 (공통)
   finalDatasets.push({
     type: 'line',
     label: '작년 동기',
@@ -477,7 +540,7 @@ function updateDashboardChart() {
   });
 
   // ------------------------------------------------
-  // 3. 최종 차트 생성
+  // 3. 차트 생성 (격자 무늬 복구!)
   // ------------------------------------------------
   salesChartInstance = new Chart(ctx, {
     type: 'line',
@@ -496,17 +559,24 @@ function updateDashboardChart() {
         legend: { display: false },
         tooltip: {
           enabled: false,
-          external: externalTooltipHandler // 커스텀 툴팁 연결
+          external: externalTooltipHandler
         }
       },
       scales: {
         x: {
-          grid: { display: false },
+          // 🚨 [격자 복구] 세로선(Grid) 부활!
+          grid: { 
+              display: true, 
+              color: 'rgba(200, 200, 200, 0.1)', // 아주 연하게
+              drawBorder: false 
+          },
           ticks: { color: '#9ca3af', font: { size: 11 } }
         },
         y: {
+          // 🚨 [격자 복구] 가로선(Grid) 부활!
           grid: {
-            color: 'rgba(200, 200, 200, 0.15)',
+            display: true,
+            color: 'rgba(200, 200, 200, 0.15)', // 연한 회색 점선
             borderDash: [4, 4],
             drawBorder: false
           },
