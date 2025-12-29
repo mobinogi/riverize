@@ -471,7 +471,7 @@ function updateDashboardChart() {
   if (currentRange === '1M') {
     finalDatasets.push({
       type: 'line', label: '전월 동기', data: prevMonthData,
-      borderColor: '#c084fc', borderWidth: 2, tension: 0.3, pointRadius: 0, fill: false, 
+      borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, 
       spanGaps: true, // 🚨 [핵심] 보라색 선도 0인 구간 점프해서 연결!
       order: 2
     });
