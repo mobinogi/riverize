@@ -9,10 +9,7 @@ let allConsolidatedFiles = [];
 // ===============================================
 
 /**
- * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
- */
-/**
- * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
+ * 메인 뷰(화면)을 전환하는 함수 (최종 수정: 차트 투명 현상 해결)
  */
 function changeView(viewName) {
   // 1. 모든 뷰 숨기기
@@ -56,19 +53,27 @@ function changeView(viewName) {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
     
-    // 📊 [수정됨] 차트 빈 화면 방지 로직
-    // 1) 일단 로딩 박스(스켈레톤)를 먼저 보여줍니다. (빈 화면 방지)
+    // 📊 [여기가 수정되었습니다!] 
     const skeleton = document.getElementById('chartSkeleton');
     const chartBox = document.getElementById('chartContainer');
+
+    // 1) 일단 로딩 박스 보여주고, 차트 숨김
     if (skeleton) skeleton.classList.remove('hidden');
     if (chartBox) chartBox.classList.add('hidden');
 
-    // 2) 0.1초 뒤에 차트를 그립니다. (화면이 다 뜬 뒤에 그려야 보임!)
+    // 2) 0.2초 뒤에 "짠" 하고 교체 (이 코드가 빠져있었습니다 ㅠㅠ)
     setTimeout(() => {
+        // 스켈레톤 숨기고!
+        if (skeleton) skeleton.classList.add('hidden');
+        
+        // ✨ 차트 박스 다시 보여주고! (이게 핵심)
+        if (chartBox) chartBox.classList.remove('hidden');
+
+        // 그 다음 차트 그리기
         if (typeof updateDashboardChart === 'function') {
             updateDashboardChart();
         }
-    }, 100);
+    }, 200); 
   }
 }
 /**
