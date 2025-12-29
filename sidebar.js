@@ -21,30 +21,23 @@ function changeView(viewName) {
   if (targetView) {
     targetView.classList.remove('hidden');
   } else {
+    // 🚨 여기서 에러가 났던 겁니다 (ID가 달라서)
     console.error(`❌ 오류: 'view-${viewName}' ID를 가진 요소를 찾을 수 없습니다.`);
     return;
   }
 
-  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기!)
+  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기)
   const navLinks = document.querySelectorAll('#sidebar nav a');
   navLinks.forEach(el => {
-      // 기존에 켜져 있던 모든 스타일 클래스를 싹 지웁니다.
       el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
-      
-      // 다시 회색(비활성)으로 돌려놓습니다.
       el.classList.add('text-gray-400');
-      
-      // 포커스를 해제해서 마우스 뗐을 때 밑줄 잔상을 없앱니다.
       el.blur(); 
   });
 
-  // 4. 선택된 메뉴 스타일 적용 (얘만 켜기!)
+  // 4. 선택된 메뉴 스타일 적용 (얘만 켜기)
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) {
-      // 활성 상태 표시 (하얀색, 굵게, 밑줄용 클래스 등)
       targetMenu.classList.add('view-active', 'active-tab', 'text-white', 'font-bold');
-      
-      // 회색(비활성) 제거
       targetMenu.classList.remove('text-gray-400');
   }
 
@@ -53,6 +46,12 @@ function changeView(viewName) {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
+  } else if (viewName === 'dashboard') {
+    // 📊 [추가됨] 대시보드로 갈 때 차트 업데이트 함수 실행!
+    if (typeof updateDashboardChart === 'function') {
+        // 차트가 찌그러져 보일 수 있으니 약간의 지연 후 실행
+        setTimeout(() => updateDashboardChart(), 100);
+    }
   }
 }
 
