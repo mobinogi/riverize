@@ -16,13 +16,18 @@ function changeView(viewName) {
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 보이기
-  const targetView = document.getElementById('view-' + viewName);
+  // 2. 선택한 뷰 보이기 (🚨 여기가 핵심 수정!)
+  // 기본적으로는 'view-이름'을 찾지만, 대시보드만 예외적으로 'dashboard-view'를 찾습니다.
+  let targetId = 'view-' + viewName;
+  if (viewName === 'dashboard') {
+      targetId = 'dashboard-view';
+  }
+
+  const targetView = document.getElementById(targetId);
   if (targetView) {
     targetView.classList.remove('hidden');
   } else {
-    // 🚨 여기서 에러가 났던 겁니다 (ID가 달라서)
-    console.error(`❌ 오류: 'view-${viewName}' ID를 가진 요소를 찾을 수 없습니다.`);
+    console.error(`❌ 오류: '${targetId}' ID를 가진 요소를 찾을 수 없습니다.`);
     return;
   }
 
@@ -47,14 +52,10 @@ function changeView(viewName) {
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
-    // 📊 [추가됨] 대시보드로 갈 때 차트 업데이트 함수 실행!
-    if (typeof updateDashboardChart === 'function') {
-        // 차트가 찌그러져 보일 수 있으니 약간의 지연 후 실행
-        setTimeout(() => updateDashboardChart(), 100);
-    }
+    // 📊 차트 그리기 함수 호출
+    if (typeof updateDashboardChart === 'function') updateDashboardChart();
   }
 }
-
 /**
  * 일보 작성 뷰 내의 서브 탭 전환
  */
