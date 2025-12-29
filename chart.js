@@ -617,8 +617,8 @@ function updateDashboardChart() {
       });
   }
 
-  // ------------------------------------------------
-  // ✨ [요약 알림판] (유리모피즘 디자인 복구 + 다크모드)
+// ------------------------------------------------
+  // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
   // ------------------------------------------------
   const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
   const currentTotal = sum(mainData);
@@ -627,16 +627,14 @@ function updateDashboardChart() {
 
   const prodLabel = currentProduct === 'st' ? '생탁' : (currentProduct === 'rice' ? '우리쌀' : '합계');
 
-  // 증감 표시 HTML
+  // 증감 표시 HTML (오리지널 스타일)
   const getDiffHtml = (curr, old, label) => {
       const diff = curr - old;
       let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af');
       let icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '-');
       let val = Math.abs(diff);
-      
-      return `<div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-0.5 font-medium">
-                <span>${label}</span> 
-                <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
+      return `<div style="font-size:12px; color:#6b7280; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                <span>${label}</span> <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
               </div>`;
   };
 
@@ -652,25 +650,43 @@ function updateDashboardChart() {
       summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
   }
 
-  // 알림판 요소 생성 (스타일: 유리 질감 복구 ✨)
+  // 알림판 요소 생성 (스타일: 오리지널 복구)
   const container = canvas.parentNode;
   let overlay = container.querySelector('.chart-summary-overlay');
   
   if (!overlay) {
       overlay = document.createElement('div');
-      // 🚨 [디자인 포인트] 
-      // bg-white/70 (투명도 높임), backdrop-blur-md (뽀샤시 효과), border-white/50 (유리 테두리)
-      overlay.className = 'chart-summary-overlay absolute top-6 left-6 p-5 rounded-2xl shadow-lg z-10 pointer-events-none border border-white/60 dark:border-gray-600/40 bg-white/70 dark:bg-gray-800/60 backdrop-blur-md transition-all duration-300';
+      overlay.className = 'chart-summary-overlay';
+      // 👇 여기가 사장님이 좋아하셨던 그 스타일입니다!
+      Object.assign(overlay.style, {
+          position: 'absolute', 
+          top: '20px', 
+          left: '20px', 
+          background: 'rgba(255, 255, 255, 0.9)', // 반투명 흰색
+          padding: '12px 16px', 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(229, 231, 235, 0.5)', 
+          zIndex: '10', 
+          pointerEvents: 'none'
+      });
       container.appendChild(overlay);
+  } else {
+      // 혹시 클래스로 디자인이 바뀌어 있을까봐 강제로 스타일 다시 주입
+      overlay.className = 'chart-summary-overlay';
+      Object.assign(overlay.style, {
+          background: 'rgba(255, 255, 255, 0.9)',
+          padding: '12px 16px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(229, 231, 235, 0.5)'
+      });
   }
   
-  // 내용 주입
   overlay.innerHTML = `
-      <div class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">${summaryTitle}</div>
-      <div class="text-3xl font-black text-gray-900 dark:text-white leading-none tracking-tight drop-shadow-sm">
-        ${currentTotal}<span class="text-sm font-normal text-gray-400 dark:text-gray-500 ml-1">개</span>
-      </div>
-      <div class="mt-3 flex flex-col gap-0.5">${summaryContent}</div>
+      <div style="font-size:12px; color:#6b7280; font-weight:500;">${summaryTitle}</div>
+      <div style="font-size:24px; color:#111827; font-weight:800; line-height:1.2;">${currentTotal}<span style="font-size:14px; color:#9ca3af; font-weight:normal;">개</span></div>
+      <div style="margin-top:4px;">${summaryContent}</div>
   `;
 
   salesChartInstance = new Chart(ctx, {
@@ -684,8 +700,8 @@ function updateDashboardChart() {
         tooltip: { enabled: false, external: externalTooltipHandler }
       },
       scales: {
-        x: { grid: { display: true, color: 'rgba(156, 163, 175, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
-        y: { grid: { display: true, color: 'rgba(156, 163, 175, 0.1)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
+        x: { grid: { display: true, color: 'rgba(200, 200, 200, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+        y: { grid: { display: true, color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
       }
     }
   });
