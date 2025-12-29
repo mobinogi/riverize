@@ -1,22 +1,24 @@
 // ==========================================
-// chart.js (최종: 1D 고정주간 + 작년비교)
+// chart.js (최종 수정본: 중복 제거 및 완벽 정리)
 // ==========================================
 
-// 전역 변수
+// ----------------------------------------------------
+// 1. 전역 변수 설정
+// ----------------------------------------------------
 let salesChartInstance = null;
 let dashboardData = {};
-let currentRange = '1Y';
-
-// 현재 보고 있는 기준 날짜 (1M, 1Y용)
+let currentRange = '1Y'; 
+let currentProduct = 'all'; // 'all', 'st', 'rice'
 let baseDate = new Date(); 
-// [chart.js] 전역 변수 추가
-let currentProduct = 'all'; // 'all'(전체), 'st'(생탁), 'rice'(우리쌀)
 
-// ✨ [UI] 알약 이동 애니메이션 함수
+// ----------------------------------------------------
+// 2. 유틸리티 & 초기화 함수
+// ----------------------------------------------------
+
+// ✨ [UI] 알약 이동 애니메이션
 function movePill(pillId, targetBtn) {
     const pill = document.getElementById(pillId);
     if (pill && targetBtn) {
-        // 버튼의 위치와 크기를 알아내서 알약을 그 자리로 보냄
         pill.style.left = targetBtn.offsetLeft + 'px';
         pill.style.width = targetBtn.offsetWidth + 'px';
     }
@@ -32,10 +34,10 @@ function changeProduct(prod) {
         'rice': document.getElementById('btn-prod-rice')
     };
 
-    // 1. 알약 이동! 🍬
+    // 1. 알약 이동
     movePill('prod-pill', btns[prod]);
 
-    // 2. 글자색 업데이트 (선택된 건 파랑, 나머진 회색)
+    // 2. 글자색 업데이트
     for (const [key, btn] of Object.entries(btns)) {
         if (!btn) continue;
         if (key === prod) {
@@ -47,9 +49,7 @@ function changeProduct(prod) {
 
     updateDashboardChart();
 }
-// ----------------------------------------------------
-// 1. 유틸리티 & 초기화
-// ----------------------------------------------------
+
 function switchView(viewId) {
     document.querySelectorAll('.view-content').forEach(el => {
         el.classList.add('hidden');
@@ -93,27 +93,25 @@ function initDashboard(response) {
     return;
   }
   dashboardData = response.data;
+  
+  // 차트 그리기
   updateDashboardChart(); 
 
-  // ✨ [초기화] 알약 위치 잡기 (처음엔 애니메이션 없이 즉시 이동)
-  // 약간의 지연시간(50ms)을 줘야 DOM 렌더링 후 정확히 잡힘
+  // ✨ [초기화] 알약 위치 잡기
   setTimeout(() => {
       movePill('prod-pill', document.getElementById('btn-prod-all'));
-      movePill('range-pill', document.getElementById('btn-1y')); // 기본값이 1Y라면
+      movePill('range-pill', document.getElementById('btn-1y')); // 기본값이 1Y
   }, 50);
 }
 
 // ----------------------------------------------------
-// 2. 날짜 제어 & 버튼 로직
+// 3. 날짜 제어 & 기간 변경
 // ----------------------------------------------------
 
-// [chart.js] 1. 날짜 범위 변경 & 이동 함수 (1D 주간 이동 기능 추가)
-
-// [기간 변경] 알약 이동 적용
 function changeChartRange(range) {
     currentRange = range;
     
-    // 날짜 이동 버튼 보이기/숨기기 (기존 로직 유지)
+    // 날짜 이동 버튼 보이기
     const navControl = document.getElementById('dateNavControl');
     if (navControl) navControl.classList.remove('hidden');
 
@@ -123,11 +121,9 @@ function changeChartRange(range) {
         '1Y': document.getElementById('btn-1y')
     };
 
-    // 1. 알약 이동! 🍬 (range는 대문자이므로 소문자 id 매칭 주의)
-    // 버튼 ID는 btn-1d, btn-1m... 형태임
+    // 1. 알약 이동
     const targetId = `btn-${range.toLowerCase()}`;
     const targetBtn = document.getElementById(targetId);
-    
     movePill('range-pill', targetBtn);
 
     // 2. 글자색 업데이트
@@ -150,50 +146,38 @@ function moveDate(delta) {
     const nextDate = new Date(baseDate);
     const today = new Date();
 
-    // 이동할 날짜 계산
     if (currentRange === '1Y') {
         nextDate.setFullYear(baseDate.getFullYear() + delta);
     } else if (currentRange === '1M') {
         nextDate.setMonth(baseDate.getMonth() + delta);
     } else if (currentRange === '1D') {
-        // 🚨 [신규] 주 단위 이동 (7일씩)
         nextDate.setDate(baseDate.getDate() + (delta * 7));
     }
 
-    // 🚫 [제한] 미래로 이동하려고 하면 막기 (오늘이 포함된 주/달/연도까지만 허용)
-    // 1D: 다음 주 월요일이 오늘보다 미래면 차단
-    // 1M: 다음 달 1일이 오늘보다 미래면 차단
-    // 1Y: 내년이면 차단
-    
-    // 간단하게 "오늘보다 미래의 날짜를 기준일로 잡으려 하면" 막음
-    // (단, 1D는 주의 시작일이 기준이라 조금 넉넉하게 체크)
+    // 미래 날짜 제한
     if (delta > 0) {
-        // 오늘 날짜랑 비교 (시간 떼고)
         const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const n = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
         
-        // 1D의 경우, 이번 주 월요일까지만 이동 가능하게
         if (currentRange === '1D') {
              const dayNum = t.getDay();
              const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
              const thisMon = new Date(t); 
              thisMon.setDate(t.getDate() + diffToMon);
-             
-             if (n > thisMon) return; // 미래 주로는 이동 불가
+             if (n > thisMon) return;
         } else {
-             // 1M, 1Y는 그냥 오늘보다 미래면 차단 (이번 달/올해까지만)
              if (n > t) return; 
         }
     }
 
-    // 통과되면 적용
     baseDate = nextDate;
     updateDashboardChart();
 }
 
 // ============================================================
-// 🎨 [커스텀 툴팁] 1. 툴팁 껍데기 + 꼬리(화살표) 생성
+// 4. 툴팁 관련 함수 (getOrCreateTooltip, externalTooltipHandler)
 // ============================================================
+
 const getOrCreateTooltip = (chart) => {
   let tooltipEl = document.getElementById('chartjs-custom-tooltip');
 
@@ -202,7 +186,6 @@ const getOrCreateTooltip = (chart) => {
     tooltipEl.id = 'chartjs-custom-tooltip';
     tooltipEl.classList.add('chartjs-tooltip');
     
-    // 툴팁 본체 스타일
     tooltipEl.style.background = 'rgba(17, 24, 39, 0.95)';
     tooltipEl.style.borderRadius = '8px';
     tooltipEl.style.color = 'white';
@@ -214,25 +197,22 @@ const getOrCreateTooltip = (chart) => {
     tooltipEl.style.zIndex = '9999';
     tooltipEl.style.minWidth = '200px'; 
     tooltipEl.style.maxWidth = '300px';
-    // 🚨 꼬리가 밖으로 튀어나와야 하므로 overflow visible 필수!
     tooltipEl.style.overflow = 'visible'; 
 
-    // 1. 내용 테이블
     const table = document.createElement('table');
     table.style.margin = '0px';
     table.style.width = '100%';
     tooltipEl.appendChild(table);
 
-    // 2. ✨ [핵심] 꼬리(화살표) 요소 추가
     const arrow = document.createElement('div');
     arrow.className = 'tooltip-arrow';
     arrow.style.position = 'absolute';
     arrow.style.width = '0';
     arrow.style.height = '0';
     arrow.style.borderStyle = 'solid';
-    arrow.style.borderWidth = '8px'; // 꼬리 크기
-    arrow.style.borderColor = 'transparent'; // 기본은 투명
-    arrow.style.top = '50%'; // 세로 중앙 정렬
+    arrow.style.borderWidth = '8px';
+    arrow.style.borderColor = 'transparent';
+    arrow.style.top = '50%';
     arrow.style.transform = 'translateY(-50%)';
     
     tooltipEl.appendChild(arrow);
@@ -242,44 +222,38 @@ const getOrCreateTooltip = (chart) => {
   return tooltipEl;
 };
 
-// ============================================================
-// 🎨 [커스텀 툴팁] 2. 내용 채우기 & 꼬리 방향 조종 (수정완료)
-// ============================================================
 const externalTooltipHandler = (context) => {
   const { chart, tooltip } = context;
   const tooltipEl = getOrCreateTooltip(chart);
   const arrowEl = tooltipEl.querySelector('.tooltip-arrow');
 
-  // 툴팁 숨김 처리
   if (tooltip.opacity === 0) {
     tooltipEl.style.opacity = 0;
     return;
   }
 
-  // 데이터가 있을 때만 렌더링
   if (tooltip.body) {
     const idx = tooltip.dataPoints[0].dataIndex;
     const datasets = chart.data.datasets;
 
-    // 1. 데이터셋 찾기
+    // 데이터셋 찾기
     const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해'));
     const lastYearSet = datasets.find(d => d.label === '작년 동기');
     
-    // 1D일 땐 '지난주', 그 외엔 '전월 동기'를 찾음
-    let prevSet = datasets.find(d => d.label === '지난주'); // 1D용
+    // 1D: '지난주', 그외: '전월 동기'
+    let prevSet = datasets.find(d => d.label === '지난주');
     let prevLabelName = '지난주';
     
     if (!prevSet) {
-        prevSet = datasets.find(d => d.label === '전월 동기'); // 1M, 1Y용
+        prevSet = datasets.find(d => d.label === '전월 동기');
         prevLabelName = '전월';
     }
 
-    // 2. 값 가져오기
     const currVal = currentSet ? currentSet.data[idx] : 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
-    const prevVal = prevSet ? prevSet.data[idx] : 0; 
+    const prevVal = prevSet ? prevSet.data[idx] : 0;
 
-    // 데이터 없음(0) 체크 -> 숨김
+    // 데이터 없으면 숨김
     if ((!currVal && !prevVal && !lastVal) || (currVal === 0 && prevVal === 0 && lastVal === 0)) {
         tooltipEl.style.opacity = 0;
         return;
@@ -287,7 +261,6 @@ const externalTooltipHandler = (context) => {
 
     const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
 
-    // 3. 증감 HTML 생성
     const getDiffHtml = (base, target) => {
       const diff = base - target;
       if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲${diff}</span>`;
@@ -299,7 +272,6 @@ const externalTooltipHandler = (context) => {
     const diffYear = getDiffHtml(currVal, lastVal);
     const title = chart.data.labels[idx];
 
-    // 4. HTML 조립
     const innerHtml = `
       <div style="padding: 12px;">
         <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 5px; color: #f3f4f6;">
@@ -336,83 +308,35 @@ const externalTooltipHandler = (context) => {
     tooltipEl.querySelector('table').innerHTML = innerHtml;
   }
 
-  // 🚩 [좌표 및 꼬리 로직] (여기가 함수 밖으로 튕겨나가 있어서 에러가 났었습니다)
+  // 좌표 및 꼬리 로직
   const position = chart.canvas.getBoundingClientRect();
   const rootLeft = position.left + window.pageXOffset;
   const rootTop = position.top + window.pageYOffset;
   const chartWidth = chart.width;
-
   const bgColor = 'rgba(17, 24, 39, 0.95)';
 
   if (tooltip.caretX > chartWidth / 2) {
       tooltipEl.style.transform = 'translate(-105%, 0)'; 
       tooltipEl.style.left = (rootLeft + tooltip.caretX - 10) + 'px';
-      arrowEl.style.left = 'auto';  
-      arrowEl.style.right = '-16px'; 
-      arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`; 
-      arrowEl.style.borderLeftColor = bgColor; 
-      arrowEl.style.borderRightColor = 'transparent';
+      arrowEl.style.left = 'auto'; arrowEl.style.right = '-16px';
+      arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`;
+      arrowEl.style.borderLeftColor = bgColor; arrowEl.style.borderRightColor = 'transparent';
   } else {
       tooltipEl.style.transform = 'translate(5%, 0)';
       tooltipEl.style.left = (rootLeft + tooltip.caretX + 10) + 'px';
-      arrowEl.style.right = 'auto'; 
-      arrowEl.style.left = '-16px'; 
+      arrowEl.style.right = 'auto'; arrowEl.style.left = '-16px';
       arrowEl.style.borderColor = `transparent transparent transparent ${bgColor}`; 
-      arrowEl.style.borderRightColor = bgColor; 
-      arrowEl.style.borderLeftColor = 'transparent';
+      arrowEl.style.borderRightColor = bgColor; arrowEl.style.borderLeftColor = 'transparent';
   }
 
   tooltipEl.style.top = (rootTop + tooltip.caretY - 20) + 'px';
   tooltipEl.style.opacity = 1;
 };
-  // 좌표 계산
-  const position = chart.canvas.getBoundingClientRect();
-  const rootLeft = position.left + window.pageXOffset;
-  const rootTop = position.top + window.pageYOffset;
-  const chartWidth = chart.width;
-
-  // 꼬리 색상 (배경색과 동일하게)
-  const bgColor = 'rgba(17, 24, 39, 0.95)';
-
-  // 🚨 [꼬리 방향 로직]
-  if (tooltip.caretX > chartWidth / 2) {
-      // (1) 마우스가 오른쪽 -> 툴팁은 왼쪽으로 뜸
-      tooltipEl.style.transform = 'translate(-105%, 0)'; 
-      tooltipEl.style.left = (rootLeft + tooltip.caretX - 10) + 'px';
-
-      // 꼬리는 오른쪽에 붙어서 오른쪽(▶)을 가리켜야 함
-      arrowEl.style.left = 'auto';  // 왼쪽 해제
-      arrowEl.style.right = '-16px'; // 오른쪽에 붙임
-      // ▶ 모양 만들기 (왼쪽 테두리에 색을 칠해야 오른쪽으로 뾰족해짐)
-      arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`; // 오류 수정: 왼쪽 테두리 색칠
-      arrowEl.style.borderLeftColor = bgColor; // 확실하게 덮어쓰기
-      arrowEl.style.borderRightColor = 'transparent';
-  } else {
-      // (2) 마우스가 왼쪽 -> 툴팁은 오른쪽으로 뜸
-      tooltipEl.style.transform = 'translate(5%, 0)';
-      tooltipEl.style.left = (rootLeft + tooltip.caretX + 10) + 'px';
-
-      // 꼬리는 왼쪽에 붙어서 왼쪽(◀)을 가리켜야 함
-      arrowEl.style.right = 'auto'; // 오른쪽 해제
-      arrowEl.style.left = '-16px'; // 왼쪽에 붙임
-      // ◀ 모양 만들기 (오른쪽 테두리에 색을 칠해야 왼쪽으로 뾰족해짐)
-      arrowEl.style.borderColor = `transparent transparent transparent ${bgColor}`; 
-      arrowEl.style.borderRightColor = bgColor; // 확실하게 덮어쓰기
-      arrowEl.style.borderLeftColor = 'transparent';
-  }
-
-  tooltipEl.style.top = (rootTop + tooltip.caretY - 20) + 'px'; // 살짝 위로 보정
-  tooltipEl.style.opacity = 1;
-};
-
 
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_1D주간비교완성.ver)
-// - 1D: 그래프는 '지난주'와 비교 / 툴팁은 '전월/작년 같은 주차'와 비교
+// 5. 차트 업데이트 메인 함수
 // ============================================================
-// ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_중복제거.ver)
-// ============================================================
+
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
   if (!canvas) return;
@@ -429,7 +353,7 @@ function updateDashboardChart() {
   const dateDisplay = document.getElementById('currentDateDisplay');
   const dayNames = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
 
-  // 데이터셋 준비
+  // 데이터셋 그릇
   let chartLabels = [];
   let mainData = []; 
   let mainDetails = []; 
@@ -458,7 +382,7 @@ function updateDashboardChart() {
   };
 
   // ------------------------------------------------
-  // 1. 데이터 가공 로직
+  // 데이터 가공 로직
   // ------------------------------------------------
   if (currentRange === '1Y') {
     // [1Y] 연간
@@ -577,7 +501,7 @@ function updateDashboardChart() {
   }
 
   // ------------------------------------------------
-  // 2. 차트 그리기 설정
+  // 차트 디자인 설정
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
   
@@ -590,6 +514,7 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
+  // 메인 데이터
   if (isYearly) {
     finalDatasets.push({
       type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
@@ -603,14 +528,20 @@ function updateDashboardChart() {
     });
   }
 
+  // 1D: 지난주 (회색 점선)
   if (currentRange === '1D') {
       finalDatasets.push({
-          type: 'line', label: '지난주', data: prevWeekData, 
-          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, order: 4
+          type: 'line', 
+          label: '지난주', 
+          data: prevWeekData, 
+          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, 
+          order: 4
       });
+      // 툴팁용 (숨김)
       finalDatasets.push({ type: 'line', label: '전월 동기', data: prevMonthData, hidden: true });
       finalDatasets.push({ type: 'line', label: '작년 동기', data: lastYearData, hidden: true });
   } else {
+      // 1M, 1Y: 전월/작년 비교
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
           type: 'line', label: '전월 동기', data: prevMonthData,
@@ -625,7 +556,7 @@ function updateDashboardChart() {
       });
   }
 
-  // ✨ [요약 알림판]
+  // ✨ 요약 알림판
   const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
   const currentTotal = sum(mainData);
   const prevTotal = sum(prevMonthData); 
