@@ -17,63 +17,24 @@ function changeView(viewName) {
   views.forEach(el => el.classList.add('hidden'));
 
   // 2. 선택한 뷰 보이기
-  // (대시보드만 ID가 달라서 예외 처리)
-  let targetId = 'view-' + viewName;
-  if (viewName === 'dashboard') {
-      targetId = 'dashboard-view';
-  }
-
-  const targetView = document.getElementById(targetId);
+  const targetView = document.getElementById('view-' + viewName);
   if (targetView) {
     targetView.classList.remove('hidden');
   } else {
-    console.error(`❌ 오류: '${targetId}' ID를 가진 요소를 찾을 수 없습니다.`);
+    console.error(`❌ 오류: 'view-${viewName}' ID를 가진 요소를 찾을 수 없습니다. index1.html을 확인하세요.`);
     return;
   }
 
-  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기)
-  const navLinks = document.querySelectorAll('#sidebar nav a');
-  navLinks.forEach(el => {
-      el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
-      el.classList.add('text-gray-400');
-      el.blur(); 
-  });
-
-  // 4. 선택된 메뉴 스타일 적용 (얘만 켜기)
+  // 3. 사이드바 메뉴 활성화 표시
+  document.querySelectorAll('#sidebar nav a').forEach(el => el.classList.remove('view-active'));
   const targetMenu = document.getElementById('menu-' + viewName);
-  if (targetMenu) {
-      targetMenu.classList.add('view-active', 'active-tab', 'text-white', 'font-bold');
-      targetMenu.classList.remove('text-gray-400');
-  }
+  if (targetMenu) targetMenu.classList.add('view-active');
 
-  // 5. 뷰별 특수 로직 실행
+  // 4. 뷰별 특수 로직 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
-  } else if (viewName === 'dashboard') {
-    
-    // 📊 [여기가 수정되었습니다!] 
-    const skeleton = document.getElementById('chartSkeleton');
-    const chartBox = document.getElementById('chartContainer');
-
-    // 1) 일단 로딩 박스 보여주고, 차트 숨김
-    if (skeleton) skeleton.classList.remove('hidden');
-    if (chartBox) chartBox.classList.add('hidden');
-
-    // 2) 0.2초 뒤에 "짠" 하고 교체 (이 코드가 빠져있었습니다 ㅠㅠ)
-    setTimeout(() => {
-        // 스켈레톤 숨기고!
-        if (skeleton) skeleton.classList.add('hidden');
-        
-        // ✨ 차트 박스 다시 보여주고! (이게 핵심)
-        if (chartBox) chartBox.classList.remove('hidden');
-
-        // 그 다음 차트 그리기
-        if (typeof updateDashboardChart === 'function') {
-            updateDashboardChart();
-        }
-    }, 200); 
   }
 }
 /**
