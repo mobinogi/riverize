@@ -89,23 +89,21 @@ function initDashboard(response) {
   updateDashboardChart();
 }
 
-// [chart.js] updateDashboardChart 함수 (그라데이션 + 말풍선 착붙 수정)
-
+// 실제 차트를 그리는 함수 (Chart.js)
 function updateDashboardChart() {
-  const canvas = document.getElementById('salesStatusChart');
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext('2d');
+  const ctx = document.getElementById('salesStatusChart');
+  if (!ctx) return;
 
-  // 사용자 선택 (김원대/정병준)
+  // 셀렉트 박스에서 현재 선택된 담당자 가져오기
   const userSelect = document.getElementById('dashboardUserSelect');
   const selectedUser = userSelect ? userSelect.value : '김원대';
 
-  // 데이터 확인
+  // 데이터가 없으면 중단
   if (!dashboardData || !dashboardData[selectedUser]) return;
-  const userData = dashboardData[selectedUser];
 
-  // 기존 차트 삭제
+  const userData = dashboardData[selectedUser]; // { thisYear: [...], lastYear: [...] }
+
+  // 기존 차트가 있으면 삭제 (중복 생성 방지)
   if (salesChartInstance) {
     salesChartInstance.destroy();
   }
@@ -114,8 +112,8 @@ function updateDashboardChart() {
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
   gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
-
-  // 차트 생성
+    
+  // 새 차트 생성
   salesChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -124,25 +122,21 @@ function updateDashboardChart() {
         {
           label: `올해 (2025)`,
           data: userData.thisYear,
-          borderColor: '#3b82f6',
-          backgroundColor: gradient, // 그라데이션 적용
+          borderColor: '#3b82f6', // 파란색 (Tailwind blue-500)
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
           borderWidth: 3,
-          tension: 0.4,
-          pointBackgroundColor: '#ffffff',
-          pointBorderColor: '#3b82F6',
-          pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          tension: 0.3, // 부드러운 곡선
+          pointBackgroundColor: '#3b82f6',
           fill: true
         },
         {
           label: `작년 (2024)`,
           data: userData.lastYear,
-          borderColor: '#9ca3af',
+          borderColor: '#9ca3af', // 회색 (Tailwind gray-400)
           borderWidth: 2,
-          borderDash: [5, 5],
+          borderDash: [5, 5], // 점선
           tension: 0.3,
-          pointRadius: 0,
+          pointRadius: 0, // 점 숨김
           fill: false
         }
       ]
@@ -150,49 +144,34 @@ function updateDashboardChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      
-      // 🧲 [자석 모드] 마우스가 근처만 가도 툴팁이 뜹니다.
       interaction: {
         mode: 'index',
-        intersect: false, // (핵심) 점에 안 닿아도 뜸
-        axis: 'x'         // 세로선 어디든 OK
+        intersect: false,
       },
-
-      layout: {
-          padding: { top: 20, right: 10, left: 10, bottom: 0 }
-      },
-
       plugins: {
-        legend: { display: false },
+        legend: {
+          labels: {
+            color: '#6b7280', // 범례 글씨색 (다크모드 대응 필요시 여기서 분기처리 가능하지만, 기본 회색이 무난함)
+            font: { family: 'Pretendard', size: 12 }
+          }
+        },
         tooltip: {
-          // 🩸 [착붙 모드] 여기가 핵심입니다!
-          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          backgroundColor: 'rgba(17, 24, 39, 0.9)', // 툴팁 배경 (진한 검정)
           titleColor: '#fff',
           bodyColor: '#e5e7eb',
           padding: 10,
-          cornerRadius: 6,
-          displayColors: false,
-
-          // 👇 이 두 줄이 범인 검거 코드입니다.
-          caretPadding: 0,   // 점과 말풍선 사이 거리 0 (딱 붙음!)
-          yAlign: 'bottom',  // 말풍선 꼬리가 무조건 아래로 향하게 (점 위에 앉음)
+          cornerRadius: 8
         }
       },
-      
       scales: {
         x: {
-          grid: { display: false },
+          grid: { color: 'rgba(200, 200, 200, 0.1)' }, // 연한 격자
           ticks: { color: '#9ca3af' }
         },
         y: {
-          // 사장님이 이미 60% 주셨다니 충분합니다! (여기선 적당히 15%만 줘도 됩니다)
-          grace: '15%', 
-          beginAtZero: true,
-          grid: { 
-              borderDash: [4, 4], 
-              color: 'rgba(200, 200, 200, 0.2)' 
-          },
-          ticks: { color: '#9ca3af' }
+          grid: { color: 'rgba(200, 200, 200, 0.1)' },
+          ticks: { color: '#9ca3af' },
+          beginAtZero: true
         }
       }
     }
