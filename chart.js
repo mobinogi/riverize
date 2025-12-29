@@ -125,11 +125,15 @@ function updateDashboardChart() {
         {
           label: `올해 (2025)`,
           data: userData.thisYear,
-          borderColor: '#3b82f6', // 파란색 (Tailwind blue-500)
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: '#3b82f6',
+          backgroundColor: gradient, // 그라데이션 적용
           borderWidth: 3,
-          tension: 0.3, // 부드러운 곡선
-          pointBackgroundColor: '#3b82f6',
+          tension: 0.4,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#3b82F6',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
           fill: true
         },
         {
@@ -163,7 +167,19 @@ function updateDashboardChart() {
           titleColor: '#fff',
           bodyColor: '#e5e7eb',
           padding: 10,
-          cornerRadius: 8
+          cornerRadius: 8,
+          displayColors: false,
+
+          // ✨ [핵심 수정]
+          // 1. 점과 말풍선 사이의 공백(Gap) 제거 -> 딱 붙음!
+          caretPadding: 0,   
+
+          // 2. yAlign 강제 설정 삭제 (주석 처리 또는 삭제)
+          // yAlign: 'bottom',  <-- 이거 지웠습니다!
+          // 이제 차트가 알아서 위, 아래, 옆 중 넓은 곳에 띄웁니다.
+          
+          // (참고) 꼬리 크기 (기본값 5~6)
+          caretSize: 6,
         }
       },
       scales: {
