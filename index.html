@@ -334,20 +334,19 @@
             </div>
         </div>
 
-        <div class="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-            <button id="btn-prod-all" onclick="changeProduct('all')" 
-                    class="px-4 py-1.5 rounded-md text-sm font-bold shadow-sm bg-white text-blue-600 transition-all">
-                전체
-            </button>
-            <button id="btn-prod-st" onclick="changeProduct('st')" 
-                    class="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">
-                생탁
-            </button>
-            <button id="btn-prod-rice" onclick="changeProduct('rice')" 
-                    class="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">
-                우리쌀
-            </button>
-        </div>
+        <div class="relative flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
+    <div id="prod-pill" class="absolute top-1 bottom-1 bg-white dark:bg-gray-600 rounded-md shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+    
+    <button id="btn-prod-all" onclick="changeProduct('all')" class="relative z-10 px-4 py-1.5 text-sm font-bold text-blue-600 transition-colors duration-200">
+        전체
+    </button>
+    <button id="btn-prod-st" onclick="changeProduct('st')" class="relative z-10 px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-200">
+        생탁
+    </button>
+    <button id="btn-prod-rice" onclick="changeProduct('rice')" class="relative z-10 px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-200">
+        우리쌀
+    </button>
+</div>
 
     </div>
 </div>
@@ -414,11 +413,19 @@
         </button>
     </div>
 
-    <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex text-xs font-medium">
-        <button onclick="changeChartRange('1D')" id="btn-1d" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1D</button>
-        <button onclick="changeChartRange('1M')" id="btn-1m" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1M</button>
-        <button onclick="changeChartRange('1Y')" id="btn-1y" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 text-blue-600 shadow-sm transition-all">1Y</button>
-    </div>
+    <div class="relative flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+    <div id="range-pill" class="absolute top-1 bottom-1 bg-white dark:bg-gray-600 rounded-md shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+
+    <button id="btn-1d" onclick="changeChartRange('1D')" class="relative z-10 px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors duration-200">
+        1D
+    </button>
+    <button id="btn-1m" onclick="changeChartRange('1M')" class="relative z-10 px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors duration-200">
+        1M
+    </button>
+    <button id="btn-1y" onclick="changeChartRange('1Y')" class="relative z-10 px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors duration-200">
+        1Y
+    </button>
+</div>
 </div>
     <div class="relative w-full h-[500px]">
       <canvas id="salesStatusChart"></canvas>
@@ -2444,6 +2451,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
