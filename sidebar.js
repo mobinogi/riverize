@@ -25,11 +25,17 @@ function changeView(viewName) {
     return;
   }
 
-  // 3. 사이드바 메뉴 활성화 표시
-  document.querySelectorAll('#sidebar nav a').forEach(el => el.classList.remove('view-active'));
-  const targetMenu = document.getElementById('menu-' + viewName);
-  if (targetMenu) targetMenu.classList.add('view-active');
+// 3. 사이드바 메뉴 활성화 표시 (및 밑줄 잔상 제거)
+  const navLinks = document.querySelectorAll('#sidebar nav a');
+  navLinks.forEach(el => {
+      el.classList.remove('view-active'); // 기존 활성화 클래스 제거
+      el.blur(); // 🚨 핵심: 강제로 포커스를 해제하여 hover 밑줄이 남는 현상 방지
+  });
 
+  const targetMenu = document.getElementById('menu-' + viewName);
+  if (targetMenu) {
+      targetMenu.classList.add('view-active');
+  }
   // 4. 뷰별 특수 로직 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
