@@ -705,4 +705,3 @@ function updateDashboardChart() {
       }
     }
   });
-}
