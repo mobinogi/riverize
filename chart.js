@@ -101,9 +101,126 @@ function moveDate(delta) {
 }
 
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_상세툴팁.ver)
-// - 생탁/우리쌀/합계 상세 표시 기능 추가
-// - 1Y(영역), 1M/1D(막대+선) 디자인 유지
+// 🎨 [커스텀 툴팁] 1. 툴팁 엘리먼트 생성/가져오기
+// ============================================================
+const getOrCreateTooltip = (chart) => {
+  let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
+
+  if (!tooltipEl) {
+    tooltipEl = document.createElement('div');
+    tooltipEl.classList.add('chartjs-tooltip');
+    tooltipEl.style.background = 'rgba(17, 24, 39, 0.95)';
+    tooltipEl.style.borderRadius = '8px';
+    tooltipEl.style.color = 'white';
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.pointerEvents = 'none';
+    tooltipEl.style.position = 'absolute';
+    tooltipEl.style.transform = 'translate(-50%, 0)';
+    tooltipEl.style.transition = 'all .1s ease';
+    tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+    tooltipEl.style.zIndex = '100';
+    tooltipEl.style.minWidth = '220px'; // 너비 확보
+
+    const table = document.createElement('table');
+    table.style.margin = '0px';
+
+    tooltipEl.appendChild(table);
+    chart.canvas.parentNode.appendChild(tooltipEl);
+  }
+
+  return tooltipEl;
+};
+
+// ============================================================
+// 🎨 [커스텀 툴팁] 2. 실제 내용 채워넣기 (좌우 배치 + 증감 표시)
+// ============================================================
+const externalTooltipHandler = (context) => {
+  // 툴팁 요소 가져오기
+  const { chart, tooltip } = context;
+  const tooltipEl = getOrCreateTooltip(chart);
+
+  // 툴팁 숨겨야 할 때
+  if (tooltip.opacity === 0) {
+    tooltipEl.style.opacity = 0;
+    return;
+  }
+
+  // 데이터가 있을 때만 렌더링
+  if (tooltip.body) {
+    const dataIndex = tooltip.dataPoints[0].dataIndex;
+    const dataset = tooltip.dataPoints[0].dataset;
+    
+    // 현재 차트의 데이터셋 가져오기
+    const mainSet = chart.data.datasets.find(ds => ds.label === '선택 기간' || ds.label.includes('올해') || ds.label === '매출');
+    const compareSet = chart.data.datasets.find(ds => ds.label === '작년 동기' || ds.label === '전월 동기');
+
+    // 상세 데이터 꺼내기
+    const currDetails = mainSet.customDetails ? mainSet.customDetails[dataIndex] : { s: 0, r: 0 };
+    const prevDetails = compareSet.customDetails ? compareSet.customDetails[dataIndex] : { s: 0, r: 0 };
+
+    const currTotal = mainSet.data[dataIndex] || 0;
+    const prevTotal = compareSet.data[dataIndex] || 0;
+
+    // 증감 계산
+    const diff = currTotal - prevTotal;
+    let diffHtml = '';
+    if (diff > 0) diffHtml = `<span style="color: #ef4444; font-weight:bold;">▲ ${diff}개</span>`; // 빨강 (증가)
+    else if (diff < 0) diffHtml = `<span style="color: #3b82f6; font-weight:bold;">▼ ${Math.abs(diff)}개</span>`; // 파랑 (감소)
+    else diffHtml = `<span style="color: #9ca3af;">변동 없음</span>`;
+
+    // 날짜 제목
+    const title = chart.data.labels[dataIndex];
+    const compareLabel = compareSet.label; // "전월 동기" or "작년 동기"
+
+    // ✨ [HTML 조립] 좌우 배치 (Flexbox)
+    const innerHtml = `
+      <div style="padding: 12px;">
+        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 4px;">
+          ${title}
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">이번 매출</div>
+            <div style="font-size: 12px;">생탁: ${currDetails.s}</div>
+            <div style="font-size: 12px;">우리쌀: ${currDetails.r}</div>
+            <div style="margin-top: 4px; font-size: 14px; font-weight: 900; color: #60a5fa;">
+              ${currTotal}개
+            </div>
+          </div>
+
+          <div style="width: 1px; background: #4b5563; height: 50px;"></div>
+
+          <div style="flex: 1; text-align: left;">
+            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${compareLabel}</div>
+            <div style="font-size: 12px; color: #d1d5db;">생탁: ${prevDetails.s}</div>
+            <div style="font-size: 12px; color: #d1d5db;">우리쌀: ${prevDetails.r}</div>
+            <div style="margin-top: 4px; font-size: 13px; font-weight: bold; color: #9ca3af;">
+              ${prevTotal}개
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top: 10px; padding-top: 6px; border-top: 1px dashed #374151; text-align: center; font-size: 12px;">
+          ${compareLabel} 대비 ${diffHtml}
+        </div>
+      </div>
+    `;
+
+    const tableRoot = tooltipEl.querySelector('table');
+    tableRoot.innerHTML = innerHtml;
+  }
+
+  // 위치 조정
+  const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+  tooltipEl.style.opacity = 1;
+  tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+  tooltipEl.style.top = positionY + tooltip.caretY + 'px';
+};
+
+// ============================================================
+// 📊 [chart.js] 차트 그리기 함수 (최종_전월비교+커스텀툴팁.ver)
 // ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -122,10 +239,11 @@ function updateDashboardChart() {
 
   let chartLabels = [];
   let mainData = [];      
-  let mainDetails = [];   // ✨ 상세 데이터 (툴팁용)
+  let mainDetails = [];   
   let trendData = [];     
   let compareData = [];   
-  let compareDetails = []; // ✨ 작년 상세
+  let compareDetails = [];
+  let compareLabelName = '작년 동기'; // 기본값
 
   // ============================
   // 1. 데이터 가공
@@ -137,15 +255,11 @@ function updateDashboardChart() {
       
       const thisYear = new Date().getFullYear();
       if (y === thisYear) {
-          mainData = userData.thisYear; 
-          mainDetails = userData.thisYearDetails || [];
-          compareData = userData.lastYear;
-          compareDetails = userData.lastYearDetails || [];
+          mainData = userData.thisYear; mainDetails = userData.thisYearDetails || [];
+          compareData = userData.lastYear; compareDetails = userData.lastYearDetails || [];
       } else if (y === thisYear - 1) {
-          mainData = userData.lastYear;
-          mainDetails = userData.lastYearDetails || [];
-          compareData = Array(12).fill(0);
-          compareDetails = Array(12).fill({s:0, r:0});
+          mainData = userData.lastYear; mainDetails = userData.lastYearDetails || [];
+          compareData = Array(12).fill(0); compareDetails = Array(12).fill({s:0, r:0});
       } else {
           mainData = Array(12).fill(0); mainDetails = Array(12).fill({s:0, r:0});
           compareData = Array(12).fill(0); compareDetails = Array(12).fill({s:0, r:0});
@@ -153,22 +267,33 @@ function updateDashboardChart() {
       trendData = mainData; 
 
   } else if (currentRange === '1M') {
-      const y = baseDate.getFullYear(); const m = baseDate.getMonth() + 1;
+      // 🚨 [핵심 수정] 1M은 '전월(지난달)'과 비교합니다.
+      compareLabelName = '전월 동기';
+      
+      const y = baseDate.getFullYear(); 
+      const m = baseDate.getMonth() + 1;
       if(dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
+      
       const lastDay = new Date(y, m, 0).getDate();
       
+      // 전월 계산 (1월이면 작년 12월로)
+      const prevDate = new Date(y, m - 2, 1); // JS Month는 0부터 시작하므로 -2가 전월
+      const pY = prevDate.getFullYear();
+      const pM = prevDate.getMonth() + 1;
+
       for (let i = 1; i <= lastDay; i++) {
           chartLabels.push(`${i}일`);
-          const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           
-          // ✨ 데이터가 객체 {t, s, r}로 옵니다. 없으면 0 처리
+          // 이번 달 데이터
+          const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           const dayData = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
           
           mainData.push(dayData.t);
           mainDetails.push({ s: dayData.s, r: dayData.r });
           trendData.push(dayData.t === 0 ? null : dayData.t);
 
-          const pKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+          // 전월 데이터 (비교용)
+          const pKey = `${pY}-${String(pM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           const pData = (userData.daily && userData.daily[pKey]) || { t: 0, s: 0, r: 0 };
           
           compareData.push(pData.t);
@@ -176,6 +301,8 @@ function updateDashboardChart() {
       }
 
   } else if (currentRange === '1D') {
+      compareLabelName = '작년 동기'; // 1D는 작년 유지 (요일 매칭 때문)
+      
       const today = new Date(); const dayNum = today.getDay(); 
       const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
       const thisMon = new Date(today); thisMon.setDate(today.getDate() + diffToMon); 
@@ -206,11 +333,10 @@ function updateDashboardChart() {
   }
 
   // ============================================
-  // 🎨 [차트 그리기]
+  // 🎨 [차트 생성]
   // ============================================
   const isYearly = (currentRange === '1Y');
   
-  // 그라데이션 설정
   const lineGradient = ctx.createLinearGradient(0, 0, 0, 400);
   lineGradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
   lineGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
@@ -224,9 +350,9 @@ function updateDashboardChart() {
   if (isYearly) {
       finalDatasets.push({
           type: 'line',
-          label: '올해 (2025)',
+          label: '선택 기간',
           data: mainData,
-          customDetails: mainDetails, // ✨ 상세 데이터 숨겨둠
+          customDetails: mainDetails,
           borderColor: '#3b82f6',
           backgroundColor: lineGradient,
           borderWidth: 3,
@@ -243,7 +369,7 @@ function updateDashboardChart() {
           type: 'bar',
           label: '매출',
           data: mainData,
-          customDetails: mainDetails, // ✨ 상세 데이터 숨겨둠
+          customDetails: mainDetails,
           backgroundColor: barGradient,
           borderRadius: 6,
           barPercentage: 0.5,
@@ -269,9 +395,9 @@ function updateDashboardChart() {
 
   finalDatasets.push({
       type: 'line',
-      label: '작년 동기',
+      label: compareLabelName, // "전월 동기" or "작년 동기"
       data: compareData,
-      customDetails: compareDetails, // ✨ 작년 상세 데이터
+      customDetails: compareDetails, 
       borderColor: '#9ca3af',
       borderWidth: 2,
       borderDash: [5, 5],
@@ -297,43 +423,11 @@ function updateDashboardChart() {
       },
       plugins: {
         legend: { display: false }, 
+        
+        // 🚨 [핵심] 커스텀 HTML 툴팁 적용
         tooltip: {
-          backgroundColor: 'rgba(17, 24, 39, 0.95)',
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: { size: 14, weight: 'bold' },
-          bodyFont: { size: 13 },
-          displayColors: false,
-          
-          filter: function(tooltipItem) { 
-              return tooltipItem.dataset.label !== '추세' && (tooltipItem.raw > 0 || tooltipItem.dataset.label === '작년 동기'); 
-          },
-
-          // ✨ [핵심] 툴팁 내용 커스터마이징
-          callbacks: {
-              title: function(context) {
-                  return context[0].label; 
-              },
-              label: function(context) {
-                  const label = context.dataset.label || '';
-                  
-                  // 숨겨둔 상세 데이터 꺼내기
-                  const details = context.dataset.customDetails && context.dataset.customDetails[context.dataIndex];
-                  
-                  if (details) {
-                      // ✨ 사장님이 원하신 포맷으로 출력!
-                      return [
-                          ` ${label}`, // 제목 (예: 매출)
-                          ` 생탁: ${details.s}개`,
-                          ` 우리쌀: ${details.r}개`,
-                          ` ----------------`,
-                          ` 합계: ${context.parsed.y}개`
-                      ];
-                  } else {
-                      return ` ${label}: ${context.parsed.y}`;
-                  }
-              }
-          }
+          enabled: false, // 기본 툴팁 끄기
+          external: externalTooltipHandler // 우리가 만든 툴팁 연결
         }
       },
       scales: {
@@ -345,7 +439,7 @@ function updateDashboardChart() {
           grid: { color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false },
           ticks: { color: '#9ca3af' },
           beginAtZero: true,
-          grace: '70%' 
+          grace: '60%' 
         }
       }
     }
