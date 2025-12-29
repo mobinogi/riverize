@@ -97,6 +97,10 @@ function updateDashboardChart() {
   // 셀렉트 박스에서 현재 선택된 담당자 가져오기
   const userSelect = document.getElementById('dashboardUserSelect');
   const selectedUser = userSelect ? userSelect.value : '김원대';
+   // ✨ [디자인] 그라데이션 (위쪽 파랑 -> 아래 투명)
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');   
 
   // 데이터가 없으면 중단
   if (!dashboardData || !dashboardData[selectedUser]) return;
@@ -108,10 +112,7 @@ function updateDashboardChart() {
     salesChartInstance.destroy();
   }
 
-  // ✨ [디자인] 그라데이션 (위쪽 파랑 -> 아래 투명)
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
-  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
+ 
     
   // 새 차트 생성
   salesChartInstance = new Chart(ctx, {
