@@ -9,71 +9,61 @@ let allConsolidatedFiles = [];
 // ===============================================
 
 /**
- * 메인 뷰 전환 함수 (멈춤 방지 안전 버전)
- * - await(대기)를 제거하고, 안전 타이머로 무조건 화면을 전환합니다.
+ * 메인 뷰(화면)을 전환하는 함수 (최종_진짜완성: ID매핑 + 스켈레톤 + 데이터로딩)
  */
 function changeView(viewName) {
   // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 ID 매핑 (HTML ID가 dashboard-view 인 경우)
+  // 2. 선택한 뷰 보이기 (ID 확인: dashboard-view)
   let targetId = 'view-' + viewName;
   if (viewName === 'dashboard') {
       targetId = 'dashboard-view';
   }
 
-  // 3. 화면 찾아서 보여주기
   const targetView = document.getElementById(targetId);
   if (targetView) {
     targetView.classList.remove('hidden');
   } else {
-    // 혹시 ID가 틀렸을 경우를 대비해 콘솔만 찍고 넘어감
-    console.warn(`주의: '${targetId}'를 찾지 못했습니다. ID를 확인하세요.`);
+    // 안전장치
+    const fallback = document.getElementById('view-' + viewName);
+    if(fallback) fallback.classList.remove('hidden');
   }
 
-  // 4. 메뉴 밑줄 초기화 (잔상 제거 & 포커스 해제)
+  // 3. 사이드바 메뉴 스타일 (밑줄 고정)
   const navLinks = document.querySelectorAll('#sidebar nav a');
   navLinks.forEach(el => {
       el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
       el.classList.add('text-gray-400');
-      try { el.blur(); } catch(e) {} // 안전하게 포커스 해제
+      el.blur(); 
   });
 
-  // 5. 선택된 메뉴 밑줄 켜기
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) {
       targetMenu.classList.add('view-active', 'active-tab', 'text-white', 'font-bold');
       targetMenu.classList.remove('text-gray-400');
   }
 
-  // 6. 페이지별 로직 실행
+  // 4. 페이지별 기능 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
     
-    // 📊 [핵심 수정] 멈춤 현상 해결 로직
+    // 📊 [여기가 핵심!] 스켈레톤(로딩바)을 여기서 먼저 강제로 켭니다!
     const skeleton = document.getElementById('chartSkeleton');
     const chartBox = document.getElementById('chartContainer');
-
-    // (1) 일단 스켈레톤(로딩바)을 보여줍니다. (차트 박스는 숨김)
-    if (skeleton) skeleton.classList.remove('hidden');
+    
+    // "차트 박스는 숨기고, 로딩바는 보여라!"
     if (chartBox) chartBox.classList.add('hidden');
+    if (skeleton) skeleton.classList.remove('hidden');
 
-    // (2) 차트 그리기 함수 실행 (await 없이 그냥 실행!)
-    // 여기서 에러가 나도 아래 타이머는 돌아가므로 멈추지 않습니다.
-    if (typeof updateDashboardChart === 'function') {
-        setTimeout(() => updateDashboardChart(), 0); 
+    // 그 다음 데이터를 가져오라고 시킵니다. (데이터 오면 chart.js가 알아서 바꿔줌)
+    if (typeof showSalesDashboard === 'function') {
+        showSalesDashboard();
     }
-
-    // (3) 0.3초 뒤에 "무조건" 스켈레톤을 끄고 차트 박스를 엽니다.
-    // 차트 데이터가 늦게 오더라도 박스는 열려있으니 늦게라도 그려집니다.
-    setTimeout(() => {
-        if (skeleton) skeleton.classList.add('hidden');
-        if (chartBox) chartBox.classList.remove('hidden');
-    }, 300); 
   }
 }
 /**
