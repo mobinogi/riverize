@@ -101,9 +101,9 @@ function moveDate(delta) {
 }
 
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_디자인 픽스.ver)
-// - 1Y: 예전처럼 속이 꽉 찬 '영역 그래프'로 원상복구 🌊
-// - 1M/1D: 막대는 0을 표시하되, 선은 0을 건너뛰고 꼭대기만 연결 🚀
+// 📊 [chart.js] 차트 그리기 함수 (최종_디자인_프리미엄.ver)
+// - 1Y: 부드러운 영역 곡선 (기존 유지)
+// - 1M/1D: 빨랫줄 현상 제거(직선 연결) + 막대 그라데이션 적용 ✨
 // ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -121,19 +121,17 @@ function updateDashboardChart() {
   const dayNames = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
 
   let chartLabels = [];
-  let mainData = [];      // 막대용 (0도 포함)
-  let trendData = [];     // ✨ 선 연결용 (0은 제거 -> null)
-  let compareData = [];   // 작년 비교용
+  let mainData = [];      
+  let trendData = [];     
+  let compareData = [];   
 
   // ============================
-  // 1. 데이터 가공
+  // 1. 데이터 가공 (로직 동일)
   // ============================
   if (currentRange === '1Y') {
-      // [1Y] 연간 데이터 (기존 유지)
       const y = baseDate.getFullYear();
       if(dateDisplay) dateDisplay.textContent = `${y}년`;
       chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-      
       const thisYear = new Date().getFullYear();
       if (y === thisYear) {
           mainData = userData.thisYear; compareData = userData.lastYear; 
@@ -142,34 +140,25 @@ function updateDashboardChart() {
       } else {
           mainData = Array(12).fill(0); compareData = Array(12).fill(0);
       }
-      // 1Y는 트렌드 라인을 따로 안 쓰므로 mainData와 동일하게 취급하거나 비워둠
       trendData = mainData; 
 
   } else if (currentRange === '1M') {
-      // [1M] 월간 데이터
       const y = baseDate.getFullYear(); const m = baseDate.getMonth() + 1;
       if(dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
       const lastDay = new Date(y, m, 0).getDate();
-      
       for (let i = 1; i <= lastDay; i++) {
           chartLabels.push(`${i}일`);
-          
           const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           let val = (userData.daily && userData.daily[key]) || 0;
-          
-          mainData.push(val); // 막대는 0이어도 자리는 차지해야 함
-          trendData.push(val === 0 ? null : val); // ✨ 선은 0이면 '없음(null)' 처리 -> 바닥 안 찍음
-
+          mainData.push(val); 
+          trendData.push(val === 0 ? null : val); // 선 연결용 (0은 null)
           const pKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           compareData.push((userData.daily && userData.daily[pKey]) || 0);
       }
-
   } else if (currentRange === '1D') {
-      // [1D] 주간 데이터
       const today = new Date(); const dayNum = today.getDay(); 
       const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
       const thisMon = new Date(today); thisMon.setDate(today.getDate() + diffToMon); 
-      
       const lastYearMon = new Date(thisMon); lastYearMon.setFullYear(thisMon.getFullYear() - 1);
       const lyDiff = (lastYearMon.getDay() === 0 ? -6 : 1) - lastYearMon.getDay();
       lastYearMon.setDate(lastYearMon.getDate() + lyDiff);
@@ -177,15 +166,11 @@ function updateDashboardChart() {
       for (let i = 0; i < 6; i++) {
           const tDay = new Date(thisMon); tDay.setDate(thisMon.getDate() + i);
           const ty = tDay.getFullYear(), tm = String(tDay.getMonth()+1).padStart(2,'0'), td = String(tDay.getDate()).padStart(2,'0');
-          
           chartLabels.push(`${tDay.getDate()}일${dayNames[tDay.getDay()]}`);
-          
           const key = `${ty}-${tm}-${td}`;
           let val = (userData.daily && userData.daily[key]) || 0;
-
           mainData.push(val);
-          trendData.push(val === 0 ? null : val); // ✨ 여기도 0은 null 처리
-
+          trendData.push(val === 0 ? null : val); 
           const lDay = new Date(lastYearMon); lDay.setDate(lastYearMon.getDate() + i);
           const ly = lDay.getFullYear(), lm = String(lDay.getMonth()+1).padStart(2,'0'), ld = String(lDay.getDate()).padStart(2,'0');
           compareData.push((userData.daily && userData.daily[`${ly}-${lm}-${ld}`]) || 0);
@@ -193,28 +178,33 @@ function updateDashboardChart() {
   }
 
   // ============================================
-  // 🎨 [차트 디자인] 1Y 원상복구 & 1M/1D 콤보 개선
+  // 🎨 [디자인 업그레이드] 그라데이션 & 스타일
   // ============================================
   const isYearly = (currentRange === '1Y');
   
-  // 1Y용 그라데이션 (파란색 영역)
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
-  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
+  // 1. 선 차트용 배경 그라데이션 (1Y용)
+  const lineGradient = ctx.createLinearGradient(0, 0, 0, 400);
+  lineGradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
+  lineGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
+
+  // 2. ✨ [NEW] 막대 차트용 그라데이션 (1M/1D용) - 위는 진하고 아래는 연하게
+  const barGradient = ctx.createLinearGradient(0, 0, 0, 400);
+  barGradient.addColorStop(0, '#3b82f6'); // 위: 파란색
+  barGradient.addColorStop(1, '#93c5fd'); // 아래: 연한 파란색
 
   let finalDatasets = [];
 
   if (isYearly) {
-      // 🌊 [1Y 스타일] 사장님이 원하시던 '원조' 영역 그래프
+      // [1Y] 연간: 부드러운 영역 곡선 (기존 유지)
       finalDatasets.push({
           type: 'line',
           label: '올해 (2025)',
           data: mainData,
           borderColor: '#3b82f6',
-          backgroundColor: gradient, // 그라데이션 부활
+          backgroundColor: lineGradient,
           borderWidth: 3,
-          tension: 0.4, // 부드러운 곡선
-          fill: true,   // ✨ 속 채우기 (Area Chart)
+          tension: 0.4,
+          fill: true,
           pointBackgroundColor: '#ffffff',
           pointBorderColor: '#3b82F6',
           pointBorderWidth: 2,
@@ -222,46 +212,51 @@ function updateDashboardChart() {
           pointHoverRadius: 6
       });
   } else {
-      // 📊 [1M / 1D 스타일] 막대 + 끊김 없는 연결선
+      // [1M / 1D] 막대 + 직선 연결 (콤보 차트)
       
-      // (1) 둥근 막대 (Bar)
+      // (1) 둥근 막대 (그라데이션 적용 ✨)
       finalDatasets.push({
           type: 'bar',
           label: '매출',
           data: mainData,
-          backgroundColor: '#3b82f6',
-          borderRadius: 4,
-          barPercentage: 0.6,
-          maxBarThickness: 30,
+          backgroundColor: barGradient, // ✨ 단색 대신 그라데이션 사용
+          borderRadius: 6,      // 더 둥글게
+          borderSkipped: false, // 밑부분도 살짝 둥글게 처리 (취향)
+          barPercentage: 0.5,   // 막대 두께 살짝 얇게 (세련됨)
+          maxBarThickness: 35,
           order: 2
       });
 
-      // (2) 상단 연결 선 (Trend Line)
+      // (2) 상단 연결 선 (직선으로 팽팽하게! 📏)
       finalDatasets.push({
           type: 'line',
           label: '추세',
-          data: trendData, // ✨ 0이 없는(null) 데이터 사용
-          borderColor: '#2563eb',
+          data: trendData,
+          borderColor: '#2563eb', // 막대보다 진한 파랑
           borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 3,
-          pointBackgroundColor: 'white',
-          pointBorderColor: '#2563eb',
+          
+          // 🚨 [핵심 변경] tension을 0으로 설정해서 축 늘어지는 곡선 제거!
+          tension: 0, 
+          
+          pointRadius: 4,         // 점 크기 살짝 키움
+          pointBackgroundColor: '#ffffff', // 속은 하얗게
+          pointBorderColor: '#2563eb',     // 테두리는 파랗게
+          pointBorderWidth: 2,
           fill: false,
-          spanGaps: true, // ✨ [핵심] null인 구간(0인 날)을 점프해서 선을 이어줌!
+          spanGaps: true, // 끊긴 구간 연결
           order: 1
       });
   }
 
-  // (3) 작년 비교 데이터 (공통 - 점선)
+  // (3) 작년 비교 데이터 (점선)
   finalDatasets.push({
       type: 'line',
       label: '작년 동기',
       data: compareData,
-      borderColor: '#9ca3af',
+      borderColor: '#9ca3af', // 회색
       borderWidth: 2,
       borderDash: [5, 5],
-      tension: 0.3,
+      tension: 0.3, // 비교 데이터는 부드럽게 둠 (구분되게)
       pointRadius: 0,
       fill: false,
       hidden: currentRange === '1D',
@@ -270,7 +265,7 @@ function updateDashboardChart() {
 
   // 차트 생성
   salesChartInstance = new Chart(ctx, {
-    type: 'line', // 기본 타입
+    type: 'line', 
     data: {
       labels: chartLabels,
       datasets: finalDatasets
@@ -286,10 +281,12 @@ function updateDashboardChart() {
         legend: { display: false }, 
         tooltip: {
           backgroundColor: 'rgba(17, 24, 39, 0.95)',
-          padding: 10,
-          cornerRadius: 6,
+          padding: 12, // 툴팁 여백 늘림
+          cornerRadius: 8,
+          titleFont: { size: 13 },
+          bodyFont: { size: 13 },
           displayColors: false,
-          // 툴팁 필터: '추세' 선은 툴팁에서 제외 (막대랑 겹치니까)
+          // '추세' 선은 툴팁에서 숨김
           filter: function(tooltipItem) { 
               return tooltipItem.raw > 0 && tooltipItem.dataset.label !== '추세'; 
           },
@@ -302,14 +299,15 @@ function updateDashboardChart() {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
+          grid: { display: false }, // 세로 격자 삭제 (더 깔끔하게)
           ticks: { color: '#9ca3af', font: { size: 11 } } 
         },
         y: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)', borderDash: [4, 4], drawBorder: false },
+          // 가로 격자는 아주 연하게 유지
+          grid: { color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false },
           ticks: { color: '#9ca3af' },
           beginAtZero: true,
-          grace: '10%' 
+          grace: '5%' // 천장 여유 조금 줄임 (막대 꽉 차게)
         }
       }
     }
