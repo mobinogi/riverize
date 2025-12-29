@@ -5,7 +5,8 @@
 // 전역 변수
 let salesChartInstance = null;
 let dashboardData = {};
-let currentRange = '1Y'; 
+let currentRange = '1Y';
+let prevWeekData = [];
 
 // 현재 보고 있는 기준 날짜 (1M, 1Y용)
 let baseDate = new Date(); 
