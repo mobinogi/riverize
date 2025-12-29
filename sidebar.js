@@ -11,13 +11,16 @@ let allConsolidatedFiles = [];
 /**
  * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
  */
+/**
+ * 메인 뷰(화면)을 전환하는 함수 (사이드바 메뉴 클릭 시)
+ */
 function changeView(viewName) {
   // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 보이기 (🚨 여기가 핵심 수정!)
-  // 기본적으로는 'view-이름'을 찾지만, 대시보드만 예외적으로 'dashboard-view'를 찾습니다.
+  // 2. 선택한 뷰 보이기
+  // (대시보드만 ID가 달라서 예외 처리)
   let targetId = 'view-' + viewName;
   if (viewName === 'dashboard') {
       targetId = 'dashboard-view';
@@ -52,8 +55,20 @@ function changeView(viewName) {
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
-    // 📊 차트 그리기 함수 호출
-    if (typeof updateDashboardChart === 'function') updateDashboardChart();
+    
+    // 📊 [수정됨] 차트 빈 화면 방지 로직
+    // 1) 일단 로딩 박스(스켈레톤)를 먼저 보여줍니다. (빈 화면 방지)
+    const skeleton = document.getElementById('chartSkeleton');
+    const chartBox = document.getElementById('chartContainer');
+    if (skeleton) skeleton.classList.remove('hidden');
+    if (chartBox) chartBox.classList.add('hidden');
+
+    // 2) 0.1초 뒤에 차트를 그립니다. (화면이 다 뜬 뒤에 그려야 보임!)
+    setTimeout(() => {
+        if (typeof updateDashboardChart === 'function') {
+            updateDashboardChart();
+        }
+    }, 100);
   }
 }
 /**
