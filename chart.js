@@ -89,34 +89,33 @@ function initDashboard(response) {
   updateDashboardChart();
 }
 
-// 실제 차트를 그리는 함수 (Chart.js)
+// [chart.js] updateDashboardChart 함수 (그라데이션 + 말풍선 착붙 수정)
+
 function updateDashboardChart() {
-  const canvas = document.getElementById('salesStatusChart'); // 캔버스 요소 가져오기
+  const canvas = document.getElementById('salesStatusChart');
   if (!canvas) return;
   
-  const ctx = canvas.getContext('2d'); // 🖌️ 그라데이션을 위해 붓(context)을 꺼냅니다.
+  const ctx = canvas.getContext('2d');
 
-  // 셀렉트 박스에서 현재 선택된 담당자 가져오기
+  // 사용자 선택 (김원대/정병준)
   const userSelect = document.getElementById('dashboardUserSelect');
   const selectedUser = userSelect ? userSelect.value : '김원대';
 
-  // 데이터가 없으면 중단
+  // 데이터 확인
   if (!dashboardData || !dashboardData[selectedUser]) return;
+  const userData = dashboardData[selectedUser];
 
-  const userData = dashboardData[selectedUser]; // { thisYear: [...], lastYear: [...] }
-
-  // 기존 차트가 있으면 삭제 (중복 생성 방지)
+  // 기존 차트 삭제
   if (salesChartInstance) {
     salesChartInstance.destroy();
   }
 
-  // ✨ [1. 그라데이션 만들기] : 위쪽은 은은한 파랑 -> 아래는 투명하게 사라짐
-  // (0, 0, 0, 400)은 그라데이션 방향(위->아래)입니다.
+  // ✨ [디자인] 그라데이션 (위쪽 파랑 -> 아래 투명)
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // 맨 위: 살짝 진한 파랑 (투명도 0.5)
-  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); // 맨 아래: 완전 투명 (흰색이랑 섞임)
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
 
-  // 새 차트 생성
+  // 차트 생성
   salesChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -125,75 +124,77 @@ function updateDashboardChart() {
         {
           label: `올해 (2025)`,
           data: userData.thisYear,
-          borderColor: '#3b82f6', // 선 색상 (진한 파랑)
-          
-          // ✨ [그라데이션 적용] 단순 단색이 아니라, 아까 만든 그라데이션을 입힙니다.
-          backgroundColor: gradient, 
-          
+          borderColor: '#3b82f6',
+          backgroundColor: gradient, // 그라데이션 적용
           borderWidth: 3,
-          tension: 0.4, // 곡선을 조금 더 부드럽게 (0.3 -> 0.4)
-          pointBackgroundColor: '#ffffff', // 포인트 안쪽은 흰색
-          pointBorderColor: '#3b82F6', // 포인트 테두리는 파란색
-          pointBorderWidth: 2, // 포인트 테두리 두께
-          pointRadius: 4, // 평소 포인트 크기
-          pointHoverRadius: 6, // 마우스 올렸을 때 포인트 크기
-          fill: true // 채우기 켜기
+          tension: 0.4,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#3b82F6',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true
         },
         {
           label: `작년 (2024)`,
           data: userData.lastYear,
-          borderColor: '#9ca3af', // 회색 (Tailwind gray-400)
+          borderColor: '#9ca3af',
           borderWidth: 2,
-          borderDash: [5, 5], // 점선
+          borderDash: [5, 5],
           tension: 0.3,
-          pointRadius: 0, // 점 숨김
+          pointRadius: 0,
           fill: false
         }
       ]
     },
     options: {
-    responsive: true,
-    maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      
+      // 🧲 [자석 모드] 마우스가 근처만 가도 툴팁이 뜹니다.
+      interaction: {
+        mode: 'index',
+        intersect: false, // (핵심) 점에 안 닿아도 뜸
+        axis: 'x'         // 세로선 어디든 OK
+      },
 
-    // ✨ [핵심] 자석 모드 설정 (이게 있어야 촥! 붙습니다)
-    interaction: {
-        mode: 'index',      // 같은 세로줄(X축)에 있는 데이터는 다 보여줘라
-        intersect: false,   // 🚨 [중요] 점에 정확히 안 닿아도(false) 보여줘라!
-        axis: 'x'           // 🚨 [추가] 마우스가 위아래 어디에 있든 'X축(가로)'만 맞으면 반응해라
-    },
+      layout: {
+          padding: { top: 20, right: 10, left: 10, bottom: 0 }
+      },
 
-    layout: {
-        padding: {
-            top: 20, // (말풍선 잘림 방지용 여백)
-            right: 10,
-            left: 10,
-            bottom: 0
-        }
-    },
-    
-    // ... (나머지 설정들은 그대로 유지)
-    scales: {
-        y: {
-            grace: '10%', // (천장 높이기)
-            beginAtZero: true,
-            grid: { color: 'rgba(200, 200, 200, 0.1)' },
-            ticks: { color: '#9ca3af' }
-        },
-        x: {
-            grid: { color: 'rgba(200, 200, 200, 0.1)' },
-            ticks: { color: '#9ca3af' }
-        }
-    },
-    plugins: {
-        legend: { display: false }, // (범례 끔)
+      plugins: {
+        legend: { display: false },
         tooltip: {
-            // 툴팁 스타일
-            backgroundColor: 'rgba(17, 24, 39, 0.9)',
-            titleColor: '#fff',
-            bodyColor: '#e5e7eb',
-            padding: 12,
-            cornerRadius: 8,
-            displayColors: false
+          // 🩸 [착붙 모드] 여기가 핵심입니다!
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#e5e7eb',
+          padding: 10,
+          cornerRadius: 6,
+          displayColors: false,
+
+          // 👇 이 두 줄이 범인 검거 코드입니다.
+          caretPadding: 0,   // 점과 말풍선 사이 거리 0 (딱 붙음!)
+          yAlign: 'bottom',  // 말풍선 꼬리가 무조건 아래로 향하게 (점 위에 앉음)
         }
+      },
+      
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#9ca3af' }
+        },
+        y: {
+          // 사장님이 이미 60% 주셨다니 충분합니다! (여기선 적당히 15%만 줘도 됩니다)
+          grace: '15%', 
+          beginAtZero: true,
+          grid: { 
+              borderDash: [4, 4], 
+              color: 'rgba(200, 200, 200, 0.2)' 
+          },
+          ticks: { color: '#9ca3af' }
+        }
+      }
     }
+  });
 }
