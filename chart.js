@@ -63,14 +63,15 @@ function initDashboard(response) {
 // 2. 날짜 제어 & 버튼 로직
 // ----------------------------------------------------
 
+// [chart.js] 1. 날짜 범위 변경 & 이동 함수 (1D 주간 이동 기능 추가)
+
 function changeChartRange(range) {
     currentRange = range;
     
-    // 1D일 때는 날짜 이동 버튼 숨기기 (고정 주간이므로)
+    // 🚨 [수정] 1D여도 날짜 이동 버튼을 숨기지 않음! (이제 이동 가능하니까)
     const navControl = document.getElementById('dateNavControl');
     if (navControl) {
-        if (range === '1D') navControl.classList.add('hidden');
-        else navControl.classList.remove('hidden');
+        navControl.classList.remove('hidden'); 
     }
 
     // 버튼 스타일 업데이트
@@ -83,20 +84,54 @@ function changeChartRange(range) {
         }
     });
 
-    // 1D로 오면 baseDate를 오늘로 리셋 (항상 이번주 보기)
+    // 1D로 바꾸면 일단 '오늘' 기준으로 리셋
     if (range === '1D') baseDate = new Date();
 
     updateDashboardChart();
 }
 
 function moveDate(delta) {
+    const nextDate = new Date(baseDate);
+    const today = new Date();
+
+    // 이동할 날짜 계산
     if (currentRange === '1Y') {
-        baseDate.setFullYear(baseDate.getFullYear() + delta);
+        nextDate.setFullYear(baseDate.getFullYear() + delta);
     } else if (currentRange === '1M') {
-        baseDate.setMonth(baseDate.getMonth() + delta);
-    } 
-    // 1D는 이동 불가 (버튼이 숨겨짐)
+        nextDate.setMonth(baseDate.getMonth() + delta);
+    } else if (currentRange === '1D') {
+        // 🚨 [신규] 주 단위 이동 (7일씩)
+        nextDate.setDate(baseDate.getDate() + (delta * 7));
+    }
+
+    // 🚫 [제한] 미래로 이동하려고 하면 막기 (오늘이 포함된 주/달/연도까지만 허용)
+    // 1D: 다음 주 월요일이 오늘보다 미래면 차단
+    // 1M: 다음 달 1일이 오늘보다 미래면 차단
+    // 1Y: 내년이면 차단
     
+    // 간단하게 "오늘보다 미래의 날짜를 기준일로 잡으려 하면" 막음
+    // (단, 1D는 주의 시작일이 기준이라 조금 넉넉하게 체크)
+    if (delta > 0) {
+        // 오늘 날짜랑 비교 (시간 떼고)
+        const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const n = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
+        
+        // 1D의 경우, 이번 주 월요일까지만 이동 가능하게
+        if (currentRange === '1D') {
+             const dayNum = t.getDay();
+             const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
+             const thisMon = new Date(t); 
+             thisMon.setDate(t.getDate() + diffToMon);
+             
+             if (n > thisMon) return; // 미래 주로는 이동 불가
+        } else {
+             // 1M, 1Y는 그냥 오늘보다 미래면 차단 (이번 달/올해까지만)
+             if (n > t) return; 
+        }
+    }
+
+    // 통과되면 적용
+    baseDate = nextDate;
     updateDashboardChart();
 }
 
@@ -176,6 +211,13 @@ const externalTooltipHandler = (context) => {
     const currVal = currentSet ? currentSet.data[idx] : 0;
     const prevVal = prevMonthSet ? prevMonthSet.data[idx] : 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
+
+    // 🚨 [신규] 모든 데이터가 0이거나 없으면 툴팁 생성 막기!
+    if ((!currVal && !prevVal && !lastVal) || (currVal === 0 && prevVal === 0 && lastVal === 0)) {
+        tooltipEl.style.opacity = 0;
+        return;
+    }  
+    
     const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
 
     // 증감 표시
@@ -336,21 +378,35 @@ function updateDashboardChart() {
       mainDetails.push({ s: d.s, r: d.r });
       trendData.push(d.t === 0 ? null : d.t);
 
+      // 🚨 [수정] 1M 전월 데이터: 0이면 null로 처리 (바닥 안 찍게)
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0 };
-      prevMonthData.push(pmData.t);
+      prevMonthData.push(pmData.t === 0 ? null : pmData.t); // ✨ 0 -> null
 
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
       lastYearData.push(lyData.t);
     }
 
-  } else if (currentRange === '1D') {
-    // [1D] 주간
-    const today = new Date();
-    const diffToMon = (today.getDay() === 0 ? -6 : 1) - today.getDay();
-    const thisMon = new Date(today);
-    thisMon.setDate(today.getDate() + diffToMon);
+} else if (currentRange === '1D') {
+    // 🚨 [신규] 1D 주차 계산 및 표시 (예: 2025.12월 셋째주)
+    const y = baseDate.getFullYear();
+    const m = baseDate.getMonth() + 1;
+    // 주차 계산 (매월 1일이 있는 주를 1주차로 계산)
+    const firstDayOfMonth = new Date(y, m - 1, 1);
+    const offset = firstDayOfMonth.getDay(); // 1일의 요일
+    const dateNum = baseDate.getDate();
+    // (날짜 + 1일의 요일인덱스) / 7 올림
+    const weekNum = Math.ceil((dateNum + offset) / 7);
+    const weekName = ['첫째주', '둘째주', '셋째주', '넷째주', '다섯째주', '여섯째주'][weekNum - 1] || (weekNum + '주');
+    
+    if (dateDisplay) dateDisplay.textContent = `${y}.${m}월 ${weekName}`;
+
+    // 1D 그래프 로직 (기존 유지)
+    const dayNum = baseDate.getDay();
+    const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
+    const thisMon = new Date(baseDate);
+    thisMon.setDate(baseDate.getDate() + diffToMon);
     
     const lyMon = new Date(thisMon);
     lyMon.setFullYear(thisMon.getFullYear() - 1);
@@ -368,8 +424,7 @@ function updateDashboardChart() {
 
       const key = `${ty}-${tm}-${td}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
-      mainData.push(d.t);
-      mainDetails.push({ s: d.s, r: d.r });
+      mainData.push(d.t); mainDetails.push({ s: d.s, r: d.r });
       trendData.push(d.t === 0 ? null : d.t);
 
       const lDay = new Date(lyMon);
@@ -377,88 +432,18 @@ function updateDashboardChart() {
       const lKey = `${lDay.getFullYear()}-${String(lDay.getMonth()+1).padStart(2,'0')}-${String(lDay.getDate()).padStart(2,'0')}`;
       const ld = (userData.daily && userData.daily[lKey]) || { t: 0 };
       lastYearData.push(ld.t);
-      
       prevMonthData.push(null);
     }
   }
 
   // ------------------------------------------------
-  // ✨ [NEW] 차트 내 요약 알림판 (Summary Overlay) 생성
-  // ------------------------------------------------
-  // 1. 합계 계산 함수
-  const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
-  
-  const currentTotal = sum(mainData);
-  const prevTotal = sum(prevMonthData);
-  const lastTotal = sum(lastYearData);
-
-  // 2. 증감 HTML 생성 함수
-  const getDiffHtml = (curr, old, label) => {
-      const diff = curr - old;
-      let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af');
-      let icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '-');
-      let val = Math.abs(diff);
-      return `<div style="font-size:12px; color:#6b7280; display:flex; align-items:center; gap:4px; margin-top:2px;">
-                <span>${label}</span> 
-                <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
-              </div>`;
-  };
-
-  // 3. 내용 조립
-  let summaryTitle = '';
-  let summaryContent = '';
-  
-  if (currentRange === '1D') {
-      summaryTitle = '이번 주 합계';
-      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
-  } else if (currentRange === '1M') {
-      summaryTitle = '이번 달 합계';
-      summaryContent = getDiffHtml(currentTotal, prevTotal, '전월 대비') + 
-                       getDiffHtml(currentTotal, lastTotal, '작년 대비');
-  } else {
-      summaryTitle = '올해 합계';
-      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
-  }
-
-  // 4. HTML 요소 만들어서 차트 위에 띄우기
-  const container = canvas.parentNode;
-  let overlay = container.querySelector('.chart-summary-overlay');
-  
-  if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'chart-summary-overlay';
-      // 스타일 설정 (차트 왼쪽 상단에 띄움)
-      Object.assign(overlay.style, {
-          position: 'absolute',
-          top: '20px',
-          left: '20px', // 왼쪽 상단 고정
-          background: 'rgba(255, 255, 255, 0.9)', // 반투명 흰색
-          padding: '12px 16px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(229, 231, 235, 0.5)',
-          zIndex: '10',
-          pointerEvents: 'none' // 마우스 통과 (차트 툴팁 방해 안 하도록)
-      });
-      container.appendChild(overlay);
-  }
-
-  overlay.innerHTML = `
-      <div style="font-size:12px; color:#6b7280; font-weight:500;">${summaryTitle}</div>
-      <div style="font-size:24px; color:#111827; font-weight:800; line-height:1.2;">${currentTotal}<span style="font-size:14px; color:#9ca3af; font-weight:normal;">개</span></div>
-      <div style="margin-top:4px;">${summaryContent}</div>
-  `;
-
-
-  // ------------------------------------------------
-  // 2. 차트 그리기 설정
+  // 차트 그리기
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
   
   const barGradient = ctx.createLinearGradient(0, 0, 0, 400);
   barGradient.addColorStop(0, '#3b82f6'); 
   barGradient.addColorStop(1, '#93c5fd'); 
-  
   const lineGradient = ctx.createLinearGradient(0, 0, 0, 400);
   lineGradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
   lineGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
@@ -466,124 +451,94 @@ function updateDashboardChart() {
   let finalDatasets = [];
 
   if (isYearly) {
-    // [연간] 영역 그래프
     finalDatasets.push({
-      type: 'line',
-      label: '올해 (2025)',
-      data: mainData,
-      customDetails: mainDetails,
-      borderColor: '#3b82f6',
-      backgroundColor: lineGradient,
-      borderWidth: 3,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 4,
-      pointBackgroundColor: 'white',
-      pointBorderColor: '#3b82f6'
+      type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
+      borderColor: '#3b82f6', backgroundColor: lineGradient, borderWidth: 3, tension: 0.4, fill: true,
+      pointRadius: 4, pointBackgroundColor: 'white', pointBorderColor: '#3b82f6'
     });
   } else {
-    // [월간/주간] 막대 그래프
     finalDatasets.push({
-      type: 'bar',
-      label: '매출',
-      data: mainData,
-      customDetails: mainDetails,
-      backgroundColor: barGradient,
-      borderRadius: 6,
-      barPercentage: 0.5,
-      maxBarThickness: 35,
-      order: 3
+      type: 'bar', label: '매출', data: mainData, customDetails: mainDetails,
+      backgroundColor: barGradient, borderRadius: 6, barPercentage: 0.5, maxBarThickness: 35, order: 3
     });
-    
-    // [월간/주간] 추세선
     finalDatasets.push({
-      type: 'line',
-      label: '추세',
-      data: trendData,
-      borderColor: '#2563eb',
-      borderWidth: 2,
-      tension: 0,
-      spanGaps: true,
-      pointRadius: 4,
-      pointBackgroundColor: 'white',
-      pointBorderColor: '#2563eb',
-      order: 1
+      type: 'line', label: '추세', data: trendData,
+      borderColor: '#2563eb', borderWidth: 2, tension: 0, spanGaps: true,
+      pointRadius: 4, pointBackgroundColor: 'white', pointBorderColor: '#2563eb', order: 1
     });
   }
 
   if (currentRange === '1M') {
     finalDatasets.push({
-      type: 'line',
-      label: '전월 동기',
-      data: prevMonthData,
-      borderColor: '#c084fc',
-      borderWidth: 2,
-      tension: 0.3,
-      pointRadius: 0,
-      fill: false,
+      type: 'line', label: '전월 동기', data: prevMonthData,
+      borderColor: '#c084fc', borderWidth: 2, tension: 0.3, pointRadius: 0, fill: false, 
+      spanGaps: true, // 🚨 [핵심] 보라색 선도 0인 구간 점프해서 연결!
       order: 2
     });
   }
 
   finalDatasets.push({
-    type: 'line',
-    label: '작년 동기',
-    data: lastYearData,
-    borderColor: '#9ca3af',
-    borderWidth: 2,
-    borderDash: [5, 5],
-    tension: 0.3,
-    pointRadius: 0,
-    fill: false,
-    hidden: currentRange === '1D',
-    order: 4
+    type: 'line', label: '작년 동기', data: lastYearData,
+    borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
+    hidden: currentRange === '1D', order: 4
   });
 
-  // ------------------------------------------------
-  // 3. 차트 생성 (격자 무늬 복구!)
-  // ------------------------------------------------
+  // 요약 알림판 (Summary Overlay) - 기존 코드 유지
+  const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
+  const currentTotal = sum(mainData);
+  const prevTotal = sum(prevMonthData);
+  const lastTotal = sum(lastYearData);
+
+  const getDiffHtml = (curr, old, label) => {
+      const diff = curr - old;
+      let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af');
+      let icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '-');
+      let val = Math.abs(diff);
+      return `<div style="font-size:12px; color:#6b7280; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                <span>${label}</span> <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
+              </div>`;
+  };
+
+  let summaryTitle = '', summaryContent = '';
+  if (currentRange === '1D') {
+      summaryTitle = '이번 주 합계'; summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  } else if (currentRange === '1M') {
+      summaryTitle = '이번 달 합계'; summaryContent = getDiffHtml(currentTotal, prevTotal, '전월 대비') + getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  } else {
+      summaryTitle = '올해 합계'; summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+  }
+
+  const container = canvas.parentNode;
+  let overlay = container.querySelector('.chart-summary-overlay');
+  if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'chart-summary-overlay';
+      Object.assign(overlay.style, {
+          position: 'absolute', top: '20px', left: '20px', background: 'rgba(255, 255, 255, 0.9)',
+          padding: '12px 16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(229, 231, 235, 0.5)', zIndex: '10', pointerEvents: 'none'
+      });
+      container.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+      <div style="font-size:12px; color:#6b7280; font-weight:500;">${summaryTitle}</div>
+      <div style="font-size:24px; color:#111827; font-weight:800; line-height:1.2;">${currentTotal}<span style="font-size:14px; color:#9ca3af; font-weight:normal;">개</span></div>
+      <div style="margin-top:4px;">${summaryContent}</div>
+  `;
+
   salesChartInstance = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: chartLabels,
-      datasets: finalDatasets
-    },
+    data: { labels: chartLabels, datasets: finalDatasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          enabled: false,
-          external: externalTooltipHandler
-        }
+        tooltip: { enabled: false, external: externalTooltipHandler }
       },
       scales: {
-        x: {
-          // 🚨 [격자 복구] 세로선(Grid) 부활!
-          grid: { 
-              display: true, 
-              color: 'rgba(200, 200, 200, 0.1)', // 아주 연하게
-              drawBorder: false 
-          },
-          ticks: { color: '#9ca3af', font: { size: 11 } }
-        },
-        y: {
-          // 🚨 [격자 복구] 가로선(Grid) 부활!
-          grid: {
-            display: true,
-            color: 'rgba(200, 200, 200, 0.15)', // 연한 회색 점선
-            borderDash: [4, 4],
-            drawBorder: false
-          },
-          ticks: { color: '#9ca3af' },
-          beginAtZero: true,
-          grace: '60%'
-        }
+        x: { grid: { display: true, color: 'rgba(200, 200, 200, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+        y: { grid: { display: true, color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
       }
     }
   });
