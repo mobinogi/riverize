@@ -307,7 +307,7 @@ function updateDashboardChart() {
           grid: { color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false },
           ticks: { color: '#9ca3af' },
           beginAtZero: true,
-          grace: '5%' // 천장 여유 조금 줄임 (막대 꽉 차게)
+          grace: '60%' // 천장 여유 조금 줄임 (막대 꽉 차게)
         }
       }
     }
