@@ -557,20 +557,23 @@ function updateDashboardChart() {
   }
 
   // ✨ 요약 알림판
-  const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
+const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
   const currentTotal = sum(mainData);
   const prevTotal = sum(prevMonthData); 
   const lastTotal = sum(lastYearData);
 
   const prodLabel = currentProduct === 'st' ? '생탁' : (currentProduct === 'rice' ? '우리쌀' : '합계');
 
+  // 증감 표시 HTML (Tailwind 클래스 적용)
   const getDiffHtml = (curr, old, label) => {
       const diff = curr - old;
-      let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af');
+      let color = diff > 0 ? '#ef4444' : (diff < 0 ? '#3b82f6' : '#9ca3af'); // 빨강/파랑/회색 (다크모드에서도 잘 보임)
       let icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '-');
       let val = Math.abs(diff);
-      return `<div style="font-size:12px; color:#6b7280; display:flex; align-items:center; gap:4px; margin-top:2px;">
-                <span>${label}</span> <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
+      
+      return `<div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                <span>${label}</span> 
+                <span style="color:${color}; font-weight:bold;">${icon} ${val}</span>
               </div>`;
   };
 
@@ -586,22 +589,24 @@ function updateDashboardChart() {
       summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
   }
 
+  // 알림판 요소 생성 (스타일: Tailwind 클래스로 변경)
   const container = canvas.parentNode;
   let overlay = container.querySelector('.chart-summary-overlay');
+  
   if (!overlay) {
       overlay = document.createElement('div');
-      overlay.className = 'chart-summary-overlay';
-      Object.assign(overlay.style, {
-          position: 'absolute', top: '20px', left: '20px', background: 'rgba(255, 255, 255, 0.9)',
-          padding: '12px 16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(229, 231, 235, 0.5)', zIndex: '10', pointerEvents: 'none'
-      });
+      // 🚨 [핵심] bg-white/90 (라이트) vs dark:bg-gray-800/90 (다크) -> 반투명 효과
+      overlay.className = 'chart-summary-overlay absolute top-5 left-5 p-4 rounded-xl shadow-sm z-10 pointer-events-none border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm transition-colors duration-200';
       container.appendChild(overlay);
   }
+  
+  // 내용 주입 (글자색도 다크모드 대응)
   overlay.innerHTML = `
-      <div style="font-size:12px; color:#6b7280; font-weight:500;">${summaryTitle}</div>
-      <div style="font-size:24px; color:#111827; font-weight:800; line-height:1.2;">${currentTotal}<span style="font-size:14px; color:#9ca3af; font-weight:normal;">개</span></div>
-      <div style="margin-top:4px;">${summaryContent}</div>
+      <div class="text-xs font-medium text-gray-500 dark:text-gray-400">${summaryTitle}</div>
+      <div class="text-2xl font-extrabold text-gray-900 dark:text-white leading-tight my-0.5">
+        ${currentTotal}<span class="text-sm font-normal text-gray-400 dark:text-gray-500 ml-0.5">개</span>
+      </div>
+      <div class="mt-1">${summaryContent}</div>
   `;
 
   salesChartInstance = new Chart(ctx, {
@@ -615,8 +620,9 @@ function updateDashboardChart() {
         tooltip: { enabled: false, external: externalTooltipHandler }
       },
       scales: {
-        x: { grid: { display: true, color: 'rgba(200, 200, 200, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
-        y: { grid: { display: true, color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
+        // 격자 색상도 너무 진하지 않게 조정
+        x: { grid: { display: true, color: 'rgba(156, 163, 175, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+        y: { grid: { display: true, color: 'rgba(156, 163, 175, 0.1)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
       }
     }
   });
