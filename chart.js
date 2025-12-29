@@ -338,8 +338,8 @@ const externalTooltipHandler = (context) => {
 
 
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_상품필터링 적용.ver)
-// - 전체/생탁/우리쌀 버튼에 따라 데이터(mainData, prev, last)를 갈아끼움
+// 📊 [chart.js] 차트 그리기 함수 (최종_1D주간비교완성.ver)
+// - 1D: 그래프는 '지난주'와 비교 / 툴팁은 '전월/작년 같은 주차'와 비교
 // ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -362,15 +362,41 @@ function updateDashboardChart() {
   let mainData = []; 
   let mainDetails = []; 
   let trendData = [];
-  let prevMonthData = []; 
-  let lastYearData = [];  
+  let prevMonthData = []; // 툴팁용 (전월)
+  let lastYearData = [];  // 툴팁용 (작년)
+  let prevWeekData = [];  // ✨ 차트 표시용 (지난주)
 
-  // 🛠️ [Helper] 현재 선택된 상품(전체/생탁/우리쌀)의 값을 추출하는 함수
+  // 🛠️ [Helper] 현재 선택된 상품 값 추출
   const getVal = (dataObj) => {
       if (!dataObj) return 0;
-      if (currentProduct === 'st') return dataObj.s || 0;     // 생탁
-      if (currentProduct === 'rice') return dataObj.r || 0;   // 우리쌀
-      return dataObj.t || 0;                                  // 전체
+      if (currentProduct === 'st') return dataObj.s || 0;     
+      if (currentProduct === 'rice') return dataObj.r || 0;   
+      return dataObj.t || 0;                                  
+  };
+
+  // 🛠️ [Helper] N번째 주, 특정 요일의 날짜 구하기
+  // year:년, month:월(1~12), nth:몇번째주, dayIdx:요일(0~6)
+  const getNthWeekDate = (year, month, nth, dayIdx) => {
+      const firstDayOfMonth = new Date(year, month - 1, 1);
+      // 첫날의 요일 (0:일 ~ 6:토)
+      const firstDayIdx = firstDayOfMonth.getDay(); 
+      
+      // 첫 번째 해당 요일 찾기
+      let dayOffset = dayIdx - firstDayIdx;
+      if (dayOffset < 0) dayOffset += 7;
+      
+      const firstTargetDay = 1 + dayOffset;
+      
+      // N번째 해당 요일 날짜 계산
+      const targetDateNum = firstTargetDay + (nth - 1) * 7;
+      
+      // 해당 월을 넘어가면 그 달의 마지막 해당 요일로 대체 (선택사항)
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      if (targetDateNum > lastDayOfMonth) {
+          return new Date(year, month - 1, targetDateNum - 7); // 5주차가 없으면 4주차로
+      }
+      
+      return new Date(year, month - 1, targetDateNum);
   };
 
   // ------------------------------------------------
@@ -382,13 +408,9 @@ function updateDashboardChart() {
     if (dateDisplay) dateDisplay.textContent = `${y}년`;
     chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
     
-    // 1Y 데이터는 배열 인덱스로 되어있으므로, userData.thisYearDetails(상세배열)를 써야 정확함
-    // 하지만 기존 thisYear는 합계 배열임. 상세 분리를 위해 Details를 순회하며 합산해야 함.
-    // 기존 구조상 Details가 있으면 그걸 쓰고, 없으면 합계를 씁니다.
-    
+    // 데이터 처리 (기존 로직 유지)
     const processYearData = (detailsArray, totalArray) => {
-        if (currentProduct === 'all') return totalArray; // 전체면 그냥 기존 합계 배열 사용
-        // 생탁/우리쌀이면 details 배열에서 추출
+        if (currentProduct === 'all') return totalArray; 
         return detailsArray.map(d => (currentProduct === 'st' ? d.s : d.r));
     };
 
@@ -400,27 +422,18 @@ function updateDashboardChart() {
       lastDetails = userData.lastYearDetails || []; lastTotal = userData.lastYear;
     } else if (y === thisYear - 1) {
       targetDetails = userData.lastYearDetails || []; targetTotal = userData.lastYear;
-      lastDetails = []; lastTotal = []; // 재작년 데이터는 없다고 가정
     }
 
     mainData = processYearData(targetDetails, targetTotal);
-    // 상세 정보는 툴팁용으로 그대로 둠
     mainDetails = targetDetails; 
-    
-    // 작년 데이터 처리
     lastYearData = processYearData(lastDetails, lastTotal);
     trendData = mainData;
 
-    // 1Y 전월 비교 데이터 생성
+    // 1Y 전월 비교 (툴팁용)
     prevMonthData = [];
     for (let i = 0; i < 12; i++) {
-        if (i === 0) {
-             // 1월은 작년 12월 데이터 필요 (여기선 편의상 0 또는 lastYear의 12월 사용)
-             // 로직상 lastYearData[11]을 가져오는게 맞으나 데이터가 없을 수 있음
-             prevMonthData.push(lastYearData[11] || 0); 
-        } else {
-             prevMonthData.push(mainData[i - 1] || 0);
-        }
+        if (i === 0) prevMonthData.push(lastYearData[11] || 0); 
+        else prevMonthData.push(mainData[i - 1] || 0);
     }
 
   } else if (currentRange === '1M') {
@@ -437,72 +450,91 @@ function updateDashboardChart() {
     for (let i = 1; i <= lastDay; i++) {
       chartLabels.push(`${i}일`);
 
-      // 이번 달
       const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
       
-      const val = getVal(d); // ✨ 선택된 상품 값 추출
+      const val = getVal(d);
       mainData.push(val);
-      mainDetails.push({ s: d.s, r: d.r }); // 툴팁엔 항상 상세정보 포함
+      mainDetails.push({ s: d.s, r: d.r });
       trendData.push(val === 0 ? null : val);
 
-      // 지난 달
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0, s: 0, r: 0 };
-      const pmVal = getVal(pmData); // ✨
+      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0 };
+      const pmVal = getVal(pmData);
       prevMonthData.push(pmVal === 0 ? null : pmVal);
 
-      // 작년 동기
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0, s: 0, r: 0 };
-      lastYearData.push(getVal(lyData)); // ✨
+      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
+      lastYearData.push(getVal(lyData));
     }
 
   } else if (currentRange === '1D') {
-    // [1D] 주간
+    // 🚨 [1D] 주간 (핵심 수정!)
     const y = baseDate.getFullYear();
     const m = baseDate.getMonth() + 1;
     const firstDayOfMonth = new Date(y, m - 1, 1);
     const offset = firstDayOfMonth.getDay();
     const dateNum = baseDate.getDate();
+    // 몇 번째 주인지 계산 (N주차)
     const weekNum = Math.ceil((dateNum + offset) / 7);
     const weekName = ['첫째주', '둘째주', '셋째주', '넷째주', '다섯째주', '여섯째주'][weekNum - 1] || (weekNum + '주');
     
     if (dateDisplay) dateDisplay.textContent = `${y}.${m}월 ${weekName}`;
 
+    // 이번 주 날짜 범위 (월~토)
     const dayNum = baseDate.getDay();
     const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
     const thisMon = new Date(baseDate);
     thisMon.setDate(baseDate.getDate() + diffToMon);
-    
-    const lyMon = new Date(thisMon);
-    lyMon.setFullYear(thisMon.getFullYear() - 1);
-    const lyDiff = (lyMon.getDay() === 0 ? -6 : 1) - lyMon.getDay();
-    lyMon.setDate(lyMon.getDate() + lyDiff);
+
+    // 1. 지난주 (Chart 표시용) - 정확히 7일 전
+    const prevWeekStart = new Date(thisMon);
+    prevWeekStart.setDate(thisMon.getDate() - 7);
+
+    // 2. 전월 같은 주차 (Tooltip용)
+    // 현재 달이 m월, 전월은 m-1월 (JS는 0부터 시작하므로 m-2)
+    const prevMonthDate = new Date(y, m - 2, 1);
+    const pmY = prevMonthDate.getFullYear();
+    const pmM = prevMonthDate.getMonth() + 1;
+
+    // 3. 작년 같은 주차 (Tooltip용)
+    const lyY = y - 1;
+    const lyM = m; // 같은 월
 
     for (let i = 0; i < 6; i++) {
+      // (1) 이번 주 날짜
       const tDay = new Date(thisMon);
       tDay.setDate(thisMon.getDate() + i);
-      const ty = tDay.getFullYear();
-      const tm = String(tDay.getMonth()+1).padStart(2,'0');
-      const td = String(tDay.getDate()).padStart(2,'0');
-      
+      const ty = tDay.getFullYear(), tm = String(tDay.getMonth()+1).padStart(2,'0'), td = String(tDay.getDate()).padStart(2,'0');
       chartLabels.push(`${tDay.getDate()}일${dayNames[tDay.getDay()]}`);
 
       const key = `${ty}-${tm}-${td}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
-      
-      const val = getVal(d); // ✨
+      const val = getVal(d);
       mainData.push(val);
       mainDetails.push({ s: d.s, r: d.r });
       trendData.push(val === 0 ? null : val);
 
-      const lDay = new Date(lyMon);
-      lDay.setDate(lyMon.getDate() + i);
-      const lKey = `${lDay.getFullYear()}-${String(lDay.getMonth()+1).padStart(2,'0')}-${String(lDay.getDate()).padStart(2,'0')}`;
-      const ld = (userData.daily && userData.daily[lKey]) || { t: 0, s: 0, r: 0 };
-      lastYearData.push(getVal(ld)); // ✨
-      prevMonthData.push(null);
+      // (2) ✨ 지난주 (7일 전) - 그래프 회색 점선용
+      const pwDay = new Date(prevWeekStart);
+      pwDay.setDate(prevWeekStart.getDate() + i);
+      const pwy = pwDay.getFullYear(), pwm = String(pwDay.getMonth()+1).padStart(2,'0'), pwd = String(pwDay.getDate()).padStart(2,'0');
+      const pwKey = `${pwy}-${pwm}-${pwd}`;
+      const pwdData = (userData.daily && userData.daily[pwKey]) || { t: 0, s: 0, r: 0 };
+      prevWeekData.push(getVal(pwdData));
+
+      // (3) ✨ 전월 같은 주차 (Tooltip용)
+      const curDayIdx = tDay.getDay(); // 요일 (1:월 ~ 6:토)
+      const targetPmDate = getNthWeekDate(pmY, pmM, weekNum, curDayIdx);
+      const pmKey = `${targetPmDate.getFullYear()}-${String(targetPmDate.getMonth()+1).padStart(2,'0')}-${String(targetPmDate.getDate()).padStart(2,'0')}`;
+      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0, s: 0, r: 0 };
+      prevMonthData.push(getVal(pmData));
+
+      // (4) ✨ 작년 같은 주차 (Tooltip용)
+      const targetLyDate = getNthWeekDate(lyY, lyM, weekNum, curDayIdx);
+      const lyKey = `${targetLyDate.getFullYear()}-${String(targetLyDate.getMonth()+1).padStart(2,'0')}-${String(targetLyDate.getDate()).padStart(2,'0')}`;
+      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0, s: 0, r: 0 };
+      lastYearData.push(getVal(lyData));
     }
   }
 
@@ -520,7 +552,7 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
-  // (1) 메인 데이터
+  // 메인 데이터
   if (isYearly) {
     finalDatasets.push({
       type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
@@ -539,31 +571,66 @@ function updateDashboardChart() {
     });
   }
 
-  // (2) 전월 동기
-  if (currentRange === '1M' || currentRange === '1Y') {
-    finalDatasets.push({
-      type: 'line', label: '전월 동기', data: prevMonthData,
-      borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, spanGaps: true, 
-      hidden: currentRange === '1Y', order: 2
-    });
+  // 1D일 때는 그래프에 '지난주'를 회색 점선으로 표시 (작년 대신)
+  if (currentRange === '1D') {
+      finalDatasets.push({
+          type: 'line', 
+          label: '작년 동기', // 라벨은 툴팁 로직 호환을 위해 유지하되, 내용은 '지난주'
+          data: prevWeekData, // ✨ 지난주 데이터
+          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, 
+          order: 4
+      });
+      // 툴팁용 데이터 숨겨서 넣기
+      finalDatasets.push({
+          type: 'line', label: '전월 동기', data: prevMonthData, hidden: true // 숨김 (툴팁 계산용)
+      });
+      // 작년 데이터는 툴팁 로직에서 '작년 동기' 라벨을 찾으므로
+      // 위에서 그린 회색 선의 라벨을 '지난주'로 바꾸고, 
+      // 진짜 작년 데이터는 숨겨진 데이터셋으로 추가하는 게 정확함.
+      // 하지만 사장님 툴팁 로직이 '작년 동기' 라벨을 찾아서 lastVal로 쓰므로
+      // 여기서는 툴팁에 '작년' 값으로 찐작년 데이터를 주기 위해 별도 처리 필요.
+      
+      // 🚨 [중요] 툴팁이 헷갈리지 않게 데이터셋 정립
+      // 1. 화면에 그리는 회색선 -> "지난주" (New)
+      finalDatasets.pop(); // 방금 넣은거 빼고 다시
+      
+      finalDatasets.push({
+          type: 'line', 
+          label: '지난주', // ✨ 화면 표시 이름
+          data: prevWeekData, 
+          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, order: 4
+      });
+      
+      // 2. 툴팁용 "작년 동기" (숨김)
+      finalDatasets.push({
+          type: 'line', label: '작년 동기', data: lastYearData, hidden: true
+      });
+  } 
+  else {
+      // 1M, 1Y
+      if (currentRange === '1M' || currentRange === '1Y') {
+        finalDatasets.push({
+          type: 'line', label: '전월 동기', data: prevMonthData,
+          borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, spanGaps: true, 
+          hidden: currentRange === '1Y', order: 2
+        });
+      }
+      finalDatasets.push({
+        type: 'line', label: '작년 동기', data: lastYearData,
+        borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
+        hidden: false, order: 4
+      });
   }
 
-  // (3) 작년 동기
-  finalDatasets.push({
-    type: 'line', label: '작년 동기', data: lastYearData,
-    borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
-    hidden: currentRange === '1D', order: 4
-  });
-
   // ------------------------------------------------
-  // ✨ [요약 알림판] 선택된 상품 기준으로 합계 계산
+  // ✨ [요약 알림판]
   // ------------------------------------------------
   const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
   const currentTotal = sum(mainData);
-  const prevTotal = sum(prevMonthData);
-  const lastTotal = sum(lastYearData);
+  const prevTotal = sum(prevMonthData); // 1D일땐 전월(주간)
+  const lastTotal = sum(lastYearData);  // 1D일땐 작년(주간)
+  const prevWeekTotal = sum(prevWeekData); // 지난주
 
-  // 상품명 라벨 (전체일 땐 생략, 아니면 상품명 표시)
   const prodLabel = currentProduct === 'st' ? '생탁' : (currentProduct === 'rice' ? '우리쌀' : '합계');
 
   const getDiffHtml = (curr, old, label) => {
@@ -579,6 +646,7 @@ function updateDashboardChart() {
   let summaryTitle = '', summaryContent = '';
   if (currentRange === '1D') {
       summaryTitle = `이번 주 ${prodLabel}`; 
+      // 1D 요약판은 "지난주 대비"가 가장 중요하므로 이걸 보여줌
       summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
   } else if (currentRange === '1M') {
       summaryTitle = `이번 달 ${prodLabel}`; 
