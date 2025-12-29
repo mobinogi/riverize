@@ -152,54 +152,48 @@ function updateDashboardChart() {
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      
-      // ✨ [2. 말풍선 안 잘리게 레이아웃 여백 확보]
-      layout: {
-          padding: {
-              top: 20, // 차트 위쪽에 20px 공백 강제 추가
-              right: 10,
-              left: 10,
-              bottom: 0
-          }
-      },
+    responsive: true,
+    maintainAspectRatio: false,
 
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          labels: {
-            color: '#6b7280',
-            font: { family: 'Pretendard', size: 12 }
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(17, 24, 39, 0.9)', // 툴팁 배경 (진한 검정)
-          titleColor: '#fff',
-          bodyColor: '#e5e7eb',
-          padding: 12,
-          cornerRadius: 8,
-          displayColors: false // 툴팁 안에 색깔 네모 박스 제거 (깔끔하게)
+    // ✨ [핵심] 자석 모드 설정 (이게 있어야 촥! 붙습니다)
+    interaction: {
+        mode: 'index',      // 같은 세로줄(X축)에 있는 데이터는 다 보여줘라
+        intersect: false,   // 🚨 [중요] 점에 정확히 안 닿아도(false) 보여줘라!
+        axis: 'x'           // 🚨 [추가] 마우스가 위아래 어디에 있든 'X축(가로)'만 맞으면 반응해라
+    },
+
+    layout: {
+        padding: {
+            top: 20, // (말풍선 잘림 방지용 여백)
+            right: 10,
+            left: 10,
+            bottom: 0
         }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)' },
-          ticks: { color: '#9ca3af' }
-        },
+    },
+    
+    // ... (나머지 설정들은 그대로 유지)
+    scales: {
         y: {
-          // ✨ [핵심] grace: '10%' -> 데이터 최댓값보다 10% 더 높게 천장을 잡습니다.
-          // 이렇게 하면 그래프가 꼭대기에 안 닿아서 말풍선이 뜰 공간이 생깁니다.
-          grace: '60%',
-          
-          grid: { color: 'rgba(200, 200, 200, 0.1)' },
-          ticks: { color: '#9ca3af' },
-          beginAtZero: true
+            grace: '10%', // (천장 높이기)
+            beginAtZero: true,
+            grid: { color: 'rgba(200, 200, 200, 0.1)' },
+            ticks: { color: '#9ca3af' }
+        },
+        x: {
+            grid: { color: 'rgba(200, 200, 200, 0.1)' },
+            ticks: { color: '#9ca3af' }
         }
-      }
+    },
+    plugins: {
+        legend: { display: false }, // (범례 끔)
+        tooltip: {
+            // 툴팁 스타일
+            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#e5e7eb',
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false
+        }
     }
-  });
 }
