@@ -101,73 +101,88 @@ function moveDate(delta) {
 }
 
 // ============================================================
-// 🎨 [커스텀 툴팁] 1. 툴팁 껍데기 만들기 (배경, 그림자 등)
+// 🎨 [커스텀 툴팁] 1. 툴팁 껍데기 + 꼬리(화살표) 생성
 // ============================================================
 const getOrCreateTooltip = (chart) => {
-  let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
+  let tooltipEl = document.getElementById('chartjs-custom-tooltip');
 
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
+    tooltipEl.id = 'chartjs-custom-tooltip';
     tooltipEl.classList.add('chartjs-tooltip');
     
-    // 스타일 설정 (진한 남색 배경)
+    // 툴팁 본체 스타일
     tooltipEl.style.background = 'rgba(17, 24, 39, 0.95)';
     tooltipEl.style.borderRadius = '8px';
     tooltipEl.style.color = 'white';
     tooltipEl.style.opacity = 1;
     tooltipEl.style.pointerEvents = 'none';
     tooltipEl.style.position = 'absolute';
-    tooltipEl.style.transform = 'translate(-50%, 0)';
-    tooltipEl.style.transition = 'all .1s ease';
+    tooltipEl.style.transition = 'all .1s ease'; 
     tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
-    tooltipEl.style.zIndex = '100';
-    tooltipEl.style.minWidth = '260px'; // 너비 넉넉하게
-    
+    tooltipEl.style.zIndex = '9999';
+    tooltipEl.style.minWidth = '200px'; 
+    tooltipEl.style.maxWidth = '300px';
+    // 🚨 꼬리가 밖으로 튀어나와야 하므로 overflow visible 필수!
+    tooltipEl.style.overflow = 'visible'; 
+
+    // 1. 내용 테이블
     const table = document.createElement('table');
     table.style.margin = '0px';
+    table.style.width = '100%';
     tooltipEl.appendChild(table);
-    chart.canvas.parentNode.appendChild(tooltipEl);
+
+    // 2. ✨ [핵심] 꼬리(화살표) 요소 추가
+    const arrow = document.createElement('div');
+    arrow.className = 'tooltip-arrow';
+    arrow.style.position = 'absolute';
+    arrow.style.width = '0';
+    arrow.style.height = '0';
+    arrow.style.borderStyle = 'solid';
+    arrow.style.borderWidth = '8px'; // 꼬리 크기
+    arrow.style.borderColor = 'transparent'; // 기본은 투명
+    arrow.style.top = '50%'; // 세로 중앙 정렬
+    arrow.style.transform = 'translateY(-50%)';
+    
+    tooltipEl.appendChild(arrow);
+    document.body.appendChild(tooltipEl);
   }
 
   return tooltipEl;
 };
 
 // ============================================================
-// 🎨 [커스텀 툴팁] 2. 내용 채우기 (3단 비교: 이번달 vs 전달 vs 작년)
+// 🎨 [커스텀 툴팁] 2. 내용 채우기 & 꼬리 방향 조종
 // ============================================================
 const externalTooltipHandler = (context) => {
   const { chart, tooltip } = context;
   const tooltipEl = getOrCreateTooltip(chart);
+  const arrowEl = tooltipEl.querySelector('.tooltip-arrow'); // 꼬리 가져오기
 
-  // 툴팁 숨겨야 할 때
   if (tooltip.opacity === 0) {
     tooltipEl.style.opacity = 0;
     return;
   }
 
-  // 데이터가 있을 때만 렌더링
   if (tooltip.body) {
     const idx = tooltip.dataPoints[0].dataIndex;
     const datasets = chart.data.datasets;
 
-    // 1. 데이터셋 3개 찾기
+    // 데이터셋 & 값 찾기
     const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해') || d.label === '선택 기간');
     const prevMonthSet = datasets.find(d => d.label === '전월 동기');
     const lastYearSet = datasets.find(d => d.label === '작년 동기');
 
-    // 2. 값 가져오기 (없으면 0)
     const currVal = currentSet ? currentSet.data[idx] : 0;
     const prevVal = prevMonthSet ? prevMonthSet.data[idx] : 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
-
-    // 3. 상세 내역(생탁/우리쌀)
     const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
 
-    // 4. 증감 계산 함수
+    // 증감 표시
     const getDiffHtml = (base, target) => {
       const diff = base - target;
-      if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲ ${diff}</span>`; // 빨강
-      if (diff < 0) return `<span style="color:#3b82f6; font-weight:bold;">▼ ${Math.abs(diff)}</span>`; // 파랑
+      if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲${diff}</span>`;
+      if (diff < 0) return `<span style="color:#3b82f6; font-weight:bold;">▼${Math.abs(diff)}</span>`;
       return `<span style="color:#9ca3af;">-</span>`;
     };
 
@@ -175,55 +190,81 @@ const externalTooltipHandler = (context) => {
     const diffYear = getDiffHtml(currVal, lastVal);
     const title = chart.data.labels[idx];
 
-    // 5. HTML 조립
+    // HTML 내용
     const innerHtml = `
-      <div style="padding: 14px;">
-        <div style="font-weight: bold; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 6px; color: #f3f4f6;">
+      <div style="padding: 12px;">
+        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 5px; color: #f3f4f6;">
           ${title} 현황
         </div>
-        
-        <div style="display: flex; gap: 16px;">
-          
-          <div style="flex: 1; min-width: 90px;">
+        <div style="display: flex; gap: 12px; align-items: stretch;">
+          <div style="flex: 1; text-align: left;">
             <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">이번 매출</div>
             <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;">
-              <span>생탁</span> <span style="color:white;">${currDetails.s}</span>
+              <span>생탁</span> <span style="color:white; font-weight:500;">${currDetails.s}</span>
             </div>
             <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;">
-              <span>우리쌀</span> <span style="color:white;">${currDetails.r}</span>
+              <span>우리쌀</span> <span style="color:white; font-weight:500;">${currDetails.r}</span>
             </div>
-            <div style="margin-top: 8px; font-size: 18px; font-weight: 800; color: #60a5fa; text-align: right;">
+            <div style="margin-top: 6px; font-size: 16px; font-weight: 800; color: #60a5fa; text-align: right;">
               ${currVal}개
             </div>
           </div>
-
-          <div style="width: 1px; background: #4b5563;"></div>
-
-          <div style="flex: 1.2;">
-            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 8px;">성과 비교</div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-size: 12px; color: #c084fc;">전월(${prevVal})</span>
-              <span style="font-size: 12px;">${diffPrev}</span>
+          <div style="width: 1px; background: #4b5563; opacity: 0.5;"></div>
+          <div style="flex: 1.1;">
+            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 6px;">성과 비교</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 11px; color: #c084fc;">전월(${prevVal})</span>
+              <span style="font-size: 11px;">${diffPrev}</span>
             </div>
-
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: #9ca3af;">작년(${lastVal})</span>
-              <span style="font-size: 12px;">${diffYear}</span>
+              <span style="font-size: 11px; color: #9ca3af;">작년(${lastVal})</span>
+              <span style="font-size: 11px;">${diffYear}</span>
             </div>
           </div>
-
         </div>
       </div>
     `;
-    
     tooltipEl.querySelector('table').innerHTML = innerHtml;
   }
 
-  const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+  // 좌표 계산
+  const position = chart.canvas.getBoundingClientRect();
+  const rootLeft = position.left + window.pageXOffset;
+  const rootTop = position.top + window.pageYOffset;
+  const chartWidth = chart.width;
+
+  // 꼬리 색상 (배경색과 동일하게)
+  const bgColor = 'rgba(17, 24, 39, 0.95)';
+
+  // 🚨 [꼬리 방향 로직]
+  if (tooltip.caretX > chartWidth / 2) {
+      // (1) 마우스가 오른쪽 -> 툴팁은 왼쪽으로 뜸
+      tooltipEl.style.transform = 'translate(-105%, 0)'; 
+      tooltipEl.style.left = (rootLeft + tooltip.caretX - 10) + 'px';
+
+      // 꼬리는 오른쪽에 붙어서 오른쪽(▶)을 가리켜야 함
+      arrowEl.style.left = 'auto';  // 왼쪽 해제
+      arrowEl.style.right = '-16px'; // 오른쪽에 붙임
+      // ▶ 모양 만들기 (왼쪽 테두리에 색을 칠해야 오른쪽으로 뾰족해짐)
+      arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`; // 오류 수정: 왼쪽 테두리 색칠
+      arrowEl.style.borderLeftColor = bgColor; // 확실하게 덮어쓰기
+      arrowEl.style.borderRightColor = 'transparent';
+  } else {
+      // (2) 마우스가 왼쪽 -> 툴팁은 오른쪽으로 뜸
+      tooltipEl.style.transform = 'translate(5%, 0)';
+      tooltipEl.style.left = (rootLeft + tooltip.caretX + 10) + 'px';
+
+      // 꼬리는 왼쪽에 붙어서 왼쪽(◀)을 가리켜야 함
+      arrowEl.style.right = 'auto'; // 오른쪽 해제
+      arrowEl.style.left = '-16px'; // 왼쪽에 붙임
+      // ◀ 모양 만들기 (오른쪽 테두리에 색을 칠해야 왼쪽으로 뾰족해짐)
+      arrowEl.style.borderColor = `transparent transparent transparent ${bgColor}`; 
+      arrowEl.style.borderRightColor = bgColor; // 확실하게 덮어쓰기
+      arrowEl.style.borderLeftColor = 'transparent';
+  }
+
+  tooltipEl.style.top = (rootTop + tooltip.caretY - 20) + 'px'; // 살짝 위로 보정
   tooltipEl.style.opacity = 1;
-  tooltipEl.style.left = positionX + tooltip.caretX + 'px';
-  tooltipEl.style.top = positionY + tooltip.caretY + 'px';
 };
 
 
