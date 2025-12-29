@@ -21,22 +21,34 @@ function changeView(viewName) {
   if (targetView) {
     targetView.classList.remove('hidden');
   } else {
-    console.error(`❌ 오류: 'view-${viewName}' ID를 가진 요소를 찾을 수 없습니다. index1.html을 확인하세요.`);
+    console.error(`❌ 오류: 'view-${viewName}' ID를 가진 요소를 찾을 수 없습니다.`);
     return;
   }
 
-// 3. 사이드바 메뉴 활성화 표시 (및 밑줄 잔상 제거)
+  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기!)
   const navLinks = document.querySelectorAll('#sidebar nav a');
   navLinks.forEach(el => {
-      el.classList.remove('view-active'); // 기존 활성화 클래스 제거
-      el.blur(); // 🚨 핵심: 강제로 포커스를 해제하여 hover 밑줄이 남는 현상 방지
+      // 기존에 켜져 있던 모든 스타일 클래스를 싹 지웁니다.
+      el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
+      
+      // 다시 회색(비활성)으로 돌려놓습니다.
+      el.classList.add('text-gray-400');
+      
+      // 포커스를 해제해서 마우스 뗐을 때 밑줄 잔상을 없앱니다.
+      el.blur(); 
   });
 
+  // 4. 선택된 메뉴 스타일 적용 (얘만 켜기!)
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) {
-      targetMenu.classList.add('view-active');
+      // 활성 상태 표시 (하얀색, 굵게, 밑줄용 클래스 등)
+      targetMenu.classList.add('view-active', 'active-tab', 'text-white', 'font-bold');
+      
+      // 회색(비활성) 제거
+      targetMenu.classList.remove('text-gray-400');
   }
-  // 4. 뷰별 특수 로직 실행
+
+  // 5. 뷰별 특수 로직 실행
   if (viewName === 'consolidated') {
     fetchConsolidatedList();
   } else if (viewName === 'write') {
@@ -325,23 +337,4 @@ document.addEventListener('touchend', e => {
     }
 }, {passive: true});
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. '.hover-line' 클래스를 가진 모든 메뉴 버튼을 찾습니다.
-    const menuItems = document.querySelectorAll('.hover-line');
 
-    menuItems.forEach(item => {
-        item.addEventListener('click', function() {
-            // (1) 딴 놈들 불 끄기 (기존 active-tab 제거)
-            menuItems.forEach(el => {
-                el.classList.remove('active-tab');
-                el.classList.add('text-gray-400'); // 회색으로
-                el.classList.remove('text-white', 'font-bold'); // 흰색 제거
-            });
-
-            // (2) 누른 놈 불 켜기 (active-tab 추가)
-            this.classList.remove('text-gray-400');
-            this.classList.add('active-tab'); // ✨ CSS가 작동해서 밑줄 고정됨
-            this.classList.add('text-white', 'font-bold');
-        });
-    });
-});
