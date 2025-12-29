@@ -356,7 +356,18 @@ function updateDashboardChart() {
       mainDetails = userData.lastYearDetails || [];
     }
     trendData = mainData;
-    prevMonthData = Array(12).fill(null);
+    // 🚨 [핵심 수정] 1Y에서도 '전월 데이터'를 계산합니다! (툴팁용)
+    prevMonthData = [];
+    for (let i = 0; i < 12; i++) {
+        if (i === 0) {
+            // 1월은 '작년 12월'과 비교
+            prevMonthData.push(userData.lastYear[11] || 0);
+        } else {
+            // 2월~12월은 '같은 해 전달'과 비교 (메인 데이터의 바로 앞 인덱스 사용)
+            // 데이터가 아직 없는 미래 달은 0 처리
+            prevMonthData.push(mainData[i - 1] || 0);
+        }
+    }
 
   } else if (currentRange === '1M') {
     // [1M] 월간
