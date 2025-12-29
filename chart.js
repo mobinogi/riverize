@@ -12,29 +12,39 @@ let baseDate = new Date();
 // [chart.js] 전역 변수 추가
 let currentProduct = 'all'; // 'all'(전체), 'st'(생탁), 'rice'(우리쌀)
 
+// ✨ [UI] 알약 이동 애니메이션 함수
+function movePill(pillId, targetBtn) {
+    const pill = document.getElementById(pillId);
+    if (pill && targetBtn) {
+        // 버튼의 위치와 크기를 알아내서 알약을 그 자리로 보냄
+        pill.style.left = targetBtn.offsetLeft + 'px';
+        pill.style.width = targetBtn.offsetWidth + 'px';
+    }
+}
+
 // ✨ 상품 변경 함수
 function changeProduct(prod) {
     currentProduct = prod;
 
-    // 버튼 스타일 업데이트 (선택된 건 하얗고 진하게, 나머진 회색)
     const btns = {
         'all': document.getElementById('btn-prod-all'),
         'st': document.getElementById('btn-prod-st'),
         'rice': document.getElementById('btn-prod-rice')
     };
 
+    // 1. 알약 이동! 🍬
+    movePill('prod-pill', btns[prod]);
+
+    // 2. 글자색 업데이트 (선택된 건 파랑, 나머진 회색)
     for (const [key, btn] of Object.entries(btns)) {
         if (!btn) continue;
         if (key === prod) {
-            // 활성 상태
-            btn.className = "px-4 py-1.5 rounded-md text-sm font-bold shadow-sm bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 transition-all";
+            btn.className = "relative z-10 px-4 py-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200";
         } else {
-            // 비활성 상태
-            btn.className = "px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 transition-all";
+            btn.className = "relative z-10 px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 transition-colors duration-200";
         }
     }
 
-    // 차트 즉시 갱신
     updateDashboardChart();
 }
 // ----------------------------------------------------
@@ -84,6 +94,13 @@ function initDashboard(response) {
   }
   dashboardData = response.data;
   updateDashboardChart(); 
+
+  // ✨ [초기화] 알약 위치 잡기 (처음엔 애니메이션 없이 즉시 이동)
+  // 약간의 지연시간(50ms)을 줘야 DOM 렌더링 후 정확히 잡힘
+  setTimeout(() => {
+      movePill('prod-pill', document.getElementById('btn-prod-all'));
+      movePill('range-pill', document.getElementById('btn-1y')); // 기본값이 1Y라면
+  }, 50);
 }
 
 // ----------------------------------------------------
@@ -92,28 +109,40 @@ function initDashboard(response) {
 
 // [chart.js] 1. 날짜 범위 변경 & 이동 함수 (1D 주간 이동 기능 추가)
 
+// [기간 변경] 알약 이동 적용
 function changeChartRange(range) {
     currentRange = range;
     
-    // 🚨 [수정] 1D여도 날짜 이동 버튼을 숨기지 않음! (이제 이동 가능하니까)
+    // 날짜 이동 버튼 보이기/숨기기 (기존 로직 유지)
     const navControl = document.getElementById('dateNavControl');
-    if (navControl) {
-        navControl.classList.remove('hidden'); 
-    }
+    if (navControl) navControl.classList.remove('hidden');
 
-    // 버튼 스타일 업데이트
-    ['1d', '1m', '1y'].forEach(r => {
-        const btn = document.getElementById(`btn-${r}`);
+    const btns = {
+        '1D': document.getElementById('btn-1d'),
+        '1M': document.getElementById('btn-1m'),
+        '1Y': document.getElementById('btn-1y')
+    };
+
+    // 1. 알약 이동! 🍬 (range는 대문자이므로 소문자 id 매칭 주의)
+    // 버튼 ID는 btn-1d, btn-1m... 형태임
+    const targetId = `btn-${range.toLowerCase()}`;
+    const targetBtn = document.getElementById(targetId);
+    
+    movePill('range-pill', targetBtn);
+
+    // 2. 글자색 업데이트
+    ['1D', '1M', '1Y'].forEach(r => {
+        const btn = btns[r];
         if (btn) {
-            btn.className = (r.toUpperCase() === range) 
-                ? "px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 text-blue-600 shadow-sm transition-all font-bold"
-                : "px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400";
+            if (r === range) {
+                btn.className = "relative z-10 px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200";
+            } else {
+                btn.className = "relative z-10 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 transition-colors duration-200";
+            }
         }
     });
 
-    // 1D로 바꾸면 일단 '오늘' 기준으로 리셋
     if (range === '1D') baseDate = new Date();
-
     updateDashboardChart();
 }
 
