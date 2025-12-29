@@ -100,9 +100,11 @@ function moveDate(delta) {
     updateDashboardChart();
 }
 
-// ----------------------------------------------------
-// 3. 차트 그리기 (핵심 로직)
-// ----------------------------------------------------
+// ============================================================
+// 📊 [chart.js] 차트 그리기 함수 (최종_막대+선 콤보.ver)
+// - 1Y: 선 그래프
+// - 1M/1D: 둥근 막대 + 상단 연결 선 그래프 (콤보 차트)
+// ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
   if (!canvas) return;
@@ -121,176 +123,134 @@ function updateDashboardChart() {
   let chartLabels = [];
   let mainData = []; 
   let compareData = []; 
-  
+
   // ============================
-  // 모드별 로직 분기
+  // 1. 데이터 가공 (기존 로직 유지)
   // ============================
   if (currentRange === '1Y') {
-      // [1Y] 연도별 보기
       const y = baseDate.getFullYear();
-      dateDisplay.textContent = `${y}년`;
-
+      if(dateDisplay) dateDisplay.textContent = `${y}년`;
       chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-      
       const thisYear = new Date().getFullYear();
       if (y === thisYear) {
-          mainData = userData.thisYear;
-          compareData = userData.lastYear; 
+          mainData = userData.thisYear; compareData = userData.lastYear; 
       } else if (y === thisYear - 1) {
-          mainData = userData.lastYear;
-          compareData = Array(12).fill(null); 
+          mainData = userData.lastYear; compareData = Array(12).fill(null); 
       } else {
-          mainData = Array(12).fill(0);
-          compareData = Array(12).fill(0);
+          mainData = Array(12).fill(0); compareData = Array(12).fill(0);
       }
-
   } else if (currentRange === '1M') {
-      // [1M] 월별 보기
-      const y = baseDate.getFullYear();
-      const m = baseDate.getMonth() + 1;
-      dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
-      
+      const y = baseDate.getFullYear(); const m = baseDate.getMonth() + 1;
+      if(dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
       const lastDay = new Date(y, m, 0).getDate();
-
       for (let i = 1; i <= lastDay; i++) {
           chartLabels.push(`${i}일`);
-
-          // 메인 (올해)
-          const dateKey = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-          let val = (userData.daily && userData.daily[dateKey]) ? userData.daily[dateKey] : 0;
-          mainData.push(val);
-
-          // 비교 (작년)
-          const prevY = y - 1;
-          const prevKey = `${prevY}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-          let prevVal = (userData.daily && userData.daily[prevKey]) ? userData.daily[prevKey] : 0;
-          compareData.push(prevVal);
+          const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+          mainData.push((userData.daily && userData.daily[key]) || 0);
+          const pKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+          compareData.push((userData.daily && userData.daily[pKey]) || 0);
       }
-
   } else if (currentRange === '1D') {
-      // [1D] 이번 주 (월~토) 고정 보기
-      // 기준: 오늘 날짜
-      const today = new Date(); 
-      
-      // 1. 이번 주 월요일 찾기
-      // (일요일=0, 월요일=1 ... 토요일=6)
-      // 오늘이 일요일(0)이면, 월요일은 어제(-6일전)가 아니라 다음주? 
-      // 사장님 요청: "일요일은 빼고". 보통 일요일은 한 주의 시작이나 끝인데, 
-      // 여기선 '이번 주'의 업무일(월~토)을 보여줍니다.
-      const dayNum = today.getDay(); // 0~6
-      
-      // 월요일과의 거리 계산 (일요일이면 -6, 월요일이면 0, 화요일이면 1...)
+      const today = new Date(); const dayNum = today.getDay(); 
       const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
-      
-      const thisMon = new Date(today);
-      thisMon.setDate(today.getDate() + diffToMon); // 이번 주 월요일로 이동
-      
-      // 2. 작년 이맘때 월요일 찾기 (요일 매칭을 위해)
-      const lastYearSameTime = new Date(thisMon);
-      lastYearSameTime.setFullYear(thisMon.getFullYear() - 1);
-      // 작년 같은 날짜의 요일을 보고, 그 주의 월요일로 조정
-      const lyDayNum = lastYearSameTime.getDay();
-      const lyDiff = (lyDayNum === 0 ? -6 : 1) - lyDayNum;
-      const lastYearMon = new Date(lastYearSameTime);
-      lastYearMon.setDate(lastYearSameTime.getDate() + lyDiff);
+      const thisMon = new Date(today); thisMon.setDate(today.getDate() + diffToMon); 
+      const lastYearMon = new Date(thisMon); lastYearMon.setFullYear(thisMon.getFullYear() - 1);
+      const lyDiff = (lastYearMon.getDay() === 0 ? -6 : 1) - lastYearMon.getDay();
+      lastYearMon.setDate(lastYearMon.getDate() + lyDiff);
 
-      // 3. 월~토 (0~5) 루프 돌리기
       for (let i = 0; i < 6; i++) {
-          // --- 올해 데이터 ---
-          const targetDay = new Date(thisMon);
-          targetDay.setDate(thisMon.getDate() + i);
-          
-          const ty = targetDay.getFullYear();
-          const tm = String(targetDay.getMonth() + 1).padStart(2, '0');
-          const td = String(targetDay.getDate()).padStart(2, '0');
-          const tDayName = dayNames[targetDay.getDay()]; // (월), (화)...
-          
-          chartLabels.push(`${targetDay.getDate()}일${tDayName}`);
-          
-          const tKey = `${ty}-${tm}-${td}`;
-          let tVal = (userData.daily && userData.daily[tKey]) ? userData.daily[tKey] : 0;
-          mainData.push(tVal);
+          const tDay = new Date(thisMon); tDay.setDate(thisMon.getDate() + i);
+          const ty = tDay.getFullYear(), tm = String(tDay.getMonth()+1).padStart(2,'0'), td = String(tDay.getDate()).padStart(2,'0');
+          chartLabels.push(`${tDay.getDate()}일${dayNames[tDay.getDay()]}`);
+          mainData.push((userData.daily && userData.daily[`${ty}-${tm}-${td}`]) || 0);
 
-          // --- 작년 데이터 (비교) ---
-          const lyDay = new Date(lastYearMon);
-          lyDay.setDate(lastYearMon.getDate() + i);
-          
-          const ly = lyDay.getFullYear();
-          const lm = String(lyDay.getMonth() + 1).padStart(2, '0');
-          const ld = String(lyDay.getDate()).padStart(2, '0');
-          
-          const lKey = `${ly}-${lm}-${ld}`;
-          let lVal = (userData.daily && userData.daily[lKey]) ? userData.daily[lKey] : 0;
-          compareData.push(lVal);
+          const lDay = new Date(lastYearMon); lDay.setDate(lastYearMon.getDate() + i);
+          const ly = lDay.getFullYear(), lm = String(lDay.getMonth()+1).padStart(2,'0'), ld = String(lDay.getDate()).padStart(2,'0');
+          compareData.push((userData.daily && userData.daily[`${ly}-${lm}-${ld}`]) || 0);
       }
   }
 
-  // 차트 생성
+  // ============================================
+  // 🎨 [핵심] 차트 데이터셋 조립 (콤보 차트 구현)
+  // ============================================
+  const isYearly = (currentRange === '1Y');
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
   gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
 
+  let finalDatasets = [];
+
+  // 1️⃣ [기본 데이터] 1Y는 선, 1M/1D는 막대로 그립니다.
+  finalDatasets.push({
+      type: isYearly ? 'line' : 'bar', // 👈 여기서 타입 결정
+      label: '선택 기간',
+      data: mainData,
+      borderColor: '#3b82f6',
+      backgroundColor: isYearly ? gradient : '#3b82f6', // 선이면 그라데이션, 막대면 단색
+      borderWidth: isYearly ? 3 : 0,
+      tension: 0.4,
+      fill: isYearly,
+      pointRadius: isYearly ? 4 : 0,
+      borderRadius: 4, // 막대 둥글게
+      barPercentage: 0.6, maxBarThickness: 30,
+      order: 2 // 막대를 뒤에 그림
+  });
+
+  // 2️⃣ [작년 비교 데이터] 항상 점선으로 그립니다.
+  finalDatasets.push({
+      type: 'line',
+      label: '작년 동기',
+      data: compareData,
+      borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5],
+      tension: 0.3, pointRadius: 0, fill: false,
+      hidden: currentRange === '1D', // 1D일 때 숨김 여부 (취향껏 true/false)
+      order: 3
+  });
+
+  // 3️⃣ [✨추가된 연결 선] 1M/1D일 때만 막대 위에 선을 하나 더 그립니다.
+  if (!isYearly) {
+      finalDatasets.push({
+          type: 'line', // 무조건 선
+          label: '추세', // 툴팁에서 걸러낼 이름
+          data: mainData, // 똑같은 데이터를 사용
+          borderColor: '#2563eb', // 막대보다 살짝 진한 파랑
+          borderWidth: 2,
+          tension: 0.3, // 부드러운 곡선
+          pointRadius: 2, // 연결 부위 작은 점
+          pointBackgroundColor: 'white',
+          pointBorderColor: '#2563eb',
+          fill: false,
+          order: 1 // 가장 앞에(위에) 그림
+      });
+  }
+
+  // 차트 생성
   salesChartInstance = new Chart(ctx, {
-    type: 'line',
+    // type을 개별 dataset에서 지정했으므로 여기선 생략 가능하지만, 기본값으로 line핑
+    type: 'line', 
     data: {
       labels: chartLabels,
-      datasets: [
-        {
-          label: '선택 기간',
-          data: mainData,
-          borderColor: '#3b82f6',
-          backgroundColor: gradient,
-          borderWidth: 3,
-          tension: 0.4,
-          pointBackgroundColor: '#ffffff',
-          pointBorderColor: '#3b82F6',
-          pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          fill: true
-        },
-        {
-          label: '작년 동기',
-          data: compareData,
-          borderColor: '#9ca3af',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          tension: 0.3,
-          pointRadius: 0,
-          fill: false,
-          hidden: false // 1D에서도 작년 비교 보여줌!
-        }
-      ]
+      datasets: finalDatasets // 조립한 데이터셋 사용
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false }, 
         tooltip: {
-          backgroundColor: 'rgba(17, 24, 39, 0.95)',
-          padding: 10,
-          cornerRadius: 6,
-          displayColors: false,
-          caretPadding: 0,
-          filter: function(tooltipItem) { return tooltipItem.raw > 0; } 
+          backgroundColor: 'rgba(17, 24, 39, 0.95)', padding: 10, cornerRadius: 6, displayColors: false,
+          // 툴팁 필터: 값이 0이거나, '추세' 선 데이터는 툴팁에서 제외 (중복 방지)
+          filter: function(tooltipItem) { 
+              return tooltipItem.raw > 0 && tooltipItem.dataset.label !== '추세'; 
+          },
+          callbacks: {
+              label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString(); }
+          }
         }
       },
       scales: {
-        x: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
-          ticks: { color: '#9ca3af' } 
-        },
-        y: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)', borderDash: [4, 4], drawBorder: false },
-          ticks: { color: '#9ca3af' },
-          beginAtZero: true,
-          grace: '15%' 
-        }
+        x: { grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(200, 200, 200, 0.1)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '10%' }
       }
     }
   });
