@@ -9,7 +9,34 @@ let currentRange = '1Y';
 
 // 현재 보고 있는 기준 날짜 (1M, 1Y용)
 let baseDate = new Date(); 
+// [chart.js] 전역 변수 추가
+let currentProduct = 'all'; // 'all'(전체), 'st'(생탁), 'rice'(우리쌀)
 
+// ✨ 상품 변경 함수
+function changeProduct(prod) {
+    currentProduct = prod;
+
+    // 버튼 스타일 업데이트 (선택된 건 하얗고 진하게, 나머진 회색)
+    const btns = {
+        'all': document.getElementById('btn-prod-all'),
+        'st': document.getElementById('btn-prod-st'),
+        'rice': document.getElementById('btn-prod-rice')
+    };
+
+    for (const [key, btn] of Object.entries(btns)) {
+        if (!btn) continue;
+        if (key === prod) {
+            // 활성 상태
+            btn.className = "px-4 py-1.5 rounded-md text-sm font-bold shadow-sm bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 transition-all";
+        } else {
+            // 비활성 상태
+            btn.className = "px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 transition-all";
+        }
+    }
+
+    // 차트 즉시 갱신
+    updateDashboardChart();
+}
 // ----------------------------------------------------
 // 1. 유틸리티 & 초기화
 // ----------------------------------------------------
@@ -311,7 +338,8 @@ const externalTooltipHandler = (context) => {
 
 
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_격자복구+요약알림판.ver)
+// 📊 [chart.js] 차트 그리기 함수 (최종_상품필터링 적용.ver)
+// - 전체/생탁/우리쌀 버튼에 따라 데이터(mainData, prev, last)를 갈아끼움
 // ============================================================
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -337,6 +365,14 @@ function updateDashboardChart() {
   let prevMonthData = []; 
   let lastYearData = [];  
 
+  // 🛠️ [Helper] 현재 선택된 상품(전체/생탁/우리쌀)의 값을 추출하는 함수
+  const getVal = (dataObj) => {
+      if (!dataObj) return 0;
+      if (currentProduct === 'st') return dataObj.s || 0;     // 생탁
+      if (currentProduct === 'rice') return dataObj.r || 0;   // 우리쌀
+      return dataObj.t || 0;                                  // 전체
+  };
+
   // ------------------------------------------------
   // 1. 데이터 가공 로직
   // ------------------------------------------------
@@ -346,26 +382,44 @@ function updateDashboardChart() {
     if (dateDisplay) dateDisplay.textContent = `${y}년`;
     chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
     
+    // 1Y 데이터는 배열 인덱스로 되어있으므로, userData.thisYearDetails(상세배열)를 써야 정확함
+    // 하지만 기존 thisYear는 합계 배열임. 상세 분리를 위해 Details를 순회하며 합산해야 함.
+    // 기존 구조상 Details가 있으면 그걸 쓰고, 없으면 합계를 씁니다.
+    
+    const processYearData = (detailsArray, totalArray) => {
+        if (currentProduct === 'all') return totalArray; // 전체면 그냥 기존 합계 배열 사용
+        // 생탁/우리쌀이면 details 배열에서 추출
+        return detailsArray.map(d => (currentProduct === 'st' ? d.s : d.r));
+    };
+
     const thisYear = new Date().getFullYear();
+    let targetDetails = [], targetTotal = [], lastDetails = [], lastTotal = [];
+
     if (y === thisYear) {
-      mainData = userData.thisYear;
-      mainDetails = userData.thisYearDetails || [];
-      lastYearData = userData.lastYear;
+      targetDetails = userData.thisYearDetails || []; targetTotal = userData.thisYear;
+      lastDetails = userData.lastYearDetails || []; lastTotal = userData.lastYear;
     } else if (y === thisYear - 1) {
-      mainData = userData.lastYear;
-      mainDetails = userData.lastYearDetails || [];
+      targetDetails = userData.lastYearDetails || []; targetTotal = userData.lastYear;
+      lastDetails = []; lastTotal = []; // 재작년 데이터는 없다고 가정
     }
+
+    mainData = processYearData(targetDetails, targetTotal);
+    // 상세 정보는 툴팁용으로 그대로 둠
+    mainDetails = targetDetails; 
+    
+    // 작년 데이터 처리
+    lastYearData = processYearData(lastDetails, lastTotal);
     trendData = mainData;
-    // 🚨 [핵심 수정] 1Y에서도 '전월 데이터'를 계산합니다! (툴팁용)
+
+    // 1Y 전월 비교 데이터 생성
     prevMonthData = [];
     for (let i = 0; i < 12; i++) {
         if (i === 0) {
-            // 1월은 '작년 12월'과 비교
-            prevMonthData.push(userData.lastYear[11] || 0);
+             // 1월은 작년 12월 데이터 필요 (여기선 편의상 0 또는 lastYear의 12월 사용)
+             // 로직상 lastYearData[11]을 가져오는게 맞으나 데이터가 없을 수 있음
+             prevMonthData.push(lastYearData[11] || 0); 
         } else {
-            // 2월~12월은 '같은 해 전달'과 비교 (메인 데이터의 바로 앞 인덱스 사용)
-            // 데이터가 아직 없는 미래 달은 0 처리
-            prevMonthData.push(mainData[i - 1] || 0);
+             prevMonthData.push(mainData[i - 1] || 0);
         }
     }
 
@@ -376,44 +430,46 @@ function updateDashboardChart() {
     if (dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
 
     const lastDay = new Date(y, m, 0).getDate();
-    const prevDate = new Date(y, m - 2, 1); 
+    const prevDate = new Date(y, m - 2, 1);
     const pmY = prevDate.getFullYear();
     const pmM = prevDate.getMonth() + 1;
 
     for (let i = 1; i <= lastDay; i++) {
       chartLabels.push(`${i}일`);
 
+      // 이번 달
       const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
-      mainData.push(d.t);
-      mainDetails.push({ s: d.s, r: d.r });
-      trendData.push(d.t === 0 ? null : d.t);
+      
+      const val = getVal(d); // ✨ 선택된 상품 값 추출
+      mainData.push(val);
+      mainDetails.push({ s: d.s, r: d.r }); // 툴팁엔 항상 상세정보 포함
+      trendData.push(val === 0 ? null : val);
 
-      // 🚨 [수정] 1M 전월 데이터: 0이면 null로 처리 (바닥 안 찍게)
+      // 지난 달
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0 };
-      prevMonthData.push(pmData.t === 0 ? null : pmData.t); // ✨ 0 -> null
+      const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0, s: 0, r: 0 };
+      const pmVal = getVal(pmData); // ✨
+      prevMonthData.push(pmVal === 0 ? null : pmVal);
 
+      // 작년 동기
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
-      lastYearData.push(lyData.t);
+      const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0, s: 0, r: 0 };
+      lastYearData.push(getVal(lyData)); // ✨
     }
 
-} else if (currentRange === '1D') {
-    // 🚨 [신규] 1D 주차 계산 및 표시 (예: 2025.12월 셋째주)
+  } else if (currentRange === '1D') {
+    // [1D] 주간
     const y = baseDate.getFullYear();
     const m = baseDate.getMonth() + 1;
-    // 주차 계산 (매월 1일이 있는 주를 1주차로 계산)
     const firstDayOfMonth = new Date(y, m - 1, 1);
-    const offset = firstDayOfMonth.getDay(); // 1일의 요일
+    const offset = firstDayOfMonth.getDay();
     const dateNum = baseDate.getDate();
-    // (날짜 + 1일의 요일인덱스) / 7 올림
     const weekNum = Math.ceil((dateNum + offset) / 7);
     const weekName = ['첫째주', '둘째주', '셋째주', '넷째주', '다섯째주', '여섯째주'][weekNum - 1] || (weekNum + '주');
     
     if (dateDisplay) dateDisplay.textContent = `${y}.${m}월 ${weekName}`;
 
-    // 1D 그래프 로직 (기존 유지)
     const dayNum = baseDate.getDay();
     const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
     const thisMon = new Date(baseDate);
@@ -435,20 +491,23 @@ function updateDashboardChart() {
 
       const key = `${ty}-${tm}-${td}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
-      mainData.push(d.t); mainDetails.push({ s: d.s, r: d.r });
-      trendData.push(d.t === 0 ? null : d.t);
+      
+      const val = getVal(d); // ✨
+      mainData.push(val);
+      mainDetails.push({ s: d.s, r: d.r });
+      trendData.push(val === 0 ? null : val);
 
       const lDay = new Date(lyMon);
       lDay.setDate(lyMon.getDate() + i);
       const lKey = `${lDay.getFullYear()}-${String(lDay.getMonth()+1).padStart(2,'0')}-${String(lDay.getDate()).padStart(2,'0')}`;
-      const ld = (userData.daily && userData.daily[lKey]) || { t: 0 };
-      lastYearData.push(ld.t);
+      const ld = (userData.daily && userData.daily[lKey]) || { t: 0, s: 0, r: 0 };
+      lastYearData.push(getVal(ld)); // ✨
       prevMonthData.push(null);
     }
   }
 
   // ------------------------------------------------
-  // 차트 그리기
+  // 2. 차트 그리기 설정
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
   
@@ -461,6 +520,7 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
+  // (1) 메인 데이터
   if (isYearly) {
     finalDatasets.push({
       type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
@@ -479,26 +539,32 @@ function updateDashboardChart() {
     });
   }
 
-  if (currentRange === '1M') {
+  // (2) 전월 동기
+  if (currentRange === '1M' || currentRange === '1Y') {
     finalDatasets.push({
       type: 'line', label: '전월 동기', data: prevMonthData,
-      borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, 
-      spanGaps: true, // 🚨 [핵심] 보라색 선도 0인 구간 점프해서 연결!
-      order: 2
+      borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, spanGaps: true, 
+      hidden: currentRange === '1Y', order: 2
     });
   }
 
+  // (3) 작년 동기
   finalDatasets.push({
     type: 'line', label: '작년 동기', data: lastYearData,
     borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
     hidden: currentRange === '1D', order: 4
   });
 
-  // 요약 알림판 (Summary Overlay) - 기존 코드 유지
+  // ------------------------------------------------
+  // ✨ [요약 알림판] 선택된 상품 기준으로 합계 계산
+  // ------------------------------------------------
   const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
   const currentTotal = sum(mainData);
   const prevTotal = sum(prevMonthData);
   const lastTotal = sum(lastYearData);
+
+  // 상품명 라벨 (전체일 땐 생략, 아니면 상품명 표시)
+  const prodLabel = currentProduct === 'st' ? '생탁' : (currentProduct === 'rice' ? '우리쌀' : '합계');
 
   const getDiffHtml = (curr, old, label) => {
       const diff = curr - old;
@@ -512,11 +578,14 @@ function updateDashboardChart() {
 
   let summaryTitle = '', summaryContent = '';
   if (currentRange === '1D') {
-      summaryTitle = '이번 주 합계'; summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+      summaryTitle = `이번 주 ${prodLabel}`; 
+      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
   } else if (currentRange === '1M') {
-      summaryTitle = '이번 달 합계'; summaryContent = getDiffHtml(currentTotal, prevTotal, '전월 대비') + getDiffHtml(currentTotal, lastTotal, '작년 대비');
+      summaryTitle = `이번 달 ${prodLabel}`; 
+      summaryContent = getDiffHtml(currentTotal, prevTotal, '전월 대비') + getDiffHtml(currentTotal, lastTotal, '작년 대비');
   } else {
-      summaryTitle = '올해 합계'; summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
+      summaryTitle = `올해 ${prodLabel}`; 
+      summaryContent = getDiffHtml(currentTotal, lastTotal, '작년 대비');
   }
 
   const container = canvas.parentNode;
