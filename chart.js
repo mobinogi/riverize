@@ -91,8 +91,10 @@ function initDashboard(response) {
 
 // 실제 차트를 그리는 함수 (Chart.js)
 function updateDashboardChart() {
-  const ctx = document.getElementById('salesStatusChart');
-  if (!ctx) return;
+  const canvas = document.getElementById('salesStatusChart'); // 캔버스 요소 가져오기
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d'); // 🖌️ 그라데이션을 위해 붓(context)을 꺼냅니다.
 
   // 셀렉트 박스에서 현재 선택된 담당자 가져오기
   const userSelect = document.getElementById('dashboardUserSelect');
@@ -108,6 +110,12 @@ function updateDashboardChart() {
     salesChartInstance.destroy();
   }
 
+  // ✨ [1. 그라데이션 만들기] : 위쪽은 은은한 파랑 -> 아래는 투명하게 사라짐
+  // (0, 0, 0, 400)은 그라데이션 방향(위->아래)입니다.
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // 맨 위: 살짝 진한 파랑 (투명도 0.5)
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); // 맨 아래: 완전 투명 (흰색이랑 섞임)
+
   // 새 차트 생성
   salesChartInstance = new Chart(ctx, {
     type: 'line',
@@ -117,12 +125,19 @@ function updateDashboardChart() {
         {
           label: `올해 (2025)`,
           data: userData.thisYear,
-          borderColor: '#3b82f6', // 파란색 (Tailwind blue-500)
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: '#3b82f6', // 선 색상 (진한 파랑)
+          
+          // ✨ [그라데이션 적용] 단순 단색이 아니라, 아까 만든 그라데이션을 입힙니다.
+          backgroundColor: gradient, 
+          
           borderWidth: 3,
-          tension: 0.3, // 부드러운 곡선
-          pointBackgroundColor: '#3b82f6',
-          fill: true
+          tension: 0.4, // 곡선을 조금 더 부드럽게 (0.3 -> 0.4)
+          pointBackgroundColor: '#ffffff', // 포인트 안쪽은 흰색
+          pointBorderColor: '#3b82F6', // 포인트 테두리는 파란색
+          pointBorderWidth: 2, // 포인트 테두리 두께
+          pointRadius: 4, // 평소 포인트 크기
+          pointHoverRadius: 6, // 마우스 올렸을 때 포인트 크기
+          fill: true // 채우기 켜기
         },
         {
           label: `작년 (2024)`,
@@ -139,6 +154,17 @@ function updateDashboardChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      
+      // ✨ [2. 말풍선 안 잘리게 레이아웃 여백 확보]
+      layout: {
+          padding: {
+              top: 20, // 차트 위쪽에 20px 공백 강제 추가
+              right: 10,
+              left: 10,
+              bottom: 0
+          }
+      },
+
       interaction: {
         mode: 'index',
         intersect: false,
@@ -146,7 +172,7 @@ function updateDashboardChart() {
       plugins: {
         legend: {
           labels: {
-            color: '#6b7280', // 범례 글씨색 (다크모드 대응 필요시 여기서 분기처리 가능하지만, 기본 회색이 무난함)
+            color: '#6b7280',
             font: { family: 'Pretendard', size: 12 }
           }
         },
@@ -154,16 +180,21 @@ function updateDashboardChart() {
           backgroundColor: 'rgba(17, 24, 39, 0.9)', // 툴팁 배경 (진한 검정)
           titleColor: '#fff',
           bodyColor: '#e5e7eb',
-          padding: 10,
-          cornerRadius: 8
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: false // 툴팁 안에 색깔 네모 박스 제거 (깔끔하게)
         }
       },
       scales: {
         x: {
-          grid: { color: 'rgba(200, 200, 200, 0.1)' }, // 연한 격자
+          grid: { color: 'rgba(200, 200, 200, 0.1)' },
           ticks: { color: '#9ca3af' }
         },
         y: {
+          // ✨ [핵심] grace: '10%' -> 데이터 최댓값보다 10% 더 높게 천장을 잡습니다.
+          // 이렇게 하면 그래프가 꼭대기에 안 닿아서 말풍선이 뜰 공간이 생깁니다.
+          grace: '10%',
+          
           grid: { color: 'rgba(200, 200, 200, 0.1)' },
           ticks: { color: '#9ca3af' },
           beginAtZero: true
