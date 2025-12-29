@@ -11,6 +11,63 @@ let currentRange = '1Y';
 let currentProduct = 'all'; // 'all', 'st', 'rice'
 let baseDate = new Date(); 
 
+// ==========================================
+// ✨ [UI] 커스텀 드롭다운 로직
+// ==========================================
+
+// 1. 드롭다운 열기/닫기 토글
+function toggleUserDropdown() {
+    const list = document.getElementById('userDropdownList');
+    const arrow = document.getElementById('dropdownArrow');
+    
+    if (list.classList.contains('hidden')) {
+        // 열기
+        list.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)'; // 화살표 뒤집기
+    } else {
+        // 닫기
+        list.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// 2. 담당자 선택 처리
+function selectUser(userName) {
+    // (1) 버튼 텍스트 변경
+    document.getElementById('selectedUserName').textContent = userName;
+    
+    // (2) 숨겨진 진짜 select 값 변경 (차트 로직과 연결)
+    const realSelect = document.getElementById('dashboardUserSelect');
+    realSelect.value = userName;
+    
+    // (3) 체크 아이콘 상태 업데이트
+    const checkKim = document.getElementById('check-김원대');
+    const checkJung = document.getElementById('check-정병준');
+    
+    if (userName === '김원대') {
+        checkKim.classList.remove('opacity-0'); checkKim.classList.add('opacity-100');
+        checkJung.classList.remove('opacity-100'); checkJung.classList.add('opacity-0');
+    } else {
+        checkKim.classList.remove('opacity-100'); checkKim.classList.add('opacity-0');
+        checkJung.classList.remove('opacity-0'); checkJung.classList.add('opacity-100');
+    }
+
+    // (4) 드롭다운 닫기 & 차트 업데이트
+    toggleUserDropdown();
+    updateDashboardChart();
+}
+
+// 3. 화면 다른 곳 클릭시 드롭다운 닫기 (UX 디테일)
+window.addEventListener('click', function(e) {
+    const btn = document.getElementById('userDropdownBtn');
+    const list = document.getElementById('userDropdownList');
+    if (btn && list && !btn.contains(e.target) && !list.contains(e.target)) {
+        list.classList.add('hidden');
+        const arrow = document.getElementById('dropdownArrow');
+        if(arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+});
+
 // ----------------------------------------------------
 // 2. 유틸리티 & 초기화 함수
 // ----------------------------------------------------
@@ -34,16 +91,17 @@ function changeProduct(prod) {
         'rice': document.getElementById('btn-prod-rice')
     };
 
-    // 1. 알약 이동
     movePill('prod-pill', btns[prod]);
 
-    // 2. 글자색 업데이트
     for (const [key, btn] of Object.entries(btns)) {
         if (!btn) continue;
+        // 🚨 focus:outline-none 추가!
+        const commonClass = "relative z-10 px-4 py-1.5 text-sm transition-colors duration-200 focus:outline-none"; 
+        
         if (key === prod) {
-            btn.className = "relative z-10 px-4 py-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200";
+            btn.className = `${commonClass} font-bold text-blue-600 dark:text-blue-400`;
         } else {
-            btn.className = "relative z-10 px-4 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 transition-colors duration-200";
+            btn.className = `${commonClass} font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400`;
         }
     }
 
@@ -130,6 +188,9 @@ function changeChartRange(range) {
     ['1D', '1M', '1Y'].forEach(r => {
         const btn = btns[r];
         if (btn) {
+
+            const commonClass = "relative z-10 px-3 py-1.5 text-sm transition-colors duration-200 focus:outline-none";
+            
             if (r === range) {
                 btn.className = "relative z-10 px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200";
             } else {
