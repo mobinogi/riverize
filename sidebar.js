@@ -9,18 +9,14 @@ let allConsolidatedFiles = [];
 // ===============================================
 
 /**
- * 메인 뷰(화면)을 전환하는 함수 (최종 수정: 차트 투명 현상 해결)
- */
-/**
- * 메인 뷰(화면)을 전환하는 함수 (최종 수정: 차트 투명 현상 해결)
+ * 메인 뷰(화면)을 전환하는 함수 (심플 버전: 즉시 실행)
  */
 function changeView(viewName) {
   // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 보이기
-  // (대시보드만 ID가 달라서 예외 처리)
+  // 2. 선택한 뷰 보이기 (ID 예외 처리 포함)
   let targetId = 'view-' + viewName;
   if (viewName === 'dashboard') {
       targetId = 'dashboard-view';
@@ -34,7 +30,7 @@ function changeView(viewName) {
     return;
   }
 
-  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기)
+  // 3. 사이드바 메뉴 스타일 초기화 (모두 끄기 & 밑줄 제거)
   const navLinks = document.querySelectorAll('#sidebar nav a');
   navLinks.forEach(el => {
       el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
@@ -56,27 +52,24 @@ function changeView(viewName) {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
     
-    // 📊 [여기가 수정되었습니다!] 
-    const skeleton = document.getElementById('chartSkeleton');
+    // 📊 [여기가 수정됨] 복잡한 딜레이/스켈레톤 다 제거! 무조건 보이게 처리
     const chartBox = document.getElementById('chartContainer');
+    const skeleton = document.getElementById('chartSkeleton');
 
-    // 1) 일단 로딩 박스 보여주고, 차트 숨김
-    if (skeleton) skeleton.classList.remove('hidden');
-    if (chartBox) chartBox.classList.add('hidden');
+    // (1) 혹시 로딩바가 켜져 있다면 끕니다.
+    if (skeleton) skeleton.classList.add('hidden');
 
-    // 2) 0.2초 뒤에 "짠" 하고 교체 (이 코드가 빠져있었습니다 ㅠㅠ)
-    setTimeout(() => {
-        // 스켈레톤 숨기고!
-        if (skeleton) skeleton.classList.add('hidden');
+    // (2) 차트 박스를 강제로 보이게 합니다. (display: none 해제)
+    if (chartBox) {
+        chartBox.classList.remove('hidden');
         
-        // ✨ 차트 박스 다시 보여주고! (이게 핵심)
-        if (chartBox) chartBox.classList.remove('hidden');
-
-        // 그 다음 차트 그리기
-        if (typeof updateDashboardChart === 'function') {
-            updateDashboardChart();
-        }
-    }, 200); 
+        // (3) 차트 그리기 함수 호출 (혹시 모르니 아주 짧은 틈만 줌)
+        setTimeout(() => {
+            if (typeof updateDashboardChart === 'function') {
+                updateDashboardChart();
+            }
+        }, 10);
+    }
   }
 }
 /**
