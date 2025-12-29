@@ -365,27 +365,42 @@
 
   <div id="chartContainer" class="hidden bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-colors">
     
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+    <div class="flex flex-col xl:flex-row justify-between items-center mb-4 gap-4">
+    
+    <div class="flex items-center gap-4">
         <h3 class="text-lg font-bold text-gray-800 dark:text-white hidden sm:block">매출 추이</h3>
-
-        <div class="flex items-center space-x-4 text-sm">
+        <div class="flex items-center space-x-3 text-xs sm:text-sm">
             <div class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                <span class="text-gray-600 dark:text-gray-300">올해</span>
+                <span class="w-3 h-3 rounded-full bg-blue-500 mr-1.5"></span>
+                <span class="text-gray-600 dark:text-gray-300 font-medium">선택 기간</span>
             </div>
             <div class="flex items-center">
-                <span class="w-8 h-0.5 border-t-2 border-dashed border-gray-400 mr-2"></span>
-                <span class="text-gray-400">작년</span>
+                <span class="w-6 h-0.5 border-t-2 border-dashed border-gray-400 mr-1.5"></span>
+                <span class="text-gray-400">작년 동기</span>
             </div>
-        </div>
-
-        <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex text-xs font-medium">
-            <button onclick="changeChartRange('1D')" id="btn-1d" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1D</button>
-            <button onclick="changeChartRange('1M')" id="btn-1m" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1M</button>
-            <button onclick="changeChartRange('1Y')" id="btn-1y" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 text-blue-600 shadow-sm transition-all">1Y</button>
         </div>
     </div>
 
+    <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+        <button onclick="moveDate(-1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-white dark:hover:bg-gray-600 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        
+        <span id="currentDateDisplay" class="mx-4 font-bold text-gray-700 dark:text-gray-200 min-w-[80px] text-center text-sm sm:text-base">
+            Loading...
+        </span>
+
+        <button onclick="moveDate(1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-white dark:hover:bg-gray-600 rounded-md transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+    </div>
+
+    <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex text-xs font-medium">
+        <button onclick="changeChartRange('1D')" id="btn-1d" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1D</button>
+        <button onclick="changeChartRange('1M')" id="btn-1m" class="px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900">1M</button>
+        <button onclick="changeChartRange('1Y')" id="btn-1y" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 text-blue-600 shadow-sm transition-all">1Y</button>
+    </div>
+</div>
     <div class="relative w-full h-[500px]">
       <canvas id="salesStatusChart"></canvas>
     </div>
@@ -2410,5 +2425,6 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
