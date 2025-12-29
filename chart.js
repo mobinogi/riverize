@@ -101,7 +101,7 @@ function moveDate(delta) {
 }
 
 // ============================================================
-// 🎨 [커스텀 툴팁] 1. 툴팁 엘리먼트 생성/가져오기
+// 🎨 [커스텀 툴팁] 1. 툴팁 껍데기 만들기 (배경, 그림자 등)
 // ============================================================
 const getOrCreateTooltip = (chart) => {
   let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
@@ -109,37 +109,9 @@ const getOrCreateTooltip = (chart) => {
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
     tooltipEl.classList.add('chartjs-tooltip');
+    
+    // 스타일 설정 (진한 남색 배경)
     tooltipEl.style.background = 'rgba(17, 24, 39, 0.95)';
-    tooltipEl.style.borderRadius = '8px';
-    tooltipEl.style.color = 'white';
-    tooltipEl.style.opacity = 1;
-    tooltipEl.style.pointerEvents = 'none';
-    tooltipEl.style.position = 'absolute';
-    tooltipEl.style.transform = 'translate(-50%, 0)';
-    tooltipEl.style.transition = 'all .1s ease';
-    tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-    tooltipEl.style.zIndex = '100';
-    tooltipEl.style.minWidth = '220px'; // 너비 확보
-
-    const table = document.createElement('table');
-    table.style.margin = '0px';
-
-    tooltipEl.appendChild(table);
-    chart.canvas.parentNode.appendChild(tooltipEl);
-  }
-
-  return tooltipEl;
-};
-
-// ============================================================
-// 🎨 [커스텀 툴팁] 3가지 비교 (이번달 vs 전달 vs 작년)
-// ============================================================
-const getOrCreateTooltip = (chart) => {
-  let tooltipEl = chart.canvas.parentNode.querySelector('div.chartjs-tooltip');
-  if (!tooltipEl) {
-    tooltipEl = document.createElement('div');
-    tooltipEl.classList.add('chartjs-tooltip');
-    tooltipEl.style.background = 'rgba(17, 24, 39, 0.95)'; // 진한 남색 배경
     tooltipEl.style.borderRadius = '8px';
     tooltipEl.style.color = 'white';
     tooltipEl.style.opacity = 1;
@@ -150,53 +122,60 @@ const getOrCreateTooltip = (chart) => {
     tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
     tooltipEl.style.zIndex = '100';
     tooltipEl.style.minWidth = '260px'; // 너비 넉넉하게
+    
     const table = document.createElement('table');
     table.style.margin = '0px';
     tooltipEl.appendChild(table);
     chart.canvas.parentNode.appendChild(tooltipEl);
   }
+
   return tooltipEl;
 };
 
+// ============================================================
+// 🎨 [커스텀 툴팁] 2. 내용 채우기 (3단 비교: 이번달 vs 전달 vs 작년)
+// ============================================================
 const externalTooltipHandler = (context) => {
   const { chart, tooltip } = context;
   const tooltipEl = getOrCreateTooltip(chart);
 
+  // 툴팁 숨겨야 할 때
   if (tooltip.opacity === 0) {
     tooltipEl.style.opacity = 0;
     return;
   }
 
+  // 데이터가 있을 때만 렌더링
   if (tooltip.body) {
     const idx = tooltip.dataPoints[0].dataIndex;
-    
-    // 데이터셋 찾기 (순서가 바뀌어도 이름으로 찾음)
     const datasets = chart.data.datasets;
-    const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해') || d.label === '선택 기간');
-    const prevMonthSet = datasets.find(d => d.label === '전월 동기'); // 지난달
-    const lastYearSet = datasets.find(d => d.label === '작년 동기'); // 작년
 
-    // 데이터 추출 (없으면 0)
+    // 1. 데이터셋 3개 찾기
+    const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해') || d.label === '선택 기간');
+    const prevMonthSet = datasets.find(d => d.label === '전월 동기');
+    const lastYearSet = datasets.find(d => d.label === '작년 동기');
+
+    // 2. 값 가져오기 (없으면 0)
     const currVal = currentSet ? currentSet.data[idx] : 0;
     const prevVal = prevMonthSet ? prevMonthSet.data[idx] : 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
 
-    const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s:0, r:0 };
+    // 3. 상세 내역(생탁/우리쌀)
+    const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
 
-    // 증감 계산 함수
+    // 4. 증감 계산 함수
     const getDiffHtml = (base, target) => {
-        const diff = base - target;
-        if(diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲ ${diff}</span>`; // 빨강 (증가)
-        if(diff < 0) return `<span style="color:#3b82f6; font-weight:bold;">▼ ${Math.abs(diff)}</span>`; // 파랑 (감소)
-        return `<span style="color:#9ca3af;">-</span>`;
+      const diff = base - target;
+      if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲ ${diff}</span>`; // 빨강
+      if (diff < 0) return `<span style="color:#3b82f6; font-weight:bold;">▼ ${Math.abs(diff)}</span>`; // 파랑
+      return `<span style="color:#9ca3af;">-</span>`;
     };
 
-    const diffPrev = getDiffHtml(currVal, prevVal); // 전월 대비
-    const diffYear = getDiffHtml(currVal, lastVal); // 작년 대비
+    const diffPrev = getDiffHtml(currVal, prevVal);
+    const diffYear = getDiffHtml(currVal, lastVal);
+    const title = chart.data.labels[idx];
 
-    const title = chart.data.labels[idx]; // 날짜 (예: 12일)
-
-    // ✨ HTML 조립: [좌: 이번달 상세] | [우: 비교 분석]
+    // 5. HTML 조립
     const innerHtml = `
       <div style="padding: 14px;">
         <div style="font-weight: bold; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 6px; color: #f3f4f6;">
@@ -237,9 +216,8 @@ const externalTooltipHandler = (context) => {
         </div>
       </div>
     `;
-
-    const tableRoot = tooltipEl.querySelector('table');
-    tableRoot.innerHTML = innerHtml;
+    
+    tooltipEl.querySelector('table').innerHTML = innerHtml;
   }
 
   const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
@@ -248,10 +226,10 @@ const externalTooltipHandler = (context) => {
   tooltipEl.style.top = positionY + tooltip.caretY + 'px';
 };
 
+
 // ============================================================
-// 📊 [chart.js] 차트 그리기 함수 (최종_전월비교+커스텀툴팁.ver)
+// 📊 [차트 그리기] 데이터 가공부터 그리기까지 (최종 수정본)
 // ============================================================
-// [chart.js] 차트 데이터 처리 및 그리기 함수
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
   if (!canvas) return;
@@ -259,7 +237,6 @@ function updateDashboardChart() {
 
   const userSelect = document.getElementById('dashboardUserSelect');
   const selectedUser = userSelect ? userSelect.value : '김원대';
-  
   if (!dashboardData || !dashboardData[selectedUser]) return;
   const userData = dashboardData[selectedUser];
 
@@ -268,20 +245,19 @@ function updateDashboardChart() {
   const dateDisplay = document.getElementById('currentDateDisplay');
   const dayNames = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
 
+  // 데이터셋 4개 준비
   let chartLabels = [];
-  
-  // 데이터셋 4개 준비 (이번달, 추세선, 지난달, 작년)
   let mainData = []; 
   let mainDetails = []; 
   let trendData = [];
-  let prevMonthData = []; // 지난달 (보라색)
-  let lastYearData = [];  // 작년 (회색)
+  let prevMonthData = []; 
+  let lastYearData = [];  
 
   // ------------------------------------------------
-  // 데이터 가공 로직
+  // 1. 날짜별 데이터 가공 로직
   // ------------------------------------------------
   if (currentRange === '1Y') {
-    // [1Y] 연간 (기존 유지)
+    // [1Y] 연간
     const y = baseDate.getFullYear();
     if (dateDisplay) dateDisplay.textContent = `${y}년`;
     chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
@@ -296,50 +272,47 @@ function updateDashboardChart() {
       mainDetails = userData.lastYearDetails || [];
     }
     trendData = mainData;
-    prevMonthData = Array(12).fill(null); // 연간은 전월비교 생략
+    prevMonthData = Array(12).fill(null);
 
   } else if (currentRange === '1M') {
-    // [1M] 월간 (3단 비교 핵심!)
+    // [1M] 월간 (3단 비교)
     const y = baseDate.getFullYear();
     const m = baseDate.getMonth() + 1;
     if (dateDisplay) dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
 
     const lastDay = new Date(y, m, 0).getDate();
-
-    // 지난달 날짜 계산 (1월이면 작년 12월로)
-    const prevDate = new Date(y, m - 2, 1);
+    const prevDate = new Date(y, m - 2, 1); // 지난달
     const pmY = prevDate.getFullYear();
     const pmM = prevDate.getMonth() + 1;
 
     for (let i = 1; i <= lastDay; i++) {
       chartLabels.push(`${i}일`);
 
-      // 1. 이번 달 (파랑)
+      // 이번 달
       const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
       mainData.push(d.t);
       mainDetails.push({ s: d.s, r: d.r });
       trendData.push(d.t === 0 ? null : d.t);
 
-      // 2. 지난 달 (보라)
+      // 지난 달
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const pmData = (userData.daily && userData.daily[pmKey]) || { t: 0 };
       prevMonthData.push(pmData.t);
 
-      // 3. 작년 동기 (회색)
+      // 작년 동기
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
       lastYearData.push(lyData.t);
     }
 
   } else if (currentRange === '1D') {
-    // [1D] 주간 (기존 유지)
+    // [1D] 주간
     const today = new Date();
     const diffToMon = (today.getDay() === 0 ? -6 : 1) - today.getDay();
     const thisMon = new Date(today);
     thisMon.setDate(today.getDate() + diffToMon);
     
-    // 작년 같은 주
     const lyMon = new Date(thisMon);
     lyMon.setFullYear(thisMon.getFullYear() - 1);
     const lyDiff = (lyMon.getDay() === 0 ? -6 : 1) - lyMon.getDay();
@@ -360,19 +333,18 @@ function updateDashboardChart() {
       mainDetails.push({ s: d.s, r: d.r });
       trendData.push(d.t === 0 ? null : d.t);
 
-      // 작년 비교
       const lDay = new Date(lyMon);
       lDay.setDate(lyMon.getDate() + i);
       const lKey = `${lDay.getFullYear()}-${String(lDay.getMonth()+1).padStart(2,'0')}-${String(lDay.getDate()).padStart(2,'0')}`;
       const ld = (userData.daily && userData.daily[lKey]) || { t: 0 };
       lastYearData.push(ld.t);
       
-      prevMonthData.push(null); // 주간은 전월비교 생략
+      prevMonthData.push(null);
     }
   }
 
   // ------------------------------------------------
-  // 차트 디자인 설정
+  // 2. 차트 그리기 설정
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
   
@@ -386,6 +358,7 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
+  // (1) 메인 데이터 (연간 vs 월간/주간)
   if (isYearly) {
     // [연간] 영역 그래프
     finalDatasets.push({
@@ -432,7 +405,7 @@ function updateDashboardChart() {
     });
   }
 
-  // [전월 동기] 보라색 실선 (1M 전용)
+  // (2) [전월 동기] 보라색 실선 (1M 전용)
   if (currentRange === '1M') {
     finalDatasets.push({
       type: 'line',
@@ -447,7 +420,7 @@ function updateDashboardChart() {
     });
   }
 
-  // [작년 동기] 회색 점선 (공통)
+  // (3) [작년 동기] 회색 점선 (공통)
   finalDatasets.push({
     type: 'line',
     label: '작년 동기',
@@ -463,7 +436,7 @@ function updateDashboardChart() {
   });
 
   // ------------------------------------------------
-  // 2. 차트 생성 및 옵션 설정 (가독성 개선)
+  // 3. 최종 차트 생성
   // ------------------------------------------------
   salesChartInstance = new Chart(ctx, {
     type: 'line',
@@ -479,9 +452,7 @@ function updateDashboardChart() {
         intersect: false
       },
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           enabled: false,
           external: externalTooltipHandler // 커스텀 툴팁 연결
@@ -489,15 +460,8 @@ function updateDashboardChart() {
       },
       scales: {
         x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            color: '#9ca3af',
-            font: {
-              size: 11
-            }
-          }
+          grid: { display: false },
+          ticks: { color: '#9ca3af', font: { size: 11 } }
         },
         y: {
           grid: {
@@ -505,12 +469,11 @@ function updateDashboardChart() {
             borderDash: [4, 4],
             drawBorder: false
           },
-          ticks: {
-            color: '#9ca3af'
-          },
+          ticks: { color: '#9ca3af' },
           beginAtZero: true,
           grace: '60%'
         }
       }
     }
   });
+}
