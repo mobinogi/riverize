@@ -193,7 +193,7 @@ function updateDashboardChart() {
         y: {
           // ✨ [핵심] grace: '10%' -> 데이터 최댓값보다 10% 더 높게 천장을 잡습니다.
           // 이렇게 하면 그래프가 꼭대기에 안 닿아서 말풍선이 뜰 공간이 생깁니다.
-          grace: '10%',
+          grace: '30%',
           
           grid: { color: 'rgba(200, 200, 200, 0.1)' },
           ticks: { color: '#9ca3af' },
