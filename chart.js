@@ -1,5 +1,5 @@
 // ==========================================
-// chart.js (최종 업그레이드: 날짜 이동 + 비교 분석)
+// chart.js (최종: 1D 고정주간 + 작년비교)
 // ==========================================
 
 // 전역 변수
@@ -7,7 +7,7 @@ let salesChartInstance = null;
 let dashboardData = {}; 
 let currentRange = '1Y'; 
 
-// 📅 [핵심] 현재 보고 있는 기준 날짜 (기본값: 오늘)
+// 현재 보고 있는 기준 날짜 (1M, 1Y용)
 let baseDate = new Date(); 
 
 // ----------------------------------------------------
@@ -28,9 +28,6 @@ function switchView(viewId) {
 function showSalesDashboard() {
   switchView('dashboard-view');
   
-  // 들어올 때마다 "오늘"로 초기화하려면 아래 주석 해제
-  // baseDate = new Date(); 
-
   if (salesChartInstance) { salesChartInstance.destroy(); salesChartInstance = null; }
   
   const sk = document.getElementById('chartSkeleton');
@@ -59,17 +56,24 @@ function initDashboard(response) {
     return;
   }
   dashboardData = response.data;
-  updateDashboardChart(); // 차트 그리기 시작
+  updateDashboardChart(); 
 }
 
 // ----------------------------------------------------
-// 2. 날짜 제어 & 버튼 로직 (여기가 새로 추가된 뇌입니다!)
+// 2. 날짜 제어 & 버튼 로직
 // ----------------------------------------------------
 
-// 1D/1M/1Y 버튼 클릭
 function changeChartRange(range) {
     currentRange = range;
-    // 버튼 스타일
+    
+    // 1D일 때는 날짜 이동 버튼 숨기기 (고정 주간이므로)
+    const navControl = document.getElementById('dateNavControl');
+    if (navControl) {
+        if (range === '1D') navControl.classList.add('hidden');
+        else navControl.classList.remove('hidden');
+    }
+
+    // 버튼 스타일 업데이트
     ['1d', '1m', '1y'].forEach(r => {
         const btn = document.getElementById(`btn-${r}`);
         if (btn) {
@@ -78,23 +82,26 @@ function changeChartRange(range) {
                 : "px-3 py-1.5 rounded-md transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400";
         }
     });
+
+    // 1D로 오면 baseDate를 오늘로 리셋 (항상 이번주 보기)
+    if (range === '1D') baseDate = new Date();
+
     updateDashboardChart();
 }
 
-// < > 화살표 클릭 (과거/미래 이동)
 function moveDate(delta) {
     if (currentRange === '1Y') {
         baseDate.setFullYear(baseDate.getFullYear() + delta);
     } else if (currentRange === '1M') {
         baseDate.setMonth(baseDate.getMonth() + delta);
-    } else if (currentRange === '1D') {
-        baseDate.setDate(baseDate.getDate() + delta); // 하루씩 이동
-    }
+    } 
+    // 1D는 이동 불가 (버튼이 숨겨짐)
+    
     updateDashboardChart();
 }
 
 // ----------------------------------------------------
-// 3. 차트 그리기 (Data Processing)
+// 3. 차트 그리기 (핵심 로직)
 // ----------------------------------------------------
 function updateDashboardChart() {
   const canvas = document.getElementById('salesStatusChart');
@@ -108,60 +115,52 @@ function updateDashboardChart() {
 
   if (salesChartInstance) salesChartInstance.destroy();
 
-  // 날짜 표시 업데이트 (가운데 글자)
   const dateDisplay = document.getElementById('currentDateDisplay');
-  
-  // 데이터 가공 변수
-  let chartLabels = [];
-  let mainData = []; // 실선 (선택 기간)
-  let compareData = []; // 점선 (비교군: 작년 or 지난주)
-  
   const dayNames = ['(일)', '(월)', '(화)', '(수)', '(목)', '(금)', '(토)'];
 
+  let chartLabels = [];
+  let mainData = []; 
+  let compareData = []; 
+  
   // ============================
   // 모드별 로직 분기
   // ============================
   if (currentRange === '1Y') {
       // [1Y] 연도별 보기
       const y = baseDate.getFullYear();
-      dateDisplay.textContent = `${y}년`; // "2025년"
+      dateDisplay.textContent = `${y}년`;
 
       chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
       
-      // 현재 선택된 연도가 '올해(서버기준)'라면 thisYear, '작년'이면 lastYear 데이터 사용
-      // (주의: 서버에서 2년치만 주기 때문에, 2023년 등은 0으로 나올 수 있음)
-      const thisYear = new Date().getFullYear(); // 2025
-      
+      const thisYear = new Date().getFullYear();
       if (y === thisYear) {
           mainData = userData.thisYear;
-          compareData = userData.lastYear; // 비교: 2024
+          compareData = userData.lastYear; 
       } else if (y === thisYear - 1) {
           mainData = userData.lastYear;
-          compareData = Array(12).fill(null); // 2023 데이터는 없으므로 비움
+          compareData = Array(12).fill(null); 
       } else {
-          mainData = Array(12).fill(0); // 데이터 없음
+          mainData = Array(12).fill(0);
           compareData = Array(12).fill(0);
       }
 
   } else if (currentRange === '1M') {
-      // [1M] 월별 보기 (1일 ~ 말일)
+      // [1M] 월별 보기
       const y = baseDate.getFullYear();
       const m = baseDate.getMonth() + 1;
-      dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`; // "2025.10"
+      dateDisplay.textContent = `${y}.${String(m).padStart(2,'0')}`;
       
-      // 해당 월의 마지막 날짜 계산 (28, 30, 31 자동)
       const lastDay = new Date(y, m, 0).getDate();
 
       for (let i = 1; i <= lastDay; i++) {
           chartLabels.push(`${i}일`);
 
-          // 1. 메인 데이터 (선택한 달)
+          // 메인 (올해)
           const dateKey = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           let val = (userData.daily && userData.daily[dateKey]) ? userData.daily[dateKey] : 0;
           mainData.push(val);
 
-          // 2. 비교 데이터 (작년 같은 달) -> 사장님 요청!
-          // 2024-10-01 데이터 찾기
+          // 비교 (작년)
           const prevY = y - 1;
           const prevKey = `${prevY}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
           let prevVal = (userData.daily && userData.daily[prevKey]) ? userData.daily[prevKey] : 0;
@@ -169,34 +168,60 @@ function updateDashboardChart() {
       }
 
   } else if (currentRange === '1D') {
-      // [1D] 주간 보기 (선택일 포함 최근 7일)
-      const y = baseDate.getFullYear();
-      const m = baseDate.getMonth() + 1;
-      const d = baseDate.getDate();
-      const dayName = dayNames[baseDate.getDay()];
+      // [1D] 이번 주 (월~토) 고정 보기
+      // 기준: 오늘 날짜
+      const today = new Date(); 
       
-      dateDisplay.textContent = `${m}.${d} ${dayName}`; // "12.23 (화)"
+      // 1. 이번 주 월요일 찾기
+      // (일요일=0, 월요일=1 ... 토요일=6)
+      // 오늘이 일요일(0)이면, 월요일은 어제(-6일전)가 아니라 다음주? 
+      // 사장님 요청: "일요일은 빼고". 보통 일요일은 한 주의 시작이나 끝인데, 
+      // 여기선 '이번 주'의 업무일(월~토)을 보여줍니다.
+      const dayNum = today.getDay(); // 0~6
+      
+      // 월요일과의 거리 계산 (일요일이면 -6, 월요일이면 0, 화요일이면 1...)
+      const diffToMon = (dayNum === 0 ? -6 : 1) - dayNum;
+      
+      const thisMon = new Date(today);
+      thisMon.setDate(today.getDate() + diffToMon); // 이번 주 월요일로 이동
+      
+      // 2. 작년 이맘때 월요일 찾기 (요일 매칭을 위해)
+      const lastYearSameTime = new Date(thisMon);
+      lastYearSameTime.setFullYear(thisMon.getFullYear() - 1);
+      // 작년 같은 날짜의 요일을 보고, 그 주의 월요일로 조정
+      const lyDayNum = lastYearSameTime.getDay();
+      const lyDiff = (lyDayNum === 0 ? -6 : 1) - lyDayNum;
+      const lastYearMon = new Date(lastYearSameTime);
+      lastYearMon.setDate(lastYearSameTime.getDate() + lyDiff);
 
-      // 6일 전 ~ 오늘 (총 7일)
-      for (let i = 6; i >= 0; i--) {
-          const tempDate = new Date(baseDate);
-          tempDate.setDate(baseDate.getDate() - i); // 날짜 계산
-
-          const ty = tempDate.getFullYear();
-          const tm = String(tempDate.getMonth() + 1).padStart(2, '0');
-          const td = String(tempDate.getDate()).padStart(2, '0');
-          const tDay = dayNames[tempDate.getDay()]; // 요일 계산
-
-          // 라벨: "23(화)"
-          chartLabels.push(`${tempDate.getDate()}${tDay}`);
-
-          // 메인 데이터
-          const key = `${ty}-${tm}-${td}`;
-          let val = (userData.daily && userData.daily[key]) ? userData.daily[key] : 0;
-          mainData.push(val);
+      // 3. 월~토 (0~5) 루프 돌리기
+      for (let i = 0; i < 6; i++) {
+          // --- 올해 데이터 ---
+          const targetDay = new Date(thisMon);
+          targetDay.setDate(thisMon.getDate() + i);
           
-          // 비교 데이터 (없음 or 지난주? 일단 깔끔하게 비움)
-          compareData.push(null);
+          const ty = targetDay.getFullYear();
+          const tm = String(targetDay.getMonth() + 1).padStart(2, '0');
+          const td = String(targetDay.getDate()).padStart(2, '0');
+          const tDayName = dayNames[targetDay.getDay()]; // (월), (화)...
+          
+          chartLabels.push(`${targetDay.getDate()}일${tDayName}`);
+          
+          const tKey = `${ty}-${tm}-${td}`;
+          let tVal = (userData.daily && userData.daily[tKey]) ? userData.daily[tKey] : 0;
+          mainData.push(tVal);
+
+          // --- 작년 데이터 (비교) ---
+          const lyDay = new Date(lastYearMon);
+          lyDay.setDate(lastYearMon.getDate() + i);
+          
+          const ly = lyDay.getFullYear();
+          const lm = String(lyDay.getMonth() + 1).padStart(2, '0');
+          const ld = String(lyDay.getDate()).padStart(2, '0');
+          
+          const lKey = `${ly}-${lm}-${ld}`;
+          let lVal = (userData.daily && userData.daily[lKey]) ? userData.daily[lKey] : 0;
+          compareData.push(lVal);
       }
   }
 
@@ -213,7 +238,7 @@ function updateDashboardChart() {
         {
           label: '선택 기간',
           data: mainData,
-          borderColor: '#3b82f6', // 파랑
+          borderColor: '#3b82f6',
           backgroundColor: gradient,
           borderWidth: 3,
           tension: 0.4,
@@ -225,16 +250,15 @@ function updateDashboardChart() {
           fill: true
         },
         {
-          label: '작년 동기', // 1M일 땐 작년 이맘때
+          label: '작년 동기',
           data: compareData,
-          borderColor: '#9ca3af', // 회색
+          borderColor: '#9ca3af',
           borderWidth: 2,
-          borderDash: [5, 5], // 점선
+          borderDash: [5, 5],
           tension: 0.3,
           pointRadius: 0,
           fill: false,
-          // 1D가 아닐 때만 비교 보여줌
-          hidden: currentRange === '1D' 
+          hidden: false // 1D에서도 작년 비교 보여줌!
         }
       ]
     },
@@ -253,7 +277,6 @@ function updateDashboardChart() {
           cornerRadius: 6,
           displayColors: false,
           caretPadding: 0,
-          // 0인 값 숨기기 (옵션)
           filter: function(tooltipItem) { return tooltipItem.raw > 0; } 
         }
       },
