@@ -1,4 +1,67 @@
 // ==========================================
+// ✨ [신규] 레이더 펄스 효과 플러그인
+// ==========================================
+const rippleEffectPlugin = {
+  id: 'rippleEffect',
+  afterDraw: (chart) => {
+    const ctx = chart.ctx;
+    const now = Date.now();
+
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      // 1. 숨겨진 그래프나, 데이터가 없으면 패스
+      if (!chart.isDatasetVisible(datasetIndex) || !dataset.data) return;
+      
+      // 2. '지난주'나 '전월 동기' 라인만 효과 적용
+      if (dataset.label !== '지난주' && dataset.label !== '전월 동기') return;
+
+      const meta = chart.getDatasetMeta(datasetIndex);
+      
+      meta.data.forEach((element, index) => {
+        const value = dataset.data[index];
+        if (value === null || value === undefined || value === 0) return;
+
+        // 3. 1등인지 판별 (다른 그래프들과 비교)
+        let isMax = true;
+        chart.data.datasets.forEach((compDs, compIdx) => {
+             if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
+             const compVal = compDs.data[index];
+             if (compVal && compVal > value) isMax = false; // 나보다 큰 놈이 있으면 난 1등 아님
+        });
+
+        if (!isMax) return; // 1등 아니면 그리지 마
+
+        // 4. 레이더 파장 그리기
+        const x = element.x;
+        const y = element.y;
+        
+        // 애니메이션 계산 (2초마다 반복)
+        const duration = 2000;
+        const offset = (now % duration) / duration; // 0 ~ 1 사이 값
+        const radius = 5 + (offset * 20); // 5px에서 25px까지 커짐
+        const opacity = 1 - offset; // 1(선명) -> 0(투명)으로 흐려짐
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.lineWidth = 2; // 선 두께
+        ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; // 보라색 + 투명도
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. 중심점 다시 찍기 (파장에 가려지지 않게)
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#c084fc';
+        ctx.fill();
+      });
+    });
+    
+    // 계속 움직이게 하려면 프레임 요청 필요
+    chart.draw(); 
+  }
+};
+
+// ==========================================
 // chart.js (최종 수정본: 중복 제거 및 완벽 정리)
 // ==========================================
 
@@ -639,7 +702,7 @@ function updateDashboardChart() {
   if (currentRange === '1D') {
       
 // 1. 지난주: 펄스 애니메이션 (속이 빈 링 효과)
-      finalDatasets.push({
+finalDatasets.push({
           type: 'line', 
           label: '지난주', 
           data: prevWeekData, 
@@ -647,40 +710,8 @@ function updateDashboardChart() {
           borderWidth: 2, 
           tension: 0.3, 
           fill: false, 
-          order: 2,
-
-          // 👇 [핵심 수정] 속이 빈 원을 만드는 설정
-          pointBackgroundColor: 'transparent', // 배경은 투명하게!
-          pointBorderColor: '#c084fc',         // 테두리는 보라색
-          pointBorderWidth: 3,                 // 테두리 두께
-
-          animations: {
-            // 1. 크기가 커짐 (0 -> 25)
-            pointRadius: {
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 0,
-              to: (ctx) => isMaxPoint(ctx) ? 25 : 0 // 1등이면 25까지 커짐
-            },
-            // 2. 테두리 색이 점점 사라짐 (보라 -> 투명)
-            pointBorderColor: {
-              type: 'color',
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 'rgba(192, 132, 252, 1)', // 진한 보라
-              to: 'rgba(192, 132, 252, 0)'    // 투명 (사라짐)
-            },
-            // 3. 커지면서 테두리가 얇아짐 (더 자연스러운 물결 효과)
-            pointBorderWidth: {
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 4, // 굵게 시작해서
-              to: 0    // 얇게 사라짐
-            }
-          }
+          pointRadius: 0, // 기본 점은 숨김 (플러그인이 그릴 거니까)
+          order: 2
       });
       
       // 2. 툴팁용 전월 데이터 (화면엔 안 보임)
@@ -703,42 +734,20 @@ function updateDashboardChart() {
   } else { 
       // 👆 [수정 1] 괄호는 하나만! (} else {)
       
-// 1M, 1Y: 전월 동기 (속이 빈 링 효과)
+// 1M, 1Y: 전월/작년 비교
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
-          type: 'line', label: '전월 동기', data: prevMonthData,
-          borderColor: '#c084fc', borderWidth: 2, tension: 0, fill: false, spanGaps: true, 
-          hidden: currentRange === '1Y', order: 2,
-
-          // 👇 [핵심 수정] 여기도 똑같이 적용!
-          pointBackgroundColor: 'transparent', 
-          pointBorderColor: '#c084fc',         
-          pointBorderWidth: 3,                 
-
-          animations: {
-            pointRadius: {
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 0,
-              to: (ctx) => isMaxPoint(ctx) ? 25 : 0
-            },
-            pointBorderColor: {
-              type: 'color',
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 'rgba(192, 132, 252, 1)', 
-              to: 'rgba(192, 132, 252, 0)'    
-            },
-            pointBorderWidth: {
-              duration: 2000,
-              easing: 'easeOutQuad',
-              loop: true,
-              from: 4,
-              to: 0
-            }
-          }
+          type: 'line', 
+          label: '전월 동기', 
+          data: prevMonthData,
+          borderColor: '#c084fc', 
+          borderWidth: 2, 
+          tension: 0, 
+          fill: false, 
+          spanGaps: true, 
+          hidden: currentRange === '1Y', 
+          order: 2,
+          pointRadius: 0 // ✅ 점은 일단 숨김 (플러그인이 그릴 거니까)
         });
       }
       
@@ -824,6 +833,9 @@ function updateDashboardChart() {
 salesChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels: chartLabels, datasets: finalDatasets },
+
+    plugins: [rippleEffectPlugin],
+    
     options: {
       responsive: true, maintainAspectRatio: false,
       
