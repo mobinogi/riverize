@@ -73,18 +73,6 @@ const rippleEffectPlugin = {
       ctx.restore();
     });
     
-  } else if (isBlueBar) {
-          // --- 🟦 파란 막대: 원 없이 투명하게 펄스만 ---
-          const maxRadius = 18;
-          const currentRadius = 2 + (offset * maxRadius);
-          const opacity = 1 - offset;
-
-          ctx.beginPath();
-          ctx.arc(x, y, currentRadius, 0, Math.PI * 2);
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = `rgba(59, 130, 246, ${opacity})`; 
-          ctx.stroke();
-      }
     // 애니메이션 프레임 유지
     if (!chart._rippleAnimating) {
         chart._rippleAnimating = true;
