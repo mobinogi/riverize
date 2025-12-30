@@ -504,7 +504,7 @@ function updateDashboardChart() {
 
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
-      lastYearData.push(lyVal === 0 ? null : lyVal);
+      lastYearData.push(lyVal);
     }
 
   } else if (currentRange === '1D') {
