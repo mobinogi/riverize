@@ -379,13 +379,13 @@ const externalTooltipHandler = (context) => {
 
   if (tooltip.caretX > chartWidth / 2) {
       tooltipEl.style.transform = 'translate(-105%, 0)'; 
-      tooltipEl.style.left = (rootLeft + tooltip.caretX - 10) + 'px';
+      tooltipEl.style.left = (rootLeft + tooltip.caretX - 30) + 'px';
       arrowEl.style.left = 'auto'; arrowEl.style.right = '-16px';
       arrowEl.style.borderColor = `transparent ${bgColor} transparent transparent`;
       arrowEl.style.borderLeftColor = bgColor; arrowEl.style.borderRightColor = 'transparent';
   } else {
       tooltipEl.style.transform = 'translate(5%, 0)';
-      tooltipEl.style.left = (rootLeft + tooltip.caretX + 10) + 'px';
+      tooltipEl.style.left = (rootLeft + tooltip.caretX + 30) + 'px';
       arrowEl.style.right = 'auto'; arrowEl.style.left = '-16px';
       arrowEl.style.borderColor = `transparent transparent transparent ${bgColor}`; 
       arrowEl.style.borderRightColor = bgColor; arrowEl.style.borderLeftColor = 'transparent';
@@ -411,7 +411,7 @@ const externalTooltipHandler = (context) => {
   }
 
   // 4. 결정된 위치로 이동!
-  tooltipEl.style.top = (rootTop + targetY - 20) + 'px';
+  tooltipEl.style.top = (rootTop + targetY - 30) + 'px';
   tooltipEl.style.opacity = 1;
 };
 
