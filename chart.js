@@ -591,16 +591,37 @@ function updateDashboardChart() {
 
   // 1D: 지난주 (회색 점선)
   if (currentRange === '1D') {
+      
+      // 1. 지난주: 보라색(#c084fc), 실선으로 변경 (order: 2)
       finalDatasets.push({
           type: 'line', 
           label: '지난주', 
           data: prevWeekData, 
-          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, 
+          borderColor: '#c084fc', // 보라색
+          borderWidth: 2, 
+          tension: 0.3, 
+          pointRadius: 0, 
+          fill: false, 
+          order: 2
+      });
+      
+      // 2. 툴팁용 전월 데이터 (화면엔 안 보임)
+      finalDatasets.push({ type: 'line', label: '전월 동기', data: prevMonthData, hidden: true });
+
+      // 3. 작년 동기: 회색(#9ca3af), 점선으로 변경 & 보이게 설정!
+      finalDatasets.push({
+          type: 'line', label: '작년 동기', data: lastYearData,
+          borderColor: '#9ca3af', // 회색
+          borderWidth: 2, 
+          borderDash: [5, 5],     // 점선
+          tension: 0.3, 
+          pointRadius: 0, 
+          fill: false,
+          hidden: false,          // 이제 보입니다!
           order: 4
       });
-      // 툴팁용 (숨김)
-      finalDatasets.push({ type: 'line', label: '전월 동기', data: prevMonthData, hidden: true });
-      finalDatasets.push({ type: 'line', label: '작년 동기', data: lastYearData, hidden: true });
+  }
+  
   } else {
       // 1M, 1Y: 전월/작년 비교
       if (currentRange === '1M' || currentRange === '1Y') {
@@ -657,7 +678,6 @@ function updateDashboardChart() {
   if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'chart-summary-overlay';
-      // 👇 여기가 사장님이 좋아하셨던 그 스타일입니다!
       Object.assign(overlay.style, {
           position: 'absolute', 
           top: '20px', 
