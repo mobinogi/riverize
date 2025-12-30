@@ -635,10 +635,10 @@ function updateDashboardChart() {
     });
   }
 
-  // 1D: 지난주 (회색 점선)
+// 1D: 지난주 (회색 점선)
   if (currentRange === '1D') {
       
-// 1. 지난주: 펄스 애니메이션 (조건부 적용)
+      // 1. 지난주: 펄스 애니메이션 적용
       finalDatasets.push({
           type: 'line', 
           label: '지난주', 
@@ -657,7 +657,7 @@ function updateDashboardChart() {
               easing: 'easeOutQuad',
               loop: true,
               from: 0,
-              // 👇 [수정] 무조건 15가 아니라, 1등일 때만 15!
+              // 👇 1등일 때만 펄스 효과!
               to: (ctx) => isMaxPoint(ctx) 
             },
             pointBackgroundColor: {
@@ -674,21 +674,23 @@ function updateDashboardChart() {
       // 2. 툴팁용 전월 데이터 (화면엔 안 보임)
       finalDatasets.push({ type: 'line', label: '전월 동기', data: prevMonthData, hidden: true });
 
-      // 3. 작년 동기: 회색(#9ca3af), 점선으로 변경 & 보이게 설정!
+      // 3. 작년 동기: 회색(#9ca3af), 점선
       finalDatasets.push({
           type: 'line', label: '작년 동기', data: lastYearData,
-          borderColor: '#9ca3af', // 회색
+          borderColor: '#9ca3af', 
           borderWidth: 2, 
-          borderDash: [5, 5],     // 점선
+          borderDash: [5, 5],     
           tension: 0.3, 
           pointRadius: 0, 
           fill: false,
-          hidden: false,          // 이제 보입니다!
+          hidden: false,          
           order: 4,
           spanGaps: true
       });
-   }
-} else {
+
+  } else { 
+      // 👆 [수정 1] 괄호는 하나만! (} else {)
+      
       // 1M, 1Y: 전월 동기 (펄스 효과)
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
@@ -704,6 +706,7 @@ function updateDashboardChart() {
               easing: 'easeOutQuad',
               loop: true,
               from: 0,
+              // 👇 여기도 함수 연결!
               to: (ctx) => isMaxPoint(ctx)
             },
             pointBackgroundColor: {
@@ -718,15 +721,14 @@ function updateDashboardChart() {
         });
       }
       
-      // ✨ [복구] 작년 동기 데이터 (이게 지워져서 1M, 1Y에서 작년 그래프가 안 나왔습니다)
+      // 👇 [수정 2] 여기가 빠져 있었습니다! (작년 데이터 복구)
       finalDatasets.push({
         type: 'line', label: '작년 동기', data: lastYearData,
         borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
-        hidden: false, order: 4
+        hidden: false, order: 4,
+        spanGaps: true
       });
-
   }
-
 // ------------------------------------------------
   // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
   // ------------------------------------------------
