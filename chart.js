@@ -730,7 +730,7 @@ finalDatasets.push({
           order: 4,
           spanGaps: true
       });
-
+     }
   } else { 
       // 👆 [수정 1] 괄호는 하나만! (} else {)
       
@@ -750,15 +750,6 @@ finalDatasets.push({
           pointRadius: 0 // ✅ 점은 일단 숨김 (플러그인이 그릴 거니까)
         });
       }
-      
-      // 👇 [수정 2] 여기가 빠져 있었습니다! (작년 데이터 복구)
-      finalDatasets.push({
-        type: 'line', label: '작년 동기', data: lastYearData,
-        borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
-        hidden: false, order: 4,
-        spanGaps: true
-      });
-  }
 // ------------------------------------------------
   // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
   // ------------------------------------------------
