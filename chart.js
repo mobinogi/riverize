@@ -620,7 +620,6 @@ function updateDashboardChart() {
           fill: false,
           hidden: false,          // 이제 보입니다!
           order: 4
-          spanGaps: true
       });
   } else {
       // 1M, 1Y: 전월/작년 비교
