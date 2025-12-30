@@ -1,5 +1,5 @@
 // ==========================================
-// ✨ [신규] 레이더 펄스 효과 플러그인
+// ✨ [신규] 레이더 펄스 효과 플러그인 (수정버전)
 // ==========================================
 const rippleEffectPlugin = {
   id: 'rippleEffect',
@@ -20,35 +20,34 @@ const rippleEffectPlugin = {
         const value = dataset.data[index];
         if (value === null || value === undefined || value === 0) return;
 
-        // 3. 1등인지 판별 (다른 그래프들과 비교)
+        // 3. 1등인지 판별
         let isMax = true;
         chart.data.datasets.forEach((compDs, compIdx) => {
              if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
              const compVal = compDs.data[index];
-             if (compVal && compVal > value) isMax = false; // 나보다 큰 놈이 있으면 난 1등 아님
+             if (compVal && compVal > value) isMax = false; 
         });
 
-        if (!isMax) return; // 1등 아니면 그리지 마
+        if (!isMax) return; 
 
         // 4. 레이더 파장 그리기
         const x = element.x;
         const y = element.y;
         
-        // 애니메이션 계산 (2초마다 반복)
         const duration = 2000;
-        const offset = (now % duration) / duration; // 0 ~ 1 사이 값
-        const radius = 5 + (offset * 20); // 5px에서 25px까지 커짐
-        const opacity = 1 - offset; // 1(선명) -> 0(투명)으로 흐려짐
+        const offset = (now % duration) / duration; 
+        const radius = 5 + (offset * 20); 
+        const opacity = 1 - offset; 
 
         ctx.save();
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.lineWidth = 2; // 선 두께
-        ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; // 보라색 + 투명도
+        ctx.lineWidth = 2; 
+        ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; 
         ctx.stroke();
         ctx.restore();
 
-        // 5. 중심점 다시 찍기 (파장에 가려지지 않게)
+        // 5. 중심점 다시 찍기
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fillStyle = '#c084fc';
@@ -56,8 +55,14 @@ const rippleEffectPlugin = {
       });
     });
     
-    // 계속 움직이게 하려면 프레임 요청 필요
-    chart.draw(); 
+    // 👇 [핵심 수정] 무한루프 방지 안전장치 추가!
+    if (!chart._rippleAnimating) {
+        chart._rippleAnimating = true;
+        requestAnimationFrame(() => {
+            chart._rippleAnimating = false;
+            chart.draw();
+        });
+    }
   }
 };
 
