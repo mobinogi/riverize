@@ -1,5 +1,5 @@
 // ==========================================
-// ✨ [디자인 완성] 보라/파랑 펄스 디테일 튜닝 버전
+// ✨ [마지막 튜닝] 마우스 오버 시 생성되는 빈 원에서 펄스 시작
 // ==========================================
 const rippleEffectPlugin = {
   id: 'rippleEffect',
@@ -7,11 +7,11 @@ const rippleEffectPlugin = {
     const ctx = chart.ctx;
     const now = Date.now();
     
+    // 1. 마우스 오버된 요소 확인
     const activeElements = chart.getActiveElements();
     if (activeElements.length === 0) return; 
     
     const activeIndex = activeElements[0].index;
-    const bgColor = 'rgba(255, 255, 255, 1)'; // 차트 배경색 (흰색으로 줄을 가릴 때 사용)
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       if (!chart.isDatasetVisible(datasetIndex) || !dataset.data) return;
@@ -29,7 +29,7 @@ const rippleEffectPlugin = {
       const value = dataset.data[activeIndex];
       if (value === null || value === undefined || value === 0) return;
 
-      // 🏆 최고점 판별 (펄스 주인공 선정)
+      // 🏆 해당 지점에서 가장 높은 데이터만 펄스 효과
       let isMax = true;
       chart.data.datasets.forEach((compDs, compIdx) => {
            if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
@@ -39,34 +39,41 @@ const rippleEffectPlugin = {
 
       if (!isMax) return; 
 
+      // 🎨 색상 및 좌표 설정
+      const isBlue = isBlueBar || isBlueLine;
+      const rippleColor = isBlue ? 'rgba(59, 130, 246' : 'rgba(192, 132, 252';
+      
       const x = element.x;
       const y = element.y;
+      
       const duration = 800; 
       const offset = (now % duration) / duration; 
-      
+
+      // 📏 파장 크기: 기본 원(약 3~4px)에서 시작해 15px까지 확장
+      const radius = 4 + (offset * 11); 
+      const opacity = 1 - offset; 
+
       ctx.save();
+      
+      // --- 🌊 퍼져나가는 파장(링) 그리기 ---
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `${rippleColor}, ${opacity})`; 
+      ctx.stroke();
 
-      if (isPurpleLine || isBlueLine) {
-          // --- 🟣/🔵 선 그래프: 원이 생겼다 사라지며 줄 가리기 ---
-          const maxRadius = 15;
-          const currentRadius = 4 + (offset * (maxRadius - 4));
-          const opacity = 1 - offset;
-          const color = isPurpleLine ? 'rgba(192, 132, 252' : 'rgba(59, 130, 246';
+      // --- ⭕ 마우스 오버 시에만 생기는 기본 '빈 원' ---
+      // 파장이 시작되는 지점을 시각적으로 보여줌
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `${rippleColor}, 0.8)`; 
+      ctx.stroke();
 
-          // 1. 원 내부의 줄 가리기 (배경색으로 채움)
-          ctx.beginPath();
-          ctx.arc(x, y, currentRadius, 0, Math.PI * 2);
-          ctx.fillStyle = bgColor;
-          ctx.fill();
-
-          // 2. 테두리 펄스 (사라지는 효과)
-          ctx.beginPath();
-          ctx.arc(x, y, currentRadius, 0, Math.PI * 2);
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = `${color}, ${opacity})`; 
-          ctx.stroke();
-
-      } else if (isBlueBar) {
+      ctx.restore();
+    });
+    
+  } else if (isBlueBar) {
           // --- 🟦 파란 막대: 원 없이 투명하게 펄스만 ---
           const maxRadius = 18;
           const currentRadius = 2 + (offset * maxRadius);
@@ -78,10 +85,7 @@ const rippleEffectPlugin = {
           ctx.strokeStyle = `rgba(59, 130, 246, ${opacity})`; 
           ctx.stroke();
       }
-
-      ctx.restore();
-    });
-    
+    // 애니메이션 프레임 유지
     if (!chart._rippleAnimating) {
         chart._rippleAnimating = true;
         requestAnimationFrame(() => {
