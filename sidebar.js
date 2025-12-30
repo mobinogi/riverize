@@ -63,6 +63,15 @@ function changeView(viewName) {
     // 그 다음 데이터를 가져오라고 시킵니다. (데이터 오면 chart.js가 알아서 바꿔줌)
     if (typeof showSalesDashboard === 'function') {
         showSalesDashboard();
+    // 👇 [여기 추가] 모바일(화면 폭 768px 미만)이면 사이드바 강제 닫기
+    if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body;
+      
+    if (sidebar) {
+        sidebar.classList.add('closed');   // 닫힘 클래스 추가
+        sidebar.classList.remove('open');  // 열림 클래스 제거
+    if(body) body.classList.add('sidebar-collapsed'); // 바디 스타일 조정
     }
   }
 }
