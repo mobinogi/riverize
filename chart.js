@@ -600,6 +600,27 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
+  // ✨ [추가] 1등 판독기: 이 점이 다른 그래프들보다 높은지 검사
+  const isMaxPoint = (ctx) => {
+      const v = ctx.raw; 
+      if (!v) return 0; // 내 값이 0이나 null이면 펄스 X
+
+      const ds = ctx.chart.data.datasets;
+      const idx = ctx.dataIndex;
+      
+      for (let i = 0; i < ds.length; i++) {
+          // 나 자신(i)이거나, 숨겨진 그래프는 비교에서 제외
+          if (i === ctx.datasetIndex || !ctx.chart.isDatasetVisible(i)) continue;
+          
+          const otherVal = ds[i].data[idx];
+          const ov = (otherVal === null || otherVal === undefined) ? 0 : otherVal;
+          
+          // 🚨 나보다 더 큰 놈(ov)이 있다? -> 난 1등 아님 -> 펄스 X
+          if (ov > v) return 0; 
+      }
+      return 15; // 🏆 내가 1등이다! -> 15까지 커져라 (펄스 O)
+  };
+
   // 메인 데이터
   if (isYearly) {
     finalDatasets.push({
@@ -617,17 +638,37 @@ function updateDashboardChart() {
   // 1D: 지난주 (회색 점선)
   if (currentRange === '1D') {
       
-      // 1. 지난주: 보라색(#c084fc), 실선으로 변경 (order: 2)
+// 1. 지난주: 펄스 애니메이션 (조건부 적용)
       finalDatasets.push({
           type: 'line', 
           label: '지난주', 
           data: prevWeekData, 
-          borderColor: '#c084fc', // 보라색
+          borderColor: '#c084fc', 
           borderWidth: 2, 
           tension: 0.3, 
-          pointRadius: 0, 
           fill: false, 
-          order: 2
+          order: 2,
+
+          pointBackgroundColor: '#c084fc',
+          pointBorderWidth: 0,
+          animations: {
+            pointRadius: {
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 0,
+              // 👇 [수정] 무조건 15가 아니라, 1등일 때만 15!
+              to: (ctx) => isMaxPoint(ctx) 
+            },
+            pointBackgroundColor: {
+              type: 'color',
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 'rgba(192, 132, 252, 1)',
+              to: 'rgba(192, 132, 252, 0)'
+            }
+          }
       });
       
       // 2. 툴팁용 전월 데이터 (화면엔 안 보임)
@@ -647,20 +688,35 @@ function updateDashboardChart() {
           spanGaps: true
       });
   } else {
-      // 1M, 1Y: 전월/작년 비교
+// 1M, 1Y: 전월 동기
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
           type: 'line', label: '전월 동기', data: prevMonthData,
-          borderColor: '#c084fc', borderWidth: 2, tension: 0, pointRadius: 0, fill: false, spanGaps: true, 
-          hidden: currentRange === '1Y', order: 2
+          borderColor: '#c084fc', borderWidth: 2, tension: 0, fill: false, spanGaps: true, 
+          hidden: currentRange === '1Y', order: 2,
+
+          pointBackgroundColor: '#c084fc',
+          pointBorderWidth: 0,
+          animations: {
+            pointRadius: {
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 0,
+              // 👇 [수정] 여기도 함수 연결!
+              to: (ctx) => isMaxPoint(ctx)
+            },
+            pointBackgroundColor: {
+              type: 'color',
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 'rgba(192, 132, 252, 1)', 
+              to: 'rgba(192, 132, 252, 0)'
+            }
+          }
         });
       }
-      finalDatasets.push({
-        type: 'line', label: '작년 동기', data: lastYearData,
-        borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
-        hidden: false, order: 4
-      });
-  }
 
 // ------------------------------------------------
   // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
