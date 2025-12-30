@@ -1,5 +1,5 @@
 // ==========================================
-// ✨ [최종 튜닝] 마우스 오버 전용 스피드 레이더 플러그인
+// ✨ [최종 튜닝] 마우스 오버 듀얼 레이더 (파란 막대 + 보라 선)
 // ==========================================
 const rippleEffectPlugin = {
   id: 'rippleEffect',
@@ -7,7 +7,6 @@ const rippleEffectPlugin = {
     const ctx = chart.ctx;
     const now = Date.now();
     
-    // 🖱️ 마우스가 있는 곳 확인
     const activeElements = chart.getActiveElements();
     if (activeElements.length === 0) return; 
     
@@ -15,7 +14,12 @@ const rippleEffectPlugin = {
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       if (!chart.isDatasetVisible(datasetIndex) || !dataset.data) return;
-      if (dataset.label !== '지난주' && dataset.label !== '전월 동기') return;
+      
+      // 1. 대상 확인: '매출'(파란 막대), '지난주/전월'(보라 선) 모두 포함
+      const isBlueBar = (dataset.label === '매출' || dataset.label.includes('올해'));
+      const isPurpleLine = (dataset.label === '지난주' || dataset.label === '전월 동기');
+      
+      if (!isBlueBar && !isPurpleLine) return;
 
       const meta = chart.getDatasetMeta(datasetIndex);
       const element = meta.data[activeIndex]; 
@@ -24,7 +28,7 @@ const rippleEffectPlugin = {
       const value = dataset.data[activeIndex];
       if (value === null || value === undefined || value === 0) return;
 
-      // 🏆 1등 판별
+      // 🏆 1등 판별 (해당 날짜 최고점만 펄스)
       let isMax = true;
       chart.data.datasets.forEach((compDs, compIdx) => {
            if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
@@ -34,36 +38,34 @@ const rippleEffectPlugin = {
 
       if (!isMax) return; 
 
-      // 🎨 [튜닝 완료] 파장 그리기
+      // 🎨 [튜닝] 색상 결정
+      const rippleColor = isBlueBar ? 'rgba(59, 130, 246' : 'rgba(192, 132, 252';
+      const centerColor = isBlueBar ? '#3b82f6' : '#c084fc';
+
+      // 📐 좌표 계산 (막대 그래프는 y축이 꼭대기임)
       const x = element.x;
       const y = element.y;
       
-      // ⚡ 속도 조절: 2000ms -> 800ms (훨씬 빨라짐)
       const duration = 800; 
       const offset = (now % duration) / duration; 
-
-      // 📏 크기 조절: 최대 25px -> 15px (더 촘촘해짐)
       const radius = 3 + (offset * 12); 
-      
-      // 🌫️ 투명도: 더 빨리 사라지게 설정
       const opacity = 1 - offset; 
 
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.lineWidth = 1.5; // 선도 살짝 얇게
-      ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; 
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `${rippleColor}, ${opacity})`; 
       ctx.stroke();
       ctx.restore();
 
-      // 중심점 (가운데 알맹이)
+      // 중심점 알맹이
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#c084fc';
+      ctx.fillStyle = centerColor;
       ctx.fill();
     });
     
-    // 애니메이션 프레임 유지
     if (!chart._rippleAnimating) {
         chart._rippleAnimating = true;
         requestAnimationFrame(() => {
