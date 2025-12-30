@@ -1,5 +1,5 @@
 // ==========================================
-// ✨ [최종 튜닝] 마우스 오버 듀얼 레이더 (파란 막대 + 보라 선)
+// ✨ [마지막 튜닝] 마우스 오버 시 생성되는 빈 원에서 펄스 시작
 // ==========================================
 const rippleEffectPlugin = {
   id: 'rippleEffect',
@@ -7,6 +7,7 @@ const rippleEffectPlugin = {
     const ctx = chart.ctx;
     const now = Date.now();
     
+    // 1. 마우스 오버된 요소 확인
     const activeElements = chart.getActiveElements();
     if (activeElements.length === 0) return; 
     
@@ -15,11 +16,11 @@ const rippleEffectPlugin = {
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       if (!chart.isDatasetVisible(datasetIndex) || !dataset.data) return;
       
-      // 1. 대상 확인: '매출'(파란 막대), '지난주/전월'(보라 선) 모두 포함
-      const isBlueBar = (dataset.label === '매출' || dataset.label.includes('올해'));
+      const isBlueBar = (dataset.label === '매출');
+      const isBlueLine = (dataset.label.includes('올해')); // 1Y 파란 선
       const isPurpleLine = (dataset.label === '지난주' || dataset.label === '전월 동기');
       
-      if (!isBlueBar && !isPurpleLine) return;
+      if (!isBlueBar && !isBlueLine && !isPurpleLine) return;
 
       const meta = chart.getDatasetMeta(datasetIndex);
       const element = meta.data[activeIndex]; 
@@ -28,7 +29,7 @@ const rippleEffectPlugin = {
       const value = dataset.data[activeIndex];
       if (value === null || value === undefined || value === 0) return;
 
-      // 🏆 1등 판별 (해당 날짜 최고점만 펄스)
+      // 🏆 해당 지점에서 가장 높은 데이터만 펄스 효과
       let isMax = true;
       chart.data.datasets.forEach((compDs, compIdx) => {
            if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
@@ -38,34 +39,41 @@ const rippleEffectPlugin = {
 
       if (!isMax) return; 
 
-      // 🎨 [튜닝] 색상 결정
-      const rippleColor = isBlueBar ? 'rgba(59, 130, 246' : 'rgba(192, 132, 252';
-      const centerColor = isBlueBar ? '#3b82f6' : '#c084fc';
-
-      // 📐 좌표 계산 (막대 그래프는 y축이 꼭대기임)
+      // 🎨 색상 및 좌표 설정
+      const isBlue = isBlueBar || isBlueLine;
+      const rippleColor = isBlue ? 'rgba(59, 130, 246' : 'rgba(192, 132, 252';
+      
       const x = element.x;
       const y = element.y;
       
       const duration = 800; 
       const offset = (now % duration) / duration; 
-      const radius = 3 + (offset * 12); 
+
+      // 📏 파장 크기: 기본 원(약 3~4px)에서 시작해 15px까지 확장
+      const radius = 4 + (offset * 11); 
       const opacity = 1 - offset; 
 
       ctx.save();
+      
+      // --- 🌊 퍼져나가는 파장(링) 그리기 ---
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = `${rippleColor}, ${opacity})`; 
       ctx.stroke();
-      ctx.restore();
 
-      // 중심점 알맹이
+      // --- ⭕ 마우스 오버 시에만 생기는 기본 '빈 원' ---
+      // 파장이 시작되는 지점을 시각적으로 보여줌
       ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = centerColor;
-      ctx.fill();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `${rippleColor}, 0.8)`; 
+      ctx.stroke();
+
+      ctx.restore();
     });
     
+    // 애니메이션 프레임 유지
     if (!chart._rippleAnimating) {
         chart._rippleAnimating = true;
         requestAnimationFrame(() => {
