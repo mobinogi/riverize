@@ -493,7 +493,7 @@ function updateDashboardChart() {
       const key = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
       const val = getVal(d);
-      mainData.push(val);
+      mainData.push(val === 0 ? null : val);
       mainDetails.push({ s: d.s, r: d.r });
 
       const pmKey = `${pmY}-${String(pmM).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
@@ -538,7 +538,7 @@ function updateDashboardChart() {
       const key = `${ty}-${tm}-${td}`;
       const d = (userData.daily && userData.daily[key]) || { t: 0, s: 0, r: 0 };
       const val = getVal(d);
-      mainData.push(val);
+      mainData.push(val === 0 ? null : val);
       mainDetails.push({ s: d.s, r: d.r });
 
       const pwDay = new Date(prevWeekStart);
@@ -707,12 +707,19 @@ function updateDashboardChart() {
       <div style="margin-top:4px;">${summaryContent}</div>
   `;
 
-  salesChartInstance = new Chart(ctx, {
+salesChartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels: chartLabels, datasets: finalDatasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
+      
+      // 👇 여기를 수정하세요! (마그넷 효과 적용)
+      interaction: { 
+          mode: 'nearest',  // 'index' -> 'nearest'로 변경 (가까운 점에 붙음)
+          axis: 'x',        // x축 방향으로 움직일 때 자연스럽게 넘어가도록 설정
+          intersect: false  // 선 위에 정확히 안 올려도 근처에 가면 뜨게 함
+      },
+      
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false, external: externalTooltipHandler }
