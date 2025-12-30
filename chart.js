@@ -310,7 +310,8 @@ const externalTooltipHandler = (context) => {
         prevLabelName = '전월';
     }
 
-    const currVal = currentSet ? currentSet.data[idx] : 0;
+    let currVal = currentSet ? currentSet.data[idx] : 0;
+    if (currVal === null) currVal = 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
     const prevVal = prevSet ? prevSet.data[idx] : 0;
 
