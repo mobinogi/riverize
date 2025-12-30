@@ -620,8 +620,6 @@ function updateDashboardChart() {
           hidden: false,          // 이제 보입니다!
           order: 4
       });
-  }
-}
   } else {
       // 1M, 1Y: 전월/작년 비교
       if (currentRange === '1M' || currentRange === '1Y') {
