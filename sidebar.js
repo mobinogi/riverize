@@ -11,12 +11,12 @@ let allConsolidatedFiles = [];
 /**
  * 메인 뷰(화면)을 전환하는 함수 (최종_진짜완성: ID매핑 + 스켈레톤 + 데이터로딩)
  */
-function changeView(viewName) {
+async function changeView(viewName) {
   // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
 
-  // 2. 선택한 뷰 보이기 (ID 확인: dashboard-view)
+  // 2. 선택한 뷰 보이기 (ID 매핑: dashboard -> dashboard-view)
   let targetId = 'view-' + viewName;
   if (viewName === 'dashboard') {
       targetId = 'dashboard-view';
@@ -31,51 +31,52 @@ function changeView(viewName) {
     if(fallback) fallback.classList.remove('hidden');
   }
 
-  // 3. 사이드바 메뉴 스타일 (밑줄 고정)
+  // 3. 사이드바 메뉴 스타일 (밑줄 고정 & 잔상 제거)
   const navLinks = document.querySelectorAll('#sidebar nav a');
   navLinks.forEach(el => {
       el.classList.remove('view-active', 'active-tab', 'text-white', 'font-bold'); 
       el.classList.add('text-gray-400');
-      el.blur(); 
+      el.blur(); // 포커스 해제
   });
 
+  // 선택된 메뉴만 불 켜기
   const targetMenu = document.getElementById('menu-' + viewName);
   if (targetMenu) {
       targetMenu.classList.add('view-active', 'active-tab', 'text-white', 'font-bold');
       targetMenu.classList.remove('text-gray-400');
   }
 
-  // 4. 페이지별 기능 실행
+  // 4. 모바일: 메뉴 누르면 사이드바 닫기 (자동 닫힘)
+  if (window.innerWidth < 768) {
+      const sidebar = document.getElementById('sidebar');
+      const body = document.body;
+      if (sidebar) {
+          sidebar.classList.add('closed');
+          sidebar.classList.remove('open');
+          if(body) body.classList.add('sidebar-collapsed');
+      }
+  }
+
+  // 5. 페이지별 기능 실행
   if (viewName === 'consolidated') {
-    fetchConsolidatedList();
+    if (typeof fetchConsolidatedList === 'function') fetchConsolidatedList();
   } else if (viewName === 'write') {
     if (typeof toggleSubTab === 'function') toggleSubTab('write'); 
   } else if (viewName === 'dashboard') {
     
-    // 📊 [여기가 핵심!] 스켈레톤(로딩바)을 여기서 먼저 강제로 켭니다!
+    // 📊 [핵심] 스켈레톤(로딩바) 즉시 켜기
     const skeleton = document.getElementById('chartSkeleton');
     const chartBox = document.getElementById('chartContainer');
     
-    // "차트 박스는 숨기고, 로딩바는 보여라!"
-    if (chartBox) chartBox.classList.add('hidden');
     if (skeleton) skeleton.classList.remove('hidden');
+    if (chartBox) chartBox.classList.add('hidden');
 
-    // 그 다음 데이터를 가져오라고 시킵니다. (데이터 오면 chart.js가 알아서 바꿔줌)
+    // 📊 데이터 로딩 시작 (chart.js 함수 호출)
     if (typeof showSalesDashboard === 'function') {
         showSalesDashboard();
-    // 👇 [여기 추가] 모바일(화면 폭 768px 미만)이면 사이드바 강제 닫기
-    if (window.innerWidth < 768) {
-        const sidebar = document.getElementById('sidebar');
-        const body = document.body;
-      
-    if (sidebar) {
-        sidebar.classList.add('closed');   // 닫힘 클래스 추가
-        sidebar.classList.remove('open');  // 열림 클래스 제거
-    if(body) body.classList.add('sidebar-collapsed'); // 바디 스타일 조정
     }
   }
 }
-  }
 /**
  * 일보 작성 뷰 내의 서브 탭 전환
  */
