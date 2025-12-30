@@ -392,14 +392,25 @@ const externalTooltipHandler = (context) => {
   }
 
 // ===================================================================
-  // [수정] 좌표 강제 고정 로직
+  // [최종 수정] 서열 정리 로직: 파란 막대(대장) 있으면 걔한테 붙어라!
   // ===================================================================
   
-  // 1. 현재 툴팁이 물고 있는 데이터 포인트(점)의 실제 화면 좌표를 가져옵니다.
-  const activePoint = tooltip.dataPoints[0];
-  const targetY = activePoint.element.y; // 점의 정확한 높이값(pixel)
+  // 1. 현재 툴팁에 들어온 데이터들 중 '매출(파란 막대)'이 있는지 찾습니다.
+  const points = tooltip.dataPoints;
+  const mainPoint = points.find(p => p.dataset.label === '매출' || p.dataset.label.includes('올해'));
 
-  // 2. caretY(계산값) 대신 targetY(실제 점 위치)를 사용합니다.
+  let targetY = 0;
+
+  // 2. 파란 막대가 있고, 데이터가 0(null)이 아니면 -> 파란 막대 머리 위에 붙음
+  if (mainPoint && mainPoint.raw !== null && mainPoint.raw !== 0) {
+      targetY = mainPoint.element.y;
+  } 
+  // 3. 파란 막대가 없으면 -> 그냥 첫 번째 잡히는 놈(보라색/회색 점)에 붙음
+  else {
+      targetY = points[0].element.y;
+  }
+
+  // 4. 결정된 위치로 이동!
   tooltipEl.style.top = (rootTop + targetY - 20) + 'px';
   tooltipEl.style.opacity = 1;
 };
@@ -730,7 +741,7 @@ salesChartInstance = new Chart(ctx, {
       
       // 👇 여기를 수정하세요! (마그넷 효과 적용)
       interaction: { 
-          mode: 'nearest',  // 'index' -> 'nearest'로 변경 (가까운 점에 붙음)
+          mode: 'index',  // 'index' -> 'nearest'로 변경 (가까운 점에 붙음)
           axis: 'x',        // x축 방향으로 움직일 때 자연스럽게 넘어가도록 설정
           intersect: false  // 선 위에 정확히 안 올려도 근처에 가면 뜨게 함
       },
