@@ -698,58 +698,43 @@ function updateDashboardChart() {
     });
   }
 
-// 1D: 지난주 (회색 점선)
+// 1D: 지난주
   if (currentRange === '1D') {
       
-// 1. 지난주: 펄스 애니메이션 (속이 빈 링 효과)
-finalDatasets.push({
-          type: 'line', 
-          label: '지난주', 
-          data: prevWeekData, 
-          borderColor: '#c084fc', 
-          borderWidth: 2, 
-          tension: 0.3, 
-          fill: false, 
-          pointRadius: 0, // 기본 점은 숨김 (플러그인이 그릴 거니까)
-          order: 2
+      // 1. 지난주: 플러그인용 설정 (애니메이션 코드 삭제!)
+      finalDatasets.push({
+          type: 'line', label: '지난주', data: prevWeekData, 
+          borderColor: '#c084fc', borderWidth: 2, tension: 0.3, fill: false, order: 2,
+          pointRadius: 0 // ✅ 점은 숨김 (이제 플러그인이 알아서 그려줌)
       });
       
-      // 2. 툴팁용 전월 데이터 (화면엔 안 보임)
+      // 2. 툴팁용 전월 데이터
       finalDatasets.push({ type: 'line', label: '전월 동기', data: prevMonthData, hidden: true });
 
-      // 3. 작년 동기: 회색(#9ca3af), 점선
+      // 3. 작년 동기
       finalDatasets.push({
           type: 'line', label: '작년 동기', data: lastYearData,
-          borderColor: '#9ca3af', 
-          borderWidth: 2, 
-          borderDash: [5, 5],     
-          tension: 0.3, 
-          pointRadius: 0, 
-          fill: false,
-          hidden: false,          
-          order: 4,
-          spanGaps: true
+          borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, hidden: false, order: 4, spanGaps: true
       });
-     }
-  } else { 
-      // 👆 [수정 1] 괄호는 하나만! (} else {)
+
+  } else { // 1M, 1Y
       
-// 1M, 1Y: 전월/작년 비교
+      // 1M, 1Y: 전월 동기
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
-          type: 'line', 
-          label: '전월 동기', 
-          data: prevMonthData,
-          borderColor: '#c084fc', 
-          borderWidth: 2, 
-          tension: 0, 
-          fill: false, 
-          spanGaps: true, 
-          hidden: currentRange === '1Y', 
-          order: 2,
-          pointRadius: 0 // ✅ 점은 일단 숨김 (플러그인이 그릴 거니까)
+          type: 'line', label: '전월 동기', data: prevMonthData,
+          borderColor: '#c084fc', borderWidth: 2, tension: 0, fill: false, spanGaps: true, 
+          hidden: currentRange === '1Y', order: 2,
+          pointRadius: 0 // ✅ 여기도 점 숨김
         });
       }
+      
+      // 2. 작년 동기
+      finalDatasets.push({
+        type: 'line', label: '작년 동기', data: lastYearData,
+        borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, hidden: false, order: 4, spanGaps: true
+      });
+  }
 // ------------------------------------------------
   // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
   // ------------------------------------------------
