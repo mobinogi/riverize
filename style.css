@@ -854,10 +854,4 @@ body.sidebar-collapsed #main-content-wrapper {
     }
 }
 
-/* =========================================
-   🚨 [필수] 닫힌 팝업 클릭 무시 (버튼 먹통 방지)
-   ========================================= */
-#nav-confirm-modal.translate-y-full,
-#delete-confirm-modal.translate-y-full {
-    pointer-events: none !important;
-}
+
