@@ -65,6 +65,7 @@ function changeView(viewName) {
         showSalesDashboard();
     }
   }
+}
 /**
  * 일보 작성 뷰 내의 서브 탭 전환
  */
