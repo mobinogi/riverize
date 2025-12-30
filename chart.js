@@ -504,7 +504,11 @@ function updateDashboardChart() {
 
       const lyKey = `${y-1}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       const lyData = (userData.daily && userData.daily[lyKey]) || { t: 0 };
-      lastYearData.push(lyVal);
+      // ✅ 1. 값을 먼저 가져옵니다 (변수 선언)
+      const lyVal = getVal(lyData); 
+      
+      // ✅ 2. 0이면 null로 바꿔서 넣습니다 (마그넷 효과 적용)
+      lastYearData.push(lyVal === 0 ? null : lyVal);
     }
 
   } else if (currentRange === '1D') {
@@ -620,6 +624,7 @@ function updateDashboardChart() {
           fill: false,
           hidden: false,          // 이제 보입니다!
           order: 4
+          spanGaps: true
       });
   } else {
       // 1M, 1Y: 전월/작년 비교
