@@ -638,7 +638,7 @@ function updateDashboardChart() {
 // 1D: 지난주 (회색 점선)
   if (currentRange === '1D') {
       
-      // 1. 지난주: 펄스 애니메이션 적용
+// 1. 지난주: 펄스 애니메이션 (속이 빈 링 효과)
       finalDatasets.push({
           type: 'line', 
           label: '지난주', 
@@ -649,24 +649,36 @@ function updateDashboardChart() {
           fill: false, 
           order: 2,
 
-          pointBackgroundColor: '#c084fc',
-          pointBorderWidth: 0,
+          // 👇 [핵심 수정] 속이 빈 원을 만드는 설정
+          pointBackgroundColor: 'transparent', // 배경은 투명하게!
+          pointBorderColor: '#c084fc',         // 테두리는 보라색
+          pointBorderWidth: 3,                 // 테두리 두께
+
           animations: {
+            // 1. 크기가 커짐 (0 -> 25)
             pointRadius: {
               duration: 2000,
               easing: 'easeOutQuad',
               loop: true,
               from: 0,
-              // 👇 1등일 때만 펄스 효과!
-              to: (ctx) => isMaxPoint(ctx) 
+              to: (ctx) => isMaxPoint(ctx) ? 25 : 0 // 1등이면 25까지 커짐
             },
-            pointBackgroundColor: {
+            // 2. 테두리 색이 점점 사라짐 (보라 -> 투명)
+            pointBorderColor: {
               type: 'color',
               duration: 2000,
               easing: 'easeOutQuad',
               loop: true,
-              from: 'rgba(192, 132, 252, 1)',
-              to: 'rgba(192, 132, 252, 0)'
+              from: 'rgba(192, 132, 252, 1)', // 진한 보라
+              to: 'rgba(192, 132, 252, 0)'    // 투명 (사라짐)
+            },
+            // 3. 커지면서 테두리가 얇아짐 (더 자연스러운 물결 효과)
+            pointBorderWidth: {
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 4, // 굵게 시작해서
+              to: 0    // 얇게 사라짐
             }
           }
       });
@@ -691,31 +703,40 @@ function updateDashboardChart() {
   } else { 
       // 👆 [수정 1] 괄호는 하나만! (} else {)
       
-      // 1M, 1Y: 전월 동기 (펄스 효과)
+// 1M, 1Y: 전월 동기 (속이 빈 링 효과)
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
           type: 'line', label: '전월 동기', data: prevMonthData,
           borderColor: '#c084fc', borderWidth: 2, tension: 0, fill: false, spanGaps: true, 
           hidden: currentRange === '1Y', order: 2,
 
-          pointBackgroundColor: '#c084fc',
-          pointBorderWidth: 0,
+          // 👇 [핵심 수정] 여기도 똑같이 적용!
+          pointBackgroundColor: 'transparent', 
+          pointBorderColor: '#c084fc',         
+          pointBorderWidth: 3,                 
+
           animations: {
             pointRadius: {
               duration: 2000,
               easing: 'easeOutQuad',
               loop: true,
               from: 0,
-              // 👇 여기도 함수 연결!
-              to: (ctx) => isMaxPoint(ctx)
+              to: (ctx) => isMaxPoint(ctx) ? 25 : 0
             },
-            pointBackgroundColor: {
+            pointBorderColor: {
               type: 'color',
               duration: 2000,
               easing: 'easeOutQuad',
               loop: true,
               from: 'rgba(192, 132, 252, 1)', 
-              to: 'rgba(192, 132, 252, 0)'
+              to: 'rgba(192, 132, 252, 0)'    
+            },
+            pointBorderWidth: {
+              duration: 2000,
+              easing: 'easeOutQuad',
+              loop: true,
+              from: 4,
+              to: 0
             }
           }
         });
