@@ -1,61 +1,69 @@
 // ==========================================
-// ✨ [신규] 레이더 펄스 효과 플러그인 (수정버전)
+// ✨ [최종 튜닝] 마우스 오버 전용 스피드 레이더 플러그인
 // ==========================================
 const rippleEffectPlugin = {
   id: 'rippleEffect',
   afterDraw: (chart) => {
     const ctx = chart.ctx;
     const now = Date.now();
+    
+    // 🖱️ 마우스가 있는 곳 확인
+    const activeElements = chart.getActiveElements();
+    if (activeElements.length === 0) return; 
+    
+    const activeIndex = activeElements[0].index;
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
-      // 1. 숨겨진 그래프나, 데이터가 없으면 패스
       if (!chart.isDatasetVisible(datasetIndex) || !dataset.data) return;
-      
-      // 2. '지난주'나 '전월 동기' 라인만 효과 적용
       if (dataset.label !== '지난주' && dataset.label !== '전월 동기') return;
 
       const meta = chart.getDatasetMeta(datasetIndex);
-      
-      meta.data.forEach((element, index) => {
-        const value = dataset.data[index];
-        if (value === null || value === undefined || value === 0) return;
+      const element = meta.data[activeIndex]; 
+      if (!element) return;
 
-        // 3. 1등인지 판별
-        let isMax = true;
-        chart.data.datasets.forEach((compDs, compIdx) => {
-             if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
-             const compVal = compDs.data[index];
-             if (compVal && compVal > value) isMax = false; 
-        });
+      const value = dataset.data[activeIndex];
+      if (value === null || value === undefined || value === 0) return;
 
-        if (!isMax) return; 
-
-        // 4. 레이더 파장 그리기
-        const x = element.x;
-        const y = element.y;
-        
-        const duration = 2000;
-        const offset = (now % duration) / duration; 
-        const radius = 5 + (offset * 20); 
-        const opacity = 1 - offset; 
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.lineWidth = 2; 
-        ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; 
-        ctx.stroke();
-        ctx.restore();
-
-        // 5. 중심점 다시 찍기
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#c084fc';
-        ctx.fill();
+      // 🏆 1등 판별
+      let isMax = true;
+      chart.data.datasets.forEach((compDs, compIdx) => {
+           if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
+           const compVal = compDs.data[activeIndex];
+           if (compVal && compVal > value) isMax = false; 
       });
+
+      if (!isMax) return; 
+
+      // 🎨 [튜닝 완료] 파장 그리기
+      const x = element.x;
+      const y = element.y;
+      
+      // ⚡ 속도 조절: 2000ms -> 800ms (훨씬 빨라짐)
+      const duration = 800; 
+      const offset = (now % duration) / duration; 
+
+      // 📏 크기 조절: 최대 25px -> 15px (더 촘촘해짐)
+      const radius = 3 + (offset * 12); 
+      
+      // 🌫️ 투명도: 더 빨리 사라지게 설정
+      const opacity = 1 - offset; 
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.lineWidth = 1.5; // 선도 살짝 얇게
+      ctx.strokeStyle = `rgba(192, 132, 252, ${opacity})`; 
+      ctx.stroke();
+      ctx.restore();
+
+      // 중심점 (가운데 알맹이)
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#c084fc';
+      ctx.fill();
     });
     
-    // 👇 [핵심 수정] 무한루프 방지 안전장치 추가!
+    // 애니메이션 프레임 유지
     if (!chart._rippleAnimating) {
         chart._rippleAnimating = true;
         requestAnimationFrame(() => {
