@@ -688,8 +688,8 @@ function updateDashboardChart() {
           spanGaps: true
       });
    }
-  } else {
-// 1M, 1Y: 전월 동기
+} else {
+      // 1M, 1Y: 전월 동기 (펄스 효과)
       if (currentRange === '1M' || currentRange === '1Y') {
         finalDatasets.push({
           type: 'line', label: '전월 동기', data: prevMonthData,
@@ -704,7 +704,6 @@ function updateDashboardChart() {
               easing: 'easeOutQuad',
               loop: true,
               from: 0,
-              // 👇 [수정] 여기도 함수 연결!
               to: (ctx) => isMaxPoint(ctx)
             },
             pointBackgroundColor: {
@@ -718,6 +717,15 @@ function updateDashboardChart() {
           }
         });
       }
+      
+      // ✨ [복구] 작년 동기 데이터 (이게 지워져서 1M, 1Y에서 작년 그래프가 안 나왔습니다)
+      finalDatasets.push({
+        type: 'line', label: '작년 동기', data: lastYearData,
+        borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false,
+        hidden: false, order: 4
+      });
+
+  }
 
 // ------------------------------------------------
   // ✨ [요약 알림판] (오리지널 디자인 복구: 반투명 스타일)
