@@ -623,7 +623,7 @@ function updateDashboardChart() {
           pointRadius: 0, 
           fill: false,
           hidden: false,          // 이제 보입니다!
-          order: 4
+          order: 4,
           spanGaps: true
       });
   } else {
