@@ -391,7 +391,16 @@ const externalTooltipHandler = (context) => {
       arrowEl.style.borderRightColor = bgColor; arrowEl.style.borderLeftColor = 'transparent';
   }
 
-  tooltipEl.style.top = (rootTop + tooltip.caretY - 20) + 'px';
+// ===================================================================
+  // [수정] 좌표 강제 고정 로직
+  // ===================================================================
+  
+  // 1. 현재 툴팁이 물고 있는 데이터 포인트(점)의 실제 화면 좌표를 가져옵니다.
+  const activePoint = tooltip.dataPoints[0];
+  const targetY = activePoint.element.y; // 점의 정확한 높이값(pixel)
+
+  // 2. caretY(계산값) 대신 targetY(실제 점 위치)를 사용합니다.
+  tooltipEl.style.top = (rootTop + targetY - 20) + 'px';
   tooltipEl.style.opacity = 1;
 };
 
