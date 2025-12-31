@@ -536,8 +536,10 @@ function updateDashboardChart() {
   // ------------------------------------------------
   // 데이터 가공 로직
   // ------------------------------------------------
+// ------------------------------------------------
+  // [수정] 1Y 연간 데이터 처리 (+ AI 예측 로직 포함)
+  // ------------------------------------------------
   if (currentRange === '1Y') {
-    // [1Y] 연간
     const y = baseDate.getFullYear();
     if (dateDisplay) dateDisplay.textContent = `${y}년`;
     chartLabels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
@@ -550,6 +552,7 @@ function updateDashboardChart() {
     const thisYear = new Date().getFullYear();
     let targetDetails = [], targetTotal = [], lastDetails = [], lastTotal = [];
 
+    // 데이터 가져오기
     if (y === thisYear) {
       targetDetails = userData.thisYearDetails || []; targetTotal = userData.thisYear;
       lastDetails = userData.lastYearDetails || []; lastTotal = userData.lastYear;
@@ -561,12 +564,53 @@ function updateDashboardChart() {
     mainDetails = targetDetails; 
     lastYearData = processYearData(lastDetails, lastTotal);
     
-    // 1Y 전월 (툴팁용)
+    // 툴팁용 전월 데이터
     prevMonthData = [];
     for (let i = 0; i < 12; i++) {
         if (i === 0) prevMonthData.push(lastYearData[11] || 0); 
         else prevMonthData.push(mainData[i - 1] || 0);
     }
+
+    // ===============================================
+    // 🤖 [AI 예측] 통계적 예측 로직 (이걸 꼭 넣으셔야 합니다!)
+    // ===============================================
+    let predictedData = new Array(12).fill(null); 
+    
+    // 1. 현재까지 데이터가 어디까지 찼는지 확인
+    let lastDataIdx = -1;
+    for (let i = 0; i < 12; i++) {
+        if (mainData[i] !== null && mainData[i] !== 0) {
+            lastDataIdx = i;
+        }
+    }
+
+    // 2. 데이터가 조금이라도 있다면 예측 시작!
+    if (lastDataIdx >= 0 && lastDataIdx < 11) {
+        // 성장률 계산
+        let currentSum = 0;
+        let lastSum = 0;
+        for(let i=0; i<=lastDataIdx; i++) {
+            currentSum += (mainData[i] || 0);
+            lastSum += (lastYearData[i] || 0);
+        }
+
+        let growthRate = 1; 
+        if (lastSum > 0) {
+            growthRate = currentSum / lastSum;
+        }
+
+        // 미래 데이터 생성
+        predictedData[lastDataIdx] = mainData[lastDataIdx]; // 이어지게
+
+        for (let i = lastDataIdx + 1; i < 12; i++) {
+            let lastVal = lastYearData[i] || 0;
+            // 작년 추세에 성장률 반영
+            predictedData[i] = Math.floor(lastVal * growthRate);
+        }
+    }
+    
+    trendData = predictedData; // 전역 변수에 저장
+    // ===============================================
 
   } else if (currentRange === '1M') {
     // [1M] 월간
