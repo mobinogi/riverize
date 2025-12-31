@@ -874,7 +874,8 @@ salesChartInstance = new Chart(ctx, {
         y: { grid: { display: true, color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
       }
     }
-
+});
+}
 // ✨ 제미나이 버튼 클릭 시 실행될 함수
 function toggleAIPrediction() {
     isAiMode = !isAiMode; // 켜기/끄기 토글
@@ -890,5 +891,4 @@ function toggleAIPrediction() {
     }
     updateDashboardChart(); // 차트 다시 그리기 (애니메이션 발동!)
 }
-  });
-}
+  
