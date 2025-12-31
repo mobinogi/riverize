@@ -537,7 +537,7 @@ function updateDashboardChart() {
   // 데이터 가공 로직
   // ------------------------------------------------
 // ------------------------------------------------
-  // [수정] 1Y 연간 데이터 처리 (+ AI 예측 로직 포함)
+  // [수정] 1Y 연간 데이터 처리 (+ 2026년 맞춤형 AI 예측)
   // ------------------------------------------------
   if (currentRange === '1Y') {
     const y = baseDate.getFullYear();
@@ -571,20 +571,19 @@ function updateDashboardChart() {
         else prevMonthData.push(mainData[i - 1] || 0);
     }
 
-// ===============================================
-    // 🤖 [AI 예측] 스마트 예측 로직 (수정판)
+    // ===============================================
+    // 🤖 [AI 예측] 2026년 신년 맞춤형 로직 (강제 실행)
     // ===============================================
     let predictedData = new Array(12).fill(null); 
     
-    // 1. 성장률 계산 (올해와 작년 데이터가 겹치는 구간만 비교)
-    // 데이터가 아예 없으면 성장률 1(작년과 동일)로 가정
+    // 1. 성장률 계산 (데이터가 없으면 작년과 동일하게 1배로 설정)
     let growthRate = 1; 
     let currentSum = 0;
     let lastSum = 0;
     let matchCount = 0;
 
     for (let i = 0; i < 12; i++) {
-        // 둘 다 데이터가 있는 달만 합산해서 비교
+        // 올해와 작년 둘 다 데이터가 있는 구간만 비교 (지금은 2026년 데이터가 없으니 스킵됨)
         if ((mainData[i] !== null && mainData[i] !== 0) && 
             (lastYearData[i] !== null && lastYearData[i] !== 0)) {
             currentSum += mainData[i];
@@ -593,39 +592,29 @@ function updateDashboardChart() {
         }
     }
 
-    // 겹치는 구간이 있어서 비교 가능하면 성장률 반영
+    // 비교할 데이터가 있으면 성장률 반영, 없으면 그냥 1배(작년 그대로)
     if (matchCount > 0 && lastSum > 0) {
         growthRate = currentSum / lastSum;
     }
 
-    // 2. 어디까지 실제 데이터가 있는지 확인 (선 연결용)
-    let lastRealIdx = -1;
-    for(let i=0; i<12; i++) {
-        if (mainData[i] !== null && mainData[i] !== 0) lastRealIdx = i;
-    }
-
-    // 3. 예측 데이터 채우기
+    // 2. [핵심] 조건문 없이 무조건 예측 데이터 채우기!
     for (let i = 0; i < 12; i++) {
-        // A. 실제 데이터가 있는 구간:
+        // 올해 데이터가 이미 있으면 그걸 쓰고 (실선)
         if (mainData[i] !== null && mainData[i] !== 0) {
-            // 자연스러운 연결을 위해 '마지막 실제 데이터' 점은 예측선에도 찍어줌
-            if (i === lastRealIdx) {
-                predictedData[i] = mainData[i];
-            }
+             // (예측선 끊김 방지용)
         } 
-        // B. 실제 데이터가 없는 구간 (미래 or 빈칸):
+        // 올해 데이터가 없으면(미래) -> 작년 데이터(족보)를 보고 무조건 예측 (점선)
         else {
-            // ✨ [핵심] 작년 데이터(족보)가 있다면 -> 무조건 예측!
             if (lastYearData[i] !== null && lastYearData[i] !== 0) {
+                // 작년 값 * 성장률(또는 1)
                 predictedData[i] = Math.floor(lastYearData[i] * growthRate);
             }
-            // 작년 데이터도 없으면(1~9월) -> 그냥 둠 (null)
         }
     }
     
-    trendData = predictedData; 
+    trendData = predictedData; // 차트 변수에 저장
     // ===============================================
-
+  
   } else if (currentRange === '1M') {
     // [1M] 월간
     const y = baseDate.getFullYear();
