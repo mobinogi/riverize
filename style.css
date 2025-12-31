@@ -967,9 +967,13 @@ body.sidebar-collapsed #main-content-wrapper {
   -webkit-tap-highlight-color: transparent; 
 }
 
-/* 🚨 [삭제함] .gemini-magic-btn::before 
-   (이 녀석이 회색 별을 하나 더 만들고 있어서 쌍별이 떴던 겁니다. 삭제!) 
-*/
+/* 포커스 잡혀도 아무런 표시 안 나게 */
+.gemini-magic-btn:focus,
+.gemini-magic-btn:focus-visible {
+  outline: none !important;
+}
+
+/* 🚨 [삭제됨] .gemini-magic-btn::before 가짜 별 코드는 이제 없습니다! */
 
 /* 1. 변신하는 그라데이션 배경 (평소엔 숨어있음) */
 .gemini-morpher {
@@ -993,25 +997,21 @@ body.sidebar-collapsed #main-content-wrapper {
   top: -150%; left: -150%;
 }
 
-/* 3. 아이콘 영역 (진짜 별) */
+/* 3. 아이콘 영역 (진짜 별 - 중앙 고정) */
 .gemini-content {
-  position: absolute; /* 절대 위치로 중앙 고정 */
+  position: absolute; 
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; /* 아이콘이 클릭 방해 안 하게 */
+  pointer-events: none; /* 클릭 방해 금지 */
 }
 
-/* ✨ [수정] 아이콘(SVG) 스타일 정의 */
+/* ✨ [아이콘 스타일] 평소엔 회색 */
 .gemini-content svg {
   width: 24px;
   height: 24px;
-  
-  /* 1) 평소엔 짙은 회색 (#5f6368) */
-  fill: #5f6368; 
-  
-  /* 2) 색깔과 회전이 아주 부드럽게 (0.7초) */
+  fill: #5f6368; /* 기본 회색 */
   transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1021,7 +1021,7 @@ body.sidebar-collapsed #main-content-wrapper {
 
 /* 1) 배경: 튀어나와서 춤추기 */
 .gemini-magic-btn:hover .gemini-morpher {
-  scale: 1; /* 띠요옹~ 등장 */
+  scale: 1; /* 등장! */
   animation: shapeshift 3s ease-in-out infinite forwards; 
 }
 
@@ -1030,9 +1030,55 @@ body.sidebar-collapsed #main-content-wrapper {
   animation: gradientMove 2s ease-in-out infinite alternate;
 }
 
-/* 3) ✨ [핵심] 별 아이콘: 회색 -> 흰색 + 한 바퀴 회전 */
+/* 3) ✨ 아이콘: 회색 -> 흰색 + 한 바퀴 회전 */
 .gemini-magic-btn:hover .gemini-content svg {
   fill: white;               /* 하얗게! */
   transform: rotate(360deg); /* 시계방향 한 바퀴 */
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* 살짝 그림자 */
+}
+
+/* 키프레임 애니메이션 */
+@keyframes shapeshift {
+  0% { clip-path: var(--circle); rotate: 0turn; }
+  25% { clip-path: var(--flower); }
+  50% { clip-path: var(--cylinder); }
+  75% { clip-path: var(--hexagon); }
+  100% { clip-path: var(--circle); rotate: 1turn; }
+}
+
+@keyframes gradientMove {
+  0% { translate: 0 0; }
+  100% { translate: -25% -25%; }
+}
+
+/* ✨ 제미나이 스타일 커스텀 툴팁 */
+.gemini-tooltip {
+    position: absolute;
+    top: 115%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    
+    background-color: rgba(31, 41, 55, 0.95);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔥 마우스 오버 시 툴팁 등장 */
+.gemini-magic-btn:hover .gemini-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    transition-delay: 0.1s;
 }
