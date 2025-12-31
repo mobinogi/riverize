@@ -854,4 +854,84 @@ body.sidebar-collapsed #main-content-wrapper {
     }
 }
 
+/* ✨ 제미나이 쉐이프 시프팅 (Clip-path Morphing) */
+@keyframes shapeshift {
+  /* 1단계: 제미나이 4각 별 모양 */
+  0% { 
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+  /* 2단계: 둥그스름한 8각형 (원형에 가까움) */
+  50% { 
+    clip-path: polygon(50% 0%, 85% 15%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0% 50%, 15% 15%, 50% 0%, 50% 0%); 
+    /* 점 개수를 맞춰야 부드럽게 변해서 좌표를 일부러 겹쳤습니다 */
+  }
+  /* 3단계: 다시 별 모양 */
+  100% { 
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+}
+
+@keyframes spin-gradient {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.gemini-magic-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  
+  /* 배경 없이 투명하게 */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.gemini-magic-btn:hover {
+  transform: scale(1.1); /* 마우스 올리면 커짐 */
+}
+
+/* 🌈 무지개 배경 (모양이 변하는 본체) */
+.gemini-magic-btn::before {
+  content: "";
+  position: absolute;
+  inset: -4px; /* 테두리 두께 */
+  background: conic-gradient(
+    from 0deg, 
+    #4facfe, #a18cd1, #fbc2eb, #a18cd1, #4facfe
+  );
+  
+  /* ✨ 핵심: 모양 변신 + 회전 애니메이션 */
+  animation: 
+    shapeshift 4s ease-in-out infinite,
+    spin-gradient 3s linear infinite;
+}
+
+/* ⚪ 버튼 내부 (흰색 알맹이) */
+.gemini-content {
+  position: absolute;
+  inset: 3px; /* 테두리 두께만큼 안쪽으로 */
+  background: white; 
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 내부도 똑같이 모양이 변해야 자연스러운 테두리가 됨 */
+  animation: shapeshift 4s ease-in-out infinite;
+}
+
+/* 다크모드 대응 */
+.dark .gemini-content {
+  background-color: #1f2937;
+}
+
 
