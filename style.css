@@ -1001,7 +1001,7 @@ body.sidebar-collapsed #main-content-wrapper {
   scale: 1; /* 띠요옹~ 하고 등장 */
   
   /* ✨ 변신 속도 업그레이드 (5s -> 2.5s) */
-  animation: shapeshift 2.5s ease-in-out infinite forwards; 
+  animation: shapeshift 3s ease-in-out infinite forwards; 
 }
 
 .gemini-magic-btn:hover .gemini-morpher::after {
@@ -1020,4 +1020,46 @@ body.sidebar-collapsed #main-content-wrapper {
 @keyframes gradientMove {
   0% { translate: 0 0; }
   100% { translate: -25% -25%; } /* 움직임 범위 조정 */
+}
+
+/* 2. 아이콘 영역 (gemini-content) */
+.gemini-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ✨ [수정] 아이콘(SVG) 스타일 정의 */
+.gemini-content svg {
+  width: 24px;
+  height: 24px;
+  
+  /* 1) 평소엔 짙은 회색 (#5f6368: 구글 기본 회색) */
+  fill: #5f6368; 
+  
+  /* 2) 부드러운 움직임 (0.7초 동안 스르륵~) */
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 🔥 [핵심] 마우스 오버 시 효과! */
+
+/* 1) 배경: 튀어나와서 춤추기 (기존 동일) */
+.gemini-magic-btn:hover .gemini-morpher {
+  scale: 1;
+  opacity: 1;
+  animation: shapeshift 2.5s ease-in-out infinite forwards;
+}
+
+/* 2) 배경 색상: 살살 움직이기 (기존 동일) */
+.gemini-magic-btn:hover .gemini-morpher::after {
+  animation: gradientMove 2s ease-in-out infinite alternate;
+}
+
+/* 3) ✨ [NEW] 아이콘: 시계방향 한 바퀴 + 하얗게 변신 */
+.gemini-magic-btn:hover .gemini-content svg {
+  fill: white;              /* 하얗게! */
+  transform: rotate(360deg); /* 한 바퀴 휙! */
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* 살짝 그림자 */
 }
