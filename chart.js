@@ -95,6 +95,7 @@ let dashboardData = {};
 let currentRange = '1Y'; 
 let currentProduct = 'all'; // 'all', 'st', 'rice'
 let baseDate = new Date(); 
+let isAiMode = false; // ✨ AI 모드 스위치
 
 // ==========================================
 // ✨ [UI] 커스텀 드롭다운 로직
@@ -691,17 +692,53 @@ function updateDashboardChart() {
   };
 
   // 메인 데이터
+// 메인 데이터 (차트 그리기)
   if (isYearly) {
+    // 1. 실제 데이터 (파란 실선) - 기존 코드 유지
     finalDatasets.push({
       type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
       borderColor: '#3b82f6', backgroundColor: lineGradient, borderWidth: 3, tension: 0.4, fill: true,
-      pointRadius: 4, pointBackgroundColor: 'white', pointBorderColor: '#3b82f6'
+      pointRadius: 4, pointBackgroundColor: 'white', pointBorderColor: '#3b82f6',
+      order: 1
     });
-  } else {
-    finalDatasets.push({
-      type: 'bar', label: '매출', data: mainData, customDetails: mainDetails,
-      backgroundColor: barGradient, borderRadius: 6, barPercentage: 0.5, maxBarThickness: 35, order: 3
-    });
+
+    // 🤖 [AI 예측] 점선 그래프 (버튼 눌렀을 때만 등장!)
+    if (isAiMode) { 
+        finalDatasets.push({
+            type: 'line', 
+            label: 'AI 예측', 
+            data: trendData,        // 아까 계산한 예측 데이터
+            borderColor: '#8b5cf6', // ✨ 제미나이 보라색
+            borderWidth: 2, 
+            borderDash: [5, 5],     // 점선
+            tension: 0.4,           
+            pointRadius: 0,         
+            fill: false,
+            order: 2,
+            spanGaps: true,
+            
+            // 👇 [핵심] 플러그인 없이 구현하는 '스르륵~' 애니메이션
+            animations: {
+                x: {
+                    type: 'number',
+                    easing: 'linear',
+                    duration: 2000, 
+                    from: NaN, // 데이터가 없는 상태에서 시작
+                    delay(ctx) {
+                        if (ctx.type !== 'data' || ctx.xStarted) return 0;
+                        ctx.xStarted = true;
+                        return ctx.index * 100; // 점 하나당 0.1초씩 딜레이 (좌->우로 그려짐)
+                    }
+                },
+                y: {
+                    type: 'number',
+                    easing: 'easeOutQuart',
+                    duration: 2000,
+                    from: (ctx) => ctx.chart.scales.y.getPixelForValue(0) // 바닥에서 솟아오르는 느낌
+                }
+            }
+        });
+    }
   }
 
 // 1D: 지난주
@@ -837,5 +874,21 @@ salesChartInstance = new Chart(ctx, {
         y: { grid: { display: true, color: 'rgba(200, 200, 200, 0.15)', borderDash: [4, 4], drawBorder: false }, ticks: { color: '#9ca3af' }, beginAtZero: true, grace: '50%' }
       }
     }
+
+// ✨ 제미나이 버튼 클릭 시 실행될 함수
+function toggleAIPrediction() {
+    isAiMode = !isAiMode; // 켜기/끄기 토글
+    
+    // 버튼 눌린 효과 (테두리 강조)
+    const btn = document.getElementById('btn-ai-predict');
+    if (btn) {
+        if (isAiMode) {
+            btn.classList.add('ring-2', 'ring-purple-400', 'ring-offset-1');
+        } else {
+            btn.classList.remove('ring-2', 'ring-purple-400', 'ring-offset-1');
+        }
+    }
+    updateDashboardChart(); // 차트 다시 그리기 (애니메이션 발동!)
+}
   });
 }
