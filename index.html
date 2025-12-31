@@ -449,6 +449,21 @@
 </div>
 </div>
     <div class="relative w-full h-[500px]">
+       <div style="position: relative; width: 100%; height: 100%;">
+
+    <button id="btn-ai-predict" onclick="toggleAIPrediction()" 
+            class="group absolute top-2 right-16 z-10 inline-flex items-center justify-center overflow-hidden rounded-full p-0.5 font-medium transition-all duration-300 hover:scale-105 focus:outline-none">
+      <span class="absolute inset-0 h-full w-full bg-gradient-to-br from-[#4facfe] via-[#a18cd1] to-[#fbc2eb] opacity-100 group-hover:via-[#a18cd1] group-hover:to-[#4facfe]"></span>
+      <span class="relative flex h-full w-full items-center justify-center rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 transition-all duration-300 group-hover:bg-opacity-90 dark:bg-gray-900 dark:text-white">
+        <svg class="mr-1.5 h-3 w-3 animate-pulse text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
+        </svg>
+        <span class="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">AI 예측</span>
+      </span>
+    </button>
+
+    <canvas id="salesStatusChart"></canvas>
+</div>
       <canvas id="salesStatusChart"></canvas>
     </div>
 
@@ -2472,6 +2487,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
 
 
 
