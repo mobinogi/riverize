@@ -373,41 +373,28 @@ const externalTooltipHandler = (context) => {
   const tooltipEl = getOrCreateTooltip(chart);
   const arrowEl = tooltipEl.querySelector('.tooltip-arrow');
 
-  if (tooltip.opacity === 0) {
-    tooltipEl.style.opacity = 0;
-    return;
-  }
+  if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; }
 
   if (tooltip.body) {
     const idx = tooltip.dataPoints[0].dataIndex;
     const datasets = chart.data.datasets;
+    const isYearlyMode = (currentRange === '1Y'); // 연간 모드 확인
 
-    // 데이터셋 찾기
     const currentSet = datasets.find(d => d.label === '매출' || d.label.includes('올해'));
     const lastYearSet = datasets.find(d => d.label === '작년 동기');
-    
-    // 1D: '지난주', 그외: '전월 동기'
-    let prevSet = datasets.find(d => d.label === '지난주');
-    let prevLabelName = '지난주';
-    
-    if (!prevSet) {
-        prevSet = datasets.find(d => d.label === '전월 동기');
-        prevLabelName = '전월';
-    }
+    let prevSet = datasets.find(d => d.label === '지난주') || datasets.find(d => d.label === '전월 동기');
+    let prevLabelName = prevSet && prevSet.label === '지난주' ? '지난주' : '전월';
 
     let currVal = currentSet ? currentSet.data[idx] : 0;
     if (currVal === null) currVal = 0;
     const lastVal = lastYearSet ? lastYearSet.data[idx] : 0;
     const prevVal = prevSet ? prevSet.data[idx] : 0;
 
-    // 데이터 없으면 숨김
     if ((!currVal && !prevVal && !lastVal) || (currVal === 0 && prevVal === 0 && lastVal === 0)) {
-        tooltipEl.style.opacity = 0;
-        return;
+        tooltipEl.style.opacity = 0; return;
     }
 
     const currDetails = (currentSet && currentSet.customDetails) ? currentSet.customDetails[idx] : { s: 0, r: 0 };
-
     const getDiffHtml = (base, target) => {
       const diff = base - target;
       if (diff > 0) return `<span style="color:#ef4444; font-weight:bold;">▲${diff}</span>`;
@@ -419,27 +406,17 @@ const externalTooltipHandler = (context) => {
     const diffYear = getDiffHtml(currVal, lastVal);
     const title = chart.data.labels[idx];
 
-    const innerHtml = `
-      <div style="padding: 12px;">
-        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 5px; color: #f3f4f6;">
-          ${title} 현황
-        </div>
-        <div style="display: flex; gap: 12px; align-items: stretch;">
-          <div style="flex: 1; text-align: left;">
-            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">이번 매출</div>
-            <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;">
-              <span>생탁</span> <span style="color:white; font-weight:500;">${currDetails.s}</span>
+    // ✨ [수정] 1Y일 때는 '성과 비교'에서 전월을 빼고 작년만 표시
+    let comparisonHtml = '';
+    if (isYearlyMode) {
+        comparisonHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; color: #9ca3af;">작년(${lastVal})</span>
+              <span style="font-size: 11px;">${diffYear}</span>
             </div>
-            <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;">
-              <span>우리쌀</span> <span style="color:white; font-weight:500;">${currDetails.r}</span>
-            </div>
-            <div style="margin-top: 6px; font-size: 16px; font-weight: 800; color: #60a5fa; text-align: right;">
-              ${currVal}개
-            </div>
-          </div>
-          <div style="width: 1px; background: #4b5563; opacity: 0.5;"></div>
-          <div style="flex: 1.1;">
-            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 6px;">성과 비교</div>
+        `;
+    } else {
+        comparisonHtml = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <span style="font-size: 11px; color: #c084fc;">${prevLabelName}(${prevVal})</span>
               <span style="font-size: 11px;">${diffPrev}</span>
@@ -448,20 +425,34 @@ const externalTooltipHandler = (context) => {
               <span style="font-size: 11px; color: #9ca3af;">작년(${lastVal})</span>
               <span style="font-size: 11px;">${diffYear}</span>
             </div>
+        `;
+    }
+
+    tooltipEl.querySelector('table').innerHTML = `
+      <div style="padding: 12px;">
+        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #374151; padding-bottom: 5px; color: #f3f4f6;">${title} 현황</div>
+        <div style="display: flex; gap: 12px; align-items: stretch;">
+          <div style="flex: 1; text-align: left;">
+            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">이번 매출</div>
+            <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;"><span>생탁</span> <span style="color:white; font-weight:500;">${currDetails.s}</span></div>
+            <div style="font-size: 12px; color: #d1d5db; display: flex; justify-content: space-between;"><span>우리쌀</span> <span style="color:white; font-weight:500;">${currDetails.r}</span></div>
+            <div style="margin-top: 6px; font-size: 16px; font-weight: 800; color: #60a5fa; text-align: right;">${currVal}개</div>
+          </div>
+          <div style="width: 1px; background: #4b5563; opacity: 0.5;"></div>
+          <div style="flex: 1.1;">
+            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 6px;">성과 비교</div>
+            ${comparisonHtml}
           </div>
         </div>
-      </div>
-    `;
-    tooltipEl.querySelector('table').innerHTML = innerHtml;
+      </div>`;
   }
 
-  // 좌표 및 꼬리 로직
   const position = chart.canvas.getBoundingClientRect();
   const rootLeft = position.left + window.pageXOffset;
   const rootTop = position.top + window.pageYOffset;
   const chartWidth = chart.width;
   const bgColor = 'rgba(17, 24, 39, 0.95)';
-
+  
   if (tooltip.caretX > chartWidth / 2) {
       tooltipEl.style.transform = 'translate(-105%, 0)'; 
       tooltipEl.style.left = (rootLeft + tooltip.caretX - 30) + 'px';
@@ -476,30 +467,23 @@ const externalTooltipHandler = (context) => {
       arrowEl.style.borderRightColor = bgColor; arrowEl.style.borderLeftColor = 'transparent';
   }
 
-// ===================================================================
-  // [최종 수정] 서열 정리 로직: 파란 막대(대장) 있으면 걔한테 붙어라!
-  // ===================================================================
-  
-  // 1. 현재 툴팁에 들어온 데이터들 중 '매출(파란 막대)'이 있는지 찾습니다.
+  // ✨ [2026년 대응 서열 정리] 올해 데이터가 0이면 데이터가 있는 다른 선에 붙음
   const points = tooltip.dataPoints;
   const mainPoint = points.find(p => p.dataset.label === '매출' || p.dataset.label.includes('올해'));
-
+  
   let targetY = 0;
-
-  // 2. 파란 막대가 있고, 데이터가 0(null)이 아니면 -> 파란 막대 머리 위에 붙음
-  if (mainPoint && mainPoint.raw !== null && mainPoint.raw !== 0) {
+  // 올해 매출이 0보다 클 때만 파란 선에 붙음
+  if (mainPoint && mainPoint.raw !== null && mainPoint.raw > 0) {
       targetY = mainPoint.element.y;
-  } 
-  // 3. 파란 막대가 없으면 -> 그냥 첫 번째 잡히는 놈(보라색/회색 점)에 붙음
-  else {
-      targetY = points[0].element.y;
+  } else {
+      // 매출이 0이면 데이터가 살아있는(작년 동기 등) 첫 번째 포인트를 찾아 붙음
+      const activePoint = points.find(p => p.raw !== null && p.raw > 0) || points[0];
+      targetY = activePoint.element.y;
   }
-
-  // 4. 결정된 위치로 이동!
-  tooltipEl.style.top = (rootTop + targetY - 30) + 'px';
+  
+  tooltipEl.style.top = (rootTop + targetY - 50) + 'px';
   tooltipEl.style.opacity = 1;
 };
-
 // ============================================================
 // 5. 차트 업데이트 메인 함수
 // ============================================================
