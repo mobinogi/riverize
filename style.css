@@ -1022,7 +1022,7 @@ body.sidebar-collapsed #main-content-wrapper {
 /* 1) 배경: 튀어나와서 춤추기 */
 .gemini-magic-btn:hover .gemini-morpher {
   scale: 1; /* 등장! */
-  animation: shapeshift 1.2s ease-in-out infinite forwards; 
+  animation: shapeshift 3s cubic-bezier(0.8, 0, 0.2, 1) infinite forwards; 
 }
 
 /* 2) 배경 색상: 살살 흐르기 */
