@@ -571,45 +571,59 @@ function updateDashboardChart() {
         else prevMonthData.push(mainData[i - 1] || 0);
     }
 
-    // ===============================================
-    // 🤖 [AI 예측] 통계적 예측 로직 (이걸 꼭 넣으셔야 합니다!)
+// ===============================================
+    // 🤖 [AI 예측] 스마트 예측 로직 (수정판)
     // ===============================================
     let predictedData = new Array(12).fill(null); 
     
-    // 1. 현재까지 데이터가 어디까지 찼는지 확인
-    let lastDataIdx = -1;
+    // 1. 성장률 계산 (올해와 작년 데이터가 겹치는 구간만 비교)
+    // 데이터가 아예 없으면 성장률 1(작년과 동일)로 가정
+    let growthRate = 1; 
+    let currentSum = 0;
+    let lastSum = 0;
+    let matchCount = 0;
+
     for (let i = 0; i < 12; i++) {
-        if (mainData[i] !== null && mainData[i] !== 0) {
-            lastDataIdx = i;
+        // 둘 다 데이터가 있는 달만 합산해서 비교
+        if ((mainData[i] !== null && mainData[i] !== 0) && 
+            (lastYearData[i] !== null && lastYearData[i] !== 0)) {
+            currentSum += mainData[i];
+            lastSum += lastYearData[i];
+            matchCount++;
         }
     }
 
-    // 2. 데이터가 조금이라도 있다면 예측 시작!
-    if (lastDataIdx >= 0 && lastDataIdx < 11) {
-        // 성장률 계산
-        let currentSum = 0;
-        let lastSum = 0;
-        for(let i=0; i<=lastDataIdx; i++) {
-            currentSum += (mainData[i] || 0);
-            lastSum += (lastYearData[i] || 0);
-        }
+    // 겹치는 구간이 있어서 비교 가능하면 성장률 반영
+    if (matchCount > 0 && lastSum > 0) {
+        growthRate = currentSum / lastSum;
+    }
 
-        let growthRate = 1; 
-        if (lastSum > 0) {
-            growthRate = currentSum / lastSum;
-        }
+    // 2. 어디까지 실제 데이터가 있는지 확인 (선 연결용)
+    let lastRealIdx = -1;
+    for(let i=0; i<12; i++) {
+        if (mainData[i] !== null && mainData[i] !== 0) lastRealIdx = i;
+    }
 
-        // 미래 데이터 생성
-        predictedData[lastDataIdx] = mainData[lastDataIdx]; // 이어지게
-
-        for (let i = lastDataIdx + 1; i < 12; i++) {
-            let lastVal = lastYearData[i] || 0;
-            // 작년 추세에 성장률 반영
-            predictedData[i] = Math.floor(lastVal * growthRate);
+    // 3. 예측 데이터 채우기
+    for (let i = 0; i < 12; i++) {
+        // A. 실제 데이터가 있는 구간:
+        if (mainData[i] !== null && mainData[i] !== 0) {
+            // 자연스러운 연결을 위해 '마지막 실제 데이터' 점은 예측선에도 찍어줌
+            if (i === lastRealIdx) {
+                predictedData[i] = mainData[i];
+            }
+        } 
+        // B. 실제 데이터가 없는 구간 (미래 or 빈칸):
+        else {
+            // ✨ [핵심] 작년 데이터(족보)가 있다면 -> 무조건 예측!
+            if (lastYearData[i] !== null && lastYearData[i] !== 0) {
+                predictedData[i] = Math.floor(lastYearData[i] * growthRate);
+            }
+            // 작년 데이터도 없으면(1~9월) -> 그냥 둠 (null)
         }
     }
     
-    trendData = predictedData; // 전역 변수에 저장
+    trendData = predictedData; 
     // ===============================================
 
   } else if (currentRange === '1M') {
