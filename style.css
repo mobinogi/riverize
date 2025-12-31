@@ -1079,3 +1079,47 @@ background: transparent;
   transform: rotate(360deg); /* 한 바퀴 휙! */
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* 살짝 그림자 */
 }
+
+/* ✨ 제미나이 스타일 커스텀 툴팁 */
+.gemini-tooltip {
+    position: absolute;
+    top: 115%; /* 버튼 바로 아래 위치 */
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px); /* 중앙 정렬 + 살짝 위에서 시작 */
+    
+    background-color: rgba(31, 41, 55, 0.95); /* 아주 짙은 회색 (거의 검정) */
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    
+    opacity: 0;       /* 평소엔 투명 */
+    visibility: hidden;
+    pointer-events: none; /* 마우스 클릭 방해 금지 */
+    
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* 부드러운 애니메이션 */
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* 살짝 그림자 */
+}
+
+/* 말풍선 꼬리 (선택사항 - 삼각형) 
+.gemini-tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px;
+    border-style: solid;
+    border-color: transparent transparent rgba(31, 41, 55, 0.95) transparent;
+} */
+
+/* 🔥 마우스 오버 시 툴팁 등장 */
+.gemini-magic-btn:hover .gemini-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0); /* 제자리로 스르륵 내려옴 */
+    transition-delay: 0.1s; /* 살짝 딜레이 줘서 더 고급스럽게 */
+}
