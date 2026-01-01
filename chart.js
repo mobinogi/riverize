@@ -31,10 +31,27 @@ const rippleEffectPlugin = {
 
       // 🏆 해당 지점에서 가장 높은 데이터만 펄스 효과
       let isMax = true;
+      
+      // ✨ [수정] 내가 주인공(파란색)인지 확인
+      const isMyMain = (isBlueBar || isBlueLine); 
+
       chart.data.datasets.forEach((compDs, compIdx) => {
            if (compIdx === datasetIndex || !chart.isDatasetVisible(compIdx)) return;
            const compVal = compDs.data[activeIndex];
-           if (compVal && compVal > value) isMax = false; 
+           
+           if (compVal !== null && compVal !== undefined) {
+               if (compVal > value) {
+                   isMax = false; // 나보다 큰 값이 있으면 탈락
+               } else if (compVal === value) {
+                   // 🤝 동점일 때 서열 정리 (파란색 > 보라색)
+                   const isCompMain = (compDs.label === '매출' || compDs.label.includes('올해'));
+                   
+                   // 상대방이 주인공(파란색)이고, 나는 조연(보라색)이라면 -> 내가 양보 (탈락)
+                   if (isCompMain && !isMyMain) {
+                       isMax = false;
+                   }
+               }
+           }
       });
 
       if (!isMax) return; 
@@ -63,7 +80,6 @@ const rippleEffectPlugin = {
       ctx.stroke();
 
       // --- ⭕ 마우스 오버 시에만 생기는 기본 '빈 원' ---
-      // 파장이 시작되는 지점을 시각적으로 보여줌
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.lineWidth = 2;
