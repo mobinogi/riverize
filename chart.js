@@ -704,7 +704,7 @@ function updateDashboardChart() {
   }
 
   // ------------------------------------------------
-  // 차트 디자인 설정
+  // 차트 디자인 설정 (데이터셋 조립)
   // ------------------------------------------------
   const isYearly = (currentRange === '1Y');
   
@@ -717,75 +717,87 @@ function updateDashboardChart() {
 
   let finalDatasets = [];
 
-  // ✨ [추가] 1등 판독기: 이 점이 다른 그래프들보다 높은지 검사
-  const isMaxPoint = (ctx) => {
-      const v = ctx.raw; 
-      if (!v) return 0; // 내 값이 0이나 null이면 펄스 X
+  // 1. [핵심] 메인 데이터 (파란색)
+  // 👉 1Y는 '선(Line)', 1D/1M은 '막대(Bar)'로 자동 변환
+  finalDatasets.push({
+      type: isYearly ? 'line' : 'bar', 
+      label: isYearly ? '올해 (2025)' : '매출', 
+      data: mainData, 
+      customDetails: mainDetails,
+      borderColor: '#3b82f6', 
+      backgroundColor: isYearly ? lineGradient : barGradient, 
+      borderWidth: isYearly ? 3 : 0, 
+      tension: 0.4, 
+      fill: true,
+      pointRadius: isYearly ? 4 : 0, 
+      pointBackgroundColor: 'white', 
+      pointBorderColor: '#3b82f6',
+      order: 1,
+      barPercentage: 0.5,
+      categoryPercentage: 0.8,
+      borderRadius: 4
+  });
 
-      const ds = ctx.chart.data.datasets;
-      const idx = ctx.dataIndex;
-      
-      for (let i = 0; i < ds.length; i++) {
-          // 나 자신(i)이거나, 숨겨진 그래프는 비교에서 제외
-          if (i === ctx.datasetIndex || !ctx.chart.isDatasetVisible(i)) continue;
-          
-          const otherVal = ds[i].data[idx];
-          const ov = (otherVal === null || otherVal === undefined) ? 0 : otherVal;
-          
-          // 🚨 나보다 더 큰 놈(ov)이 있다? -> 난 1등 아님 -> 펄스 X
-          if (ov > v) return 0; 
-      }
-      return 15; // 🏆 내가 1등이다! -> 15까지 커져라 (펄스 O)
-  };
+  // 2. 비교 데이터 (보라색 선)
+  if (currentRange === '1D') {
+      // 1D: 지난주 (보라색 실선)
+      finalDatasets.push({
+          type: 'line', label: '지난주', data: prevWeekData, 
+          borderColor: '#c084fc', borderWidth: 2, tension: 0.3, fill: false, order: 2,
+          pointRadius: 0
+      });
+  } else {
+      // 1M: 전월 동기 (보라색 실선)
+      // 1Y: 전월 데이터는 보통 숨김 처리 (필요하면 hidden: false로 변경)
+      finalDatasets.push({
+          type: 'line', label: '전월 동기', data: prevMonthData,
+          borderColor: '#c084fc', borderWidth: 2, tension: 0, fill: false, spanGaps: true, 
+          hidden: isYearly, 
+          order: 2,
+          pointRadius: 0
+      });
+  }
 
-  // 메인 데이터
-// 메인 데이터 (차트 그리기)
-  if (isYearly) {
-    // 1. 실제 데이터 (파란 실선) - 기존 코드 유지
-    finalDatasets.push({
-      type: 'line', label: '올해 (2025)', data: mainData, customDetails: mainDetails,
-      borderColor: '#3b82f6', backgroundColor: lineGradient, borderWidth: 3, tension: 0.4, fill: true,
-      pointRadius: 4, pointBackgroundColor: 'white', pointBorderColor: '#3b82f6',
-      order: 1
-    });
+  // 3. 작년 데이터 (회색 점선) - 모든 기간 공통
+  finalDatasets.push({
+      type: 'line', label: '작년 동기', data: lastYearData,
+      borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0, fill: false, hidden: false, order: 4, spanGaps: true
+  });
 
-    // 🤖 [AI 예측] 점선 그래프 (버튼 눌렀을 때만 등장!)
-    if (isAiMode) { 
-        finalDatasets.push({
-            type: 'line', 
-            label: 'AI 예측', 
-            data: trendData,        // 아까 계산한 예측 데이터
-            borderColor: '#8b5cf6', // ✨ 제미나이 보라색
-            borderWidth: 2, 
-            borderDash: [5, 5],     // 점선
-            tension: 0.4,           
-            pointRadius: 0,         
-            fill: false,
-            order: 2,
-            spanGaps: true,
-            
-            // 👇 [핵심] 플러그인 없이 구현하는 '스르륵~' 애니메이션
-            animations: {
-                x: {
-                    type: 'number',
-                    easing: 'linear',
-                    duration: 2000, 
-                    from: NaN, // 데이터가 없는 상태에서 시작
-                    delay(ctx) {
-                        if (ctx.type !== 'data' || ctx.xStarted) return 0;
-                        ctx.xStarted = true;
-                        return ctx.index * 100; // 점 하나당 0.1초씩 딜레이 (좌->우로 그려짐)
-                    }
-                },
-                y: {
-                    type: 'number',
-                    easing: 'easeOutQuart',
-                    duration: 2000,
-                    from: (ctx) => ctx.chart.scales.y.getPixelForValue(0) // 바닥에서 솟아오르는 느낌
-                }
-            }
-        });
-    }
+  // 4. [1Y 전용] AI 예측 (보라색 점선) - 버튼 눌렀을 때만
+  if (isYearly && isAiMode) { 
+      finalDatasets.push({
+          type: 'line', 
+          label: 'AI 예측', 
+          data: trendData,        
+          borderColor: '#8b5cf6', 
+          borderWidth: 2, 
+          borderDash: [5, 5],     
+          tension: 0.4,           
+          pointRadius: 0,         
+          fill: false,
+          order: 2,
+          spanGaps: true,
+          animations: {
+              x: {
+                  type: 'number',
+                  easing: 'linear',
+                  duration: 2000, 
+                  from: NaN, 
+                  delay(ctx) {
+                      if (ctx.type !== 'data' || ctx.xStarted) return 0;
+                      ctx.xStarted = true;
+                      return ctx.index * 100; 
+                  }
+              },
+              y: {
+                  type: 'number',
+                  easing: 'easeOutQuart',
+                  duration: 2000,
+                  from: (ctx) => ctx.chart.scales.y.getPixelForValue(0) 
+              }
+          }
+      });
   }
 
 // 1D: 지난주
