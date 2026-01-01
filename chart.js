@@ -966,19 +966,101 @@ salesChartInstance = new Chart(ctx, {
     }
 });
 }
-// ✨ 제미나이 버튼 클릭 시 실행될 함수
+
+// ===============================================
+// ✨ [최종 완성] AI 버튼 토글 함수 (슈퍼 애니메이션 Ver.)
+// ===============================================
 function toggleAIPrediction() {
-    isAiMode = !isAiMode; // 켜기/끄기 토글
-    
-    // 버튼 눌린 효과 (테두리 강조)
     const btn = document.getElementById('btn-ai-predict');
-    if (btn) {
-        if (isAiMode) {
-            btn.classList.add('ring-2', 'ring-purple-400', 'ring-offset-1');
-        } else {
-            btn.classList.remove('ring-2', 'ring-purple-400', 'ring-offset-1');
+    if (!salesChartInstance) return; // 차트가 없으면 중단
+
+    isAiMode = !isAiMode;
+
+    if (isAiMode) {
+        // [ON] 켜짐: 버튼 스타일 & 애니메이션 그래프 추가
+        btn.classList.add('ring-2', 'ring-purple-400', 'bg-purple-50');
+        
+        // 1. 즉석 데이터 계산 (기존 로직과 동일)
+        const datasets = salesChartInstance.data.datasets;
+        const mainDs = datasets.find(d => d.label.includes('올해') || d.label === '매출');
+        const lastDs = datasets.find(d => d.label === '작년 동기');
+        if (!mainDs || !lastDs) return;
+        const mainData = mainDs.data; const lastYearData = lastDs.data;
+        let predictedData = new Array(12).fill(null); 
+        let growthRate = 1; let currentSum = 0, lastSum = 0, matchCount = 0;
+        for (let i = 0; i < 12; i++) {
+            if ((mainData[i] !== null && mainData[i] !== 0) && (lastYearData[i] !== null && lastYearData[i] !== 0)) {
+                currentSum += mainData[i]; lastSum += lastYearData[i]; matchCount++;
+            }
         }
+        if (matchCount > 0 && lastSum > 0) growthRate = currentSum / lastSum;
+        for (let i = 0; i < 12; i++) {
+            if (mainData[i] === null || mainData[i] === 0) {
+                if (lastYearData[i] !== null && lastYearData[i] !== 0) {
+                    predictedData[i] = Math.floor(lastYearData[i] * growthRate);
+                }
+            }
+        }
+
+        // 2. ✨ [핵심] 슈퍼 애니메이션 데이터셋 정의
+        const newAiDataset = {
+            type: 'line', 
+            label: 'AI 예측', 
+            data: predictedData,        
+            borderColor: '#8b5cf6', // 보라색
+            borderWidth: 3,         // 선을 좀 더 두껍게 (강조)
+            borderDash: [5, 5],     // 점선
+            tension: 0.4,           // 부드러운 곡선
+            pointRadius: 0,         // 평소엔 점 숨김
+            pointHoverRadius: 6,    // 호버하면 점 커짐
+            pointBackgroundColor: '#8b5cf6',
+            fill: false,
+            order: 0, // 맨 위에 그림
+            spanGaps: true,
+            
+            // 🎬 [애니메이션 설정] 여기가 마법이 일어나는 곳입니다!
+            animations: {
+                // ① 선이 왼쪽에서 오른쪽으로 그려짐
+                x: {
+                    type: 'number',
+                    easing: 'linear', // 일정한 속도로
+                    duration: 2000,   // 2초 동안 천천히
+                    from: NaN,        // 없는 상태에서 시작
+                    delay(ctx) {
+                        if (ctx.type !== 'data' || ctx.xStarted) return 0;
+                        ctx.xStarted = true;
+                        return ctx.index * 150; // 월별로 0.15초씩 딜레이 (순차적)
+                    }
+                },
+                // ② 값이 바닥에서 위로 솟아오름 (쫄깃한 느낌)
+                y: {
+                    type: 'number',
+                    easing: 'easeOutBack', // 🎯 팅~ 하고 튀어 오르는 탄성 효과!
+                    duration: 2000,
+                    from: (ctx) => ctx.chart.scales.y.getPixelForValue(0), // 바닥(0)에서 시작
+                    delay(ctx) {
+                        if (ctx.type !== 'data' || ctx.yStarted) return 0;
+                        ctx.yStarted = true;
+                        return ctx.index * 150; // X축과 동일한 딜레이
+                    }
+                },
+                // ③ (선택) 점이 통통 튀어나오는 효과
+                radius: {
+                    duration: 400,
+                    easing: 'easeOutBack',
+                    from: 0,
+                    delay(ctx) { return (ctx.index * 150) + 500; } // 선이 그려진 뒤에 뿅!
+                }
+            }
+        };
+
+        salesChartInstance.data.datasets.push(newAiDataset);
+        salesChartInstance.update(); // 새로고침 없이 추가!
+
+    } else {
+        // [OFF] 꺼짐: 데이터셋 제거 (애니메이션 없이 즉시 사라짐)
+        btn.classList.remove('ring-2', 'ring-purple-400', 'bg-purple-50');
+        salesChartInstance.data.datasets = salesChartInstance.data.datasets.filter(d => d.label !== 'AI 예측');
+        salesChartInstance.update('none'); // 'none' 모드로 업데이트 (즉시 반영)
     }
-    updateDashboardChart(); // 차트 다시 그리기 (애니메이션 발동!)
 }
-  
