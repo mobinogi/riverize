@@ -290,9 +290,7 @@ function changeChartRange(range) {
     ['1D', '1M', '1Y'].forEach(r => {
         const btn = btns[r];
         if (btn) {
-
             const commonClass = "relative z-10 px-3 py-1.5 text-sm transition-colors duration-200 focus:outline-none";
-            
             if (r === range) {
                 btn.className = "relative z-10 px-3 py-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200";
             } else {
@@ -300,6 +298,23 @@ function changeChartRange(range) {
             }
         }
     });
+
+    // ✨ [핵심 기능] 1Y가 아니면 AI 버튼 압수!
+    const aiBtn = document.getElementById('btn-ai-predict');
+    if (aiBtn) {
+        if (range === '1Y') {
+            // 1Y일 때는 등장!
+            aiBtn.style.display = 'flex'; 
+            setTimeout(() => aiBtn.style.opacity = '1', 50); // 부드럽게
+        } else {
+            // 1D, 1M일 때는 퇴장!
+            aiBtn.style.display = 'none';
+            aiBtn.style.opacity = '0';
+            
+            // 혹시 AI 모드가 켜져 있었다면 끄기 (차트 꼬임 방지)
+            isAiMode = false;
+        }
+    }
 
     if (range === '1D') baseDate = new Date();
     updateDashboardChart();
