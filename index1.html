@@ -54,9 +54,9 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🔥 [하이브리드 V12] 개인별 total(172, 100 등) 추적 및 실시간 업데이트
+// 🔥 [하이브리드 V13] 데이터 증발 방지 + 실시간 직접 조회 엔진
   window.saveToFirebase = async function() {
-      const { doc, setDoc, updateDoc, deleteField, collection, query, orderBy, limit, getDocs, serverTimestamp } 
+      const { doc, getDoc, setDoc, updateDoc, deleteField, collection, query, orderBy, limit, getDocs, serverTimestamp } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
       const manager = document.getElementById('qe-manager').value;
@@ -64,15 +64,15 @@
       const val2Input = document.getElementById('qe-input-2');
       const val3Input = document.getElementById('qe-input-3');
 
-      const num1 = Number(val1Input.value) || 0; // st
-      const num2 = Number(val2Input.value) || 0; // rice
-      const num3 = Number(val3Input.value) || 0; // empty (미출고)
+      const num1 = Number(val1Input.value) || 0; 
+      const num2 = Number(val2Input.value) || 0; 
+      const num3 = Number(val3Input.value) || 0; 
 
       if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🚀 개인 장부 추적 중...</span>`;
+      submitBtn.innerHTML = `<span>🔄 실시간 정합성 체크 중...</span>`;
       submitBtn.disabled = true;
 
       try {
@@ -82,40 +82,46 @@
           const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
           const docRef = doc(window.db, "daily_sales", dateStr);
 
-          // --- 1단계: [이중 추적] 공장 전체 balance와 개인별 total 찾기 ---
-          const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(10));
-          const querySnapshot = await getDocs(q);
-          
-          let lastFactoryBalance = 0; // 공장 이월 재고
-          let lastPersonalTotal = 0;   // 개인 이월 재고 (예: kim의 172)
+          // ====================================================
+          // 🚀 [핵심 보정] 저장 직전, DB에서 가장 최신 balance 직접 읽기
+          // ====================================================
+          // 1. 오늘 문서가 이미 있는지 확인
+          const todaySnap = await getDoc(docRef);
+          let baseBalance = 0;
+          let basePersonalTotal = 0;
 
-          if (!querySnapshot.empty) {
+          if (todaySnap.exists() && todaySnap.data().factory?.balance !== undefined) {
+              // 오늘 누군가 이미 입력했다면 그 숫자를 기준점으로 잡음 (증발 방지)
+              baseBalance = Number(todaySnap.data().factory.balance);
+              basePersonalTotal = Number(todaySnap.data()[fieldName]?.total || 0);
+          } 
+          
+          // 2. 만약 오늘 첫 입력이라면, 어제 기록을 뒤짐
+          if (baseBalance === 0) {
+              const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
+              const querySnapshot = await getDocs(q);
               for (const d of querySnapshot.docs) {
-                  const data = d.data();
                   if (d.id < dateStr) {
-                      // 1. 공장 전체 잔량 추적 (factory.balance)
-                      if (lastFactoryBalance === 0 && data.factory?.balance !== undefined) {
-                          lastFactoryBalance = Number(data.factory.balance);
-                      }
-                      // 2. 담당자 개인 잔량 추적 (fieldName.total)
-                      if (lastPersonalTotal === 0 && data[fieldName]?.total !== undefined) {
-                          lastPersonalTotal = Number(data[fieldName].total);
-                      }
-                      // 둘 다 찾았으면 중단
-                      if (lastFactoryBalance > 0 && lastPersonalTotal > 0) break;
+                      if (baseBalance === 0) baseBalance = Number(d.data().factory?.balance || 0);
+                      if (basePersonalTotal === 0) basePersonalTotal = Number(d.data()[fieldName]?.total || 0);
+                      if (baseBalance > 0 && basePersonalTotal > 0) break;
                   }
               }
           }
-          
-          // DB에 데이터가 없으면 현재 화면 값을 백업으로 사용
-          if (lastFactoryBalance === 0) lastFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
 
-          // --- 2단계: [실시간 수식 계산] ---
-          const dailyNet = (num1 + num2) - num3; // 오늘의 변동량 (+7 등)
-          const personalFinalTotal = lastPersonalTotal + dailyNet; // 개인 최종 (예: 172 + 7 = 179)
-          const factoryFinalBalance = lastFactoryBalance + dailyNet; // 공장 최종 (예: 272 + 7 = 279)
+          // DB에도 없으면 최후의 수단으로 전광판 숫자 사용
+          if (baseBalance === 0) baseBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
 
-          // --- 3단계: [삭제/저장 로직] ---
+          // --- 2단계: 정밀 계산 ---
+          const dailyNet = (num1 + num2) - num3; 
+          const finalFactoryBalance = baseBalance + dailyNet;
+          const finalPersonalTotal = (basePersonalTotal === 0 && todaySnap.exists()) 
+                                     ? Number(todaySnap.data()[fieldName]?.total || 0) + dailyNet // 이미 오늘 데이터가 있는 경우
+                                     : basePersonalTotal + dailyNet;
+
+          // ====================================================
+          // 🚀 [저장 및 UI 업데이트]
+          // ====================================================
           if (num1 === 0 && num2 === 0 && num3 === 0) {
               await updateDoc(docRef, { [fieldName]: deleteField(), last_updated: serverTimestamp() });
               showToast(`🗑️ [${manager}] 삭제 완료`, "success");
@@ -124,33 +130,22 @@
               return;
           }
 
-          // DB 저장 (사진 속 구조와 100% 동일하게 total 필드 포함)
           await setDoc(docRef, {
-              [fieldName]: { 
-                  st: num1, 
-                  rice: num2, 
-                  empty: num3, 
-                  total: personalFinalTotal, // 👈 개인별 최종 잔량 업데이트
-                  time: new Date().toLocaleTimeString() 
-              },
-              factory: {
-                  balance: factoryFinalBalance, // 👈 공장 전체 최종 잔량 업데이트
-                  note: "하이브리드 작성"
-              },
+              [fieldName]: { st: num1, rice: num2, empty: num3, total: finalPersonalTotal, time: new Date().toLocaleTimeString() },
+              factory: { balance: finalFactoryBalance, note: "정밀 합산 완료" },
               last_updated: serverTimestamp()
           }, { merge: true });
 
-          // --- 4단계: [UI 업데이트] ---
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
 
+          // 결과 표시
           document.getElementById('qe-form-content').classList.add('hidden');
           document.getElementById('qe-result-content').classList.remove('hidden');
-          
           document.getElementById('res-manager').textContent = manager;
           document.getElementById('res-val1').textContent = num1;
           document.getElementById('res-val2').textContent = num2;
           document.getElementById('res-val3').textContent = num3;
-          document.getElementById('res-balance').textContent = personalFinalTotal; // 확인창엔 '개인 잔량' 표시
+          document.getElementById('res-balance').textContent = finalPersonalTotal; 
 
           if(typeof window.callAppsScript === 'function') {
               window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
@@ -160,7 +155,7 @@
 
       } catch(e) {
           console.error(e);
-          showToast("처리 중 오류 발생", "error");
+          showToast("연산 오류 발생", "error");
       } finally {
           submitBtn.innerHTML = originalText;
           submitBtn.disabled = false;
