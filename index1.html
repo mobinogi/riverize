@@ -54,7 +54,7 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🔥 [하이브리드 V10] 날짜 불문! 최종 마감값(282) 추적 엔진
+// 🔥 [하이브리드 V11] 사장님 DB 구조(factory.balance) 맞춤형 엔진
   window.saveToFirebase = async function() {
       const { doc, setDoc, updateDoc, deleteField, collection, query, orderBy, limit, getDocs, serverTimestamp } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
@@ -64,15 +64,15 @@
       const val2Input = document.getElementById('qe-input-2');
       const val3Input = document.getElementById('qe-input-3');
 
-      const num1 = Number(val1Input.value) || 0; 
-      const num2 = Number(val2Input.value) || 0; 
-      const num3 = Number(val3Input.value) || 0; 
+      const num1 = Number(val1Input.value) || 0; // st
+      const num2 = Number(val2Input.value) || 0; // rice
+      const num3 = Number(val3Input.value) || 0; // empty (미출고)
 
       if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🚀 장부 이월 중...</span>`;
+      submitBtn.innerHTML = `<span>🚀 잔량 계산 중...</span>`;
       submitBtn.disabled = true;
 
       try {
@@ -80,50 +80,60 @@
           const fieldName = userMap[manager];
           const today = new Date();
           const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+          const docRef = doc(window.db, "daily_sales", dateStr);
 
-          // --- 1단계: [이월 재고 추적] 가장 최근에 작성된 '누구의 것이든' 마지막 마감 잔량 찾기 ---
+          // --- 1단계: [이월 재고 추적] DB에서 factory.balance 찾아오기 ---
           const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
           const querySnapshot = await getDocs(q);
           
-          let lastClosedBalance = 0; // 이월될 재고
+          let lastClosedBalance = 0; 
 
           if (!querySnapshot.empty) {
-              // 가장 최신 문서부터 역순으로 뒤져서 가장 먼저 나오는 '최종 잔량'을 찾습니다.
               for (const d of querySnapshot.docs) {
                   if (d.id < dateStr) {
                       const data = d.data();
-                      // 해당 날짜에 마지막으로 기록된 공장 전체 잔량을 찾음
-                      // (없을 경우를 대비해 전광판 숫자도 백업으로 활용)
-                      lastClosedBalance = data.factory_final_balance || Number(document.getElementById('val-f21')?.textContent) || 0;
-                      if (lastClosedBalance > 0) break;
+                      // 🚀 사진 구조 대응: factory 주머니 안의 balance 확인
+                      if (data.factory && data.factory.balance !== undefined) {
+                          lastClosedBalance = Number(data.factory.balance);
+                          break;
+                      }
                   }
               }
           }
           
+          // DB 기록이 아예 없으면 전광판 숫자라도 기준점으로 사용
           if (lastClosedBalance === 0) {
               lastClosedBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
           }
 
-          // --- 2단계: [실시간 계산] ---
-          const dailyNet = (num1 + num2) - num3; // 오늘의 변동량
-          const currentFinalBalance = lastClosedBalance + dailyNet; // 새로운 공장 최종 잔량 (예: 282)
+          // --- 2단계: [실시간 수식 계산] ---
+          const dailyNet = (num1 + num2) - num3; 
+          const currentFinalBalance = lastClosedBalance + dailyNet;
 
-          // --- 3단계: [삭제 로직] ---
+          // --- 3단계: [삭제 로직] 0,0,0 입력 시 해당 담당자 필드 삭제 ---
           if (num1 === 0 && num2 === 0 && num3 === 0) {
-              await updateDoc(doc(window.db, "daily_sales", dateStr), { [fieldName]: deleteField() });
+              await updateDoc(docRef, {
+                  [fieldName]: deleteField(),
+                  last_updated: serverTimestamp()
+              });
               showToast(`🗑️ [${manager}] 삭제 완료`, "success");
               if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
               closeQuickEntryModal();
               return;
           }
 
-          // --- 4단계: [저장] 미래의 '전잔량'이 될 factory_final_balance를 함께 기록 ---
-          await setDoc(doc(window.db, "daily_sales", dateStr), {
+          // --- 4단계: [저장] 사진 속 구조와 똑같이 기록 ---
+          await setDoc(docRef, {
               [fieldName]: { 
-                  st: num1, rice: num2, empty: num3, 
+                  st: num1, 
+                  rice: num2, 
+                  empty: num3, 
                   time: new Date().toLocaleTimeString() 
               },
-              factory_final_balance: currentFinalBalance, // 👈 이것이 다음 일보의 '이월 재고'가 됨
+              factory: {
+                  balance: currentFinalBalance, // 👈 다음날의 '전잔량'이 됨
+                  note: "간편작성 마감"
+              },
               last_updated: serverTimestamp()
           }, { merge: true });
 
@@ -137,8 +147,9 @@
           document.getElementById('res-val1').textContent = num1;
           document.getElementById('res-val2').textContent = num2;
           document.getElementById('res-val3').textContent = num3;
-          document.getElementById('res-balance').textContent = currentFinalBalance; // 282 출력
+          document.getElementById('res-balance').textContent = currentFinalBalance; // 최종 계산값 영수증 표시
 
+          // GAS 엑셀 백업 실행
           if(typeof window.callAppsScript === 'function') {
               window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
           }
