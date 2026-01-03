@@ -54,7 +54,7 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🔥 [V27] "너도 같이 가자!" 동료 데이터 자동 계승 엔진
+// 🔥 [V28] 삭제 시 데이터 날리지 않고 '0점 초기화' 하는 최종 수정본
   window.saveToFirebase = async function() {
       const { doc, getDoc, setDoc, updateDoc, deleteField, serverTimestamp, collection, query, orderBy, limit, getDocs } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
@@ -73,23 +73,19 @@
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🤝 동료 데이터 계승 중...</span>`;
+      submitBtn.innerHTML = `<span>🔄 처리 중...</span>`;
       submitBtn.disabled = true;
 
       try {
           const userMap = { '김원대': 'kim', '정병준': 'jung' };
-          const fieldName = userMap[manager]; // 나
-          const otherName = (fieldName === 'kim') ? 'jung' : 'kim'; // 동료
+          const fieldName = userMap[manager]; 
+          const otherName = (fieldName === 'kim') ? 'jung' : 'kim'; 
           
           const today = new Date();
           const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
           const docRef = doc(window.db, "daily_sales", dateStr);
 
-          // ==========================================================
-          // 📜 [1단계] "바로 어제(혹은 최신)" 문서 딱 하나만 가져와서 분석
-          // ==========================================================
-          // 이제 15개씩 뒤질 필요가 거의 없습니다. 계승되니까요.
-          // 그래도 혹시 모르니 5개 정도만 넉넉히 봅니다.
+          // 1. 과거 데이터 확보 (계승용)
           const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
           const qSnap = await getDocs(q);
           
@@ -97,93 +93,83 @@
           let otherLastTotal = 0;
           let baseFactoryBalance = 0;
 
-          // 과거 데이터 찾기
           for (const d of qSnap.docs) {
               if (d.id < dateStr) {
                   const data = d.data();
-                  
-                  // 내 전잔 찾기
                   if (myLastTotal === 0 && data[fieldName]?.total !== undefined) myLastTotal = data[fieldName].total;
-                  
-                  // ⭐ [핵심] 동료 전잔도 같이 찾기!
                   if (otherLastTotal === 0 && data[otherName]?.total !== undefined) otherLastTotal = data[otherName].total;
-                  
-                  // 공장 전잔
                   if (baseFactoryBalance === 0 && data.factory?.balance !== undefined) baseFactoryBalance = data.factory.balance;
-                  
-                  // 셋 다 찾았으면 바로 탈출
                   if (myLastTotal > 0 && otherLastTotal > 0 && baseFactoryBalance > 0) break;
               }
           }
-          // 공장값 없으면 전광판 사용
           if (baseFactoryBalance === 0) baseFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
 
-
-          // ==========================================================
-          // 🤝 [2단계] 오늘 문서 상태 확인 (동료가 이미 썼나?)
-          // ==========================================================
+          // 2. 동료 데이터 처리 (계승 로직)
           const todaySnap = await getDoc(docRef);
-          let todayPayload = {}; // 저장할 데이터 보따리
-
-          // 1. 내 데이터 준비
-          const finalPersonalTotal = myLastTotal + dailyNet;
-          todayPayload[fieldName] = { 
-              st: num1, rice: num2, empty: num3, 
-              total: finalPersonalTotal, 
-              time: new Date().toLocaleTimeString() 
-          };
-
-          // 2. 동료 데이터 준비 (여기가 사장님 아이디어 핵심!)
+          let todayPayload = {}; 
           let otherNet = 0;
           
           if (todaySnap.exists() && todaySnap.data()[otherName]) {
-              // A. 동료가 이미 오늘 먼저 와서 썼음 -> 건드리지 말고 그 사람 실적 합산
               const o = todaySnap.data()[otherName];
               otherNet = (Number(o.st||0) + Number(o.rice||0)) - Number(o.empty||0);
-              // todayPayload[otherName] 은 추가 안 함 (이미 DB에 있으니까 merge로 유지됨)
           } else {
-              // B. 동료가 오늘 아직 안 씀 -> ⭐ 강제 계승 (0점 처리해서 데려감)
               todayPayload[otherName] = {
                   st: 0, rice: 0, empty: 0,
-                  total: otherLastTotal, // 어제꺼 그대로 물려줌
+                  total: otherLastTotal, 
                   time: "자동이월"
               };
-              otherNet = 0; // 오늘 변동 없음
+              otherNet = 0;
           }
 
-          // 3. 공장 밸런스 계산
+          // 3. 최종 계산
+          const finalPersonalTotal = myLastTotal + dailyNet;
           const finalFactoryBalance = baseFactoryBalance + otherNet + dailyNet;
-          todayPayload['factory'] = { 
-              balance: finalFactoryBalance, 
-              note: "계승형 통합엔진" 
-          };
-          todayPayload['last_updated'] = serverTimestamp();
-
 
           // ==========================================================
-          // 💾 [3단계] 저장 (삭제 or 업데이트)
+          // 🚀 [수정된 부분] 0,0,0 입력 시 '삭제'가 아니라 '0으로 세팅'
           // ==========================================================
           if (num1 === 0 && num2 === 0 && num3 === 0) {
-              // 삭제 시: 내 껀 지우고, 동료 껀 냅두고(또는 계승하고), 밸런스 맞춤
-              if (todaySnap.exists()) {
-                   // 삭제할 땐 updateDoc으로 내 필드만 콕 집어 삭제
-                  await updateDoc(docRef, {
-                      [fieldName]: deleteField(),
-                      "factory.balance": finalFactoryBalance,
-                      last_updated: serverTimestamp()
-                  });
-              }
-              showToast("삭제 완료", "success");
-              document.getElementById('res-balance').textContent = myLastTotal; 
+              // ⚠️ deleteField() 삭제! -> 대신 0으로 덮어씁니다.
+              todayPayload[fieldName] = {
+                  st: 0,
+                  rice: 0,
+                  empty: 0,
+                  total: myLastTotal, // ⭐ 중요: 어제 토탈값으로 원상복구
+                  time: "입력취소" 
+              };
+              todayPayload['factory'] = { 
+                  balance: finalFactoryBalance, // 내가 빠진 상태의 밸런스
+                  note: "입력 초기화됨" 
+              };
+              todayPayload['last_updated'] = serverTimestamp();
+
+              // 덮어쓰기 (merge: true)
+              await setDoc(docRef, todayPayload, { merge: true });
+              
+              showToast(`🗑️ [${manager}] 입력값 0으로 초기화 완료`, "success");
+              document.getElementById('res-balance').textContent = myLastTotal; // 어제 잔량 표시
           } else {
-              // 저장 시: setDoc + merge (내꺼 + 동료꺼(없으면 자동생성) + 밸런스)
+              // 정상 저장 로직 (동일)
+              todayPayload[fieldName] = { 
+                  st: num1, rice: num2, empty: num3, 
+                  total: finalPersonalTotal, 
+                  time: new Date().toLocaleTimeString() 
+              };
+              todayPayload['factory'] = { 
+                  balance: finalFactoryBalance, 
+                  note: "정상 기록됨" 
+              };
+              todayPayload['last_updated'] = serverTimestamp();
+
               await setDoc(docRef, todayPayload, { merge: true });
               document.getElementById('res-balance').textContent = finalPersonalTotal; 
           }
+
+          // 4. 결과창 숫자 표시
           document.getElementById('res-val1').textContent = num1;
           document.getElementById('res-val2').textContent = num2;
           document.getElementById('res-val3').textContent = num3;
-        
+          
           // 마무리
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
           document.getElementById('qe-form-content').classList.add('hidden');
