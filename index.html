@@ -4,12 +4,12 @@
   <title>강서 도매소</title>
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://cdn.jsdelivr.net https://www.gstatic.com https://script.google.com https://script.googleusercontent.com;
-    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com https://api.allorigins.win https://api.openweathermap.org https://cdn.jsdelivr.net;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://cdn.jsdelivr.net https://www.gstatic.com https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://apis.openapi.sk.com https://api.allorigins.win https://api.openweathermap.org https://cdn.jsdelivr.net https://*.googleapis.com https://*.firebaseio.com https://*.gstatic.com https://firestore.googleapis.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' data: https://*.daumcdn.net https://tmapapi.sktelecom.com https://*.tmap.sk.com https://*.tmap.co.kr https://s3-us-west-2.amazonaws.com https://openweathermap.org https://mobinogi.github.io;
-    frame-src 'self' blob:; 
+    frame-src 'self' blob: https://*.firebaseapp.com;
   ">
   <link rel="icon" href="favicon.ico" type="image/png">
   <base target="_top">
@@ -26,10 +26,167 @@
   <script src="weather.js"></script>
   <script src="newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="chart.js"></script>
+  <script src="chart1.js"></script>
   <script>
   tailwind.config = {
     darkMode: 'class' 
+  }
+</script>
+<script type="module">
+  // 1. 필요한 도구들 가져오기 (이 부분이 없어서 안 됐던 겁니다!)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // 2. 사장님 앱 출입증 (Config)
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4f4rLPaanGV-72YZhn5sy_fRkTZk_sA0",
+    authDomain: "gangseo-app.firebaseapp.com",
+    projectId: "gangseo-app",
+    storageBucket: "gangseo-app.firebasestorage.app",
+    messagingSenderId: "166683314292",
+    appId: "1:166683314292:web:3e5e96ca88fece97086921"
+  };
+
+  // 3. 엔진 시동
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 전역 변수 설정 (콘솔 테스트용)
+  window.db = db;
+
+// 🔥 [V28] 삭제 시 데이터 날리지 않고 '0점 초기화' 하는 최종 수정본
+  window.saveToFirebase = async function() {
+      const { doc, getDoc, setDoc, updateDoc, deleteField, serverTimestamp, collection, query, orderBy, limit, getDocs } 
+          = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+      const manager = document.getElementById('qe-manager').value;
+      const val1Input = document.getElementById('qe-input-1');
+      const val2Input = document.getElementById('qe-input-2');
+      const val3Input = document.getElementById('qe-input-3');
+
+      const num1 = Number(val1Input.value) || 0; 
+      const num2 = Number(val2Input.value) || 0; 
+      const num3 = Number(val3Input.value) || 0; 
+      const dailyNet = (num1 + num2) - num3; 
+
+      if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
+
+      const submitBtn = document.getElementById('qe-submit-btn');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = `<span>🔄 처리 중...</span>`;
+      submitBtn.disabled = true;
+
+      try {
+          const userMap = { '김원대': 'kim', '정병준': 'jung' };
+          const fieldName = userMap[manager]; 
+          const otherName = (fieldName === 'kim') ? 'jung' : 'kim'; 
+          
+          const today = new Date();
+          const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+          const docRef = doc(window.db, "daily_sales", dateStr);
+
+          // 1. 과거 데이터 확보 (계승용)
+          const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
+          const qSnap = await getDocs(q);
+          
+          let myLastTotal = 0;
+          let otherLastTotal = 0;
+          let baseFactoryBalance = 0;
+
+          for (const d of qSnap.docs) {
+              if (d.id < dateStr) {
+                  const data = d.data();
+                  if (myLastTotal === 0 && data[fieldName]?.total !== undefined) myLastTotal = data[fieldName].total;
+                  if (otherLastTotal === 0 && data[otherName]?.total !== undefined) otherLastTotal = data[otherName].total;
+                  if (baseFactoryBalance === 0 && data.factory?.balance !== undefined) baseFactoryBalance = data.factory.balance;
+                  if (myLastTotal > 0 && otherLastTotal > 0 && baseFactoryBalance > 0) break;
+              }
+          }
+          if (baseFactoryBalance === 0) baseFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
+
+          // 2. 동료 데이터 처리 (계승 로직)
+          const todaySnap = await getDoc(docRef);
+          let todayPayload = {}; 
+          let otherNet = 0;
+          
+          if (todaySnap.exists() && todaySnap.data()[otherName]) {
+              const o = todaySnap.data()[otherName];
+              otherNet = (Number(o.st||0) + Number(o.rice||0)) - Number(o.empty||0);
+          } else {
+              todayPayload[otherName] = {
+                  st: 0, rice: 0, empty: 0,
+                  total: otherLastTotal, 
+                  time: "자동이월"
+              };
+              otherNet = 0;
+          }
+
+          // 3. 최종 계산
+          const finalPersonalTotal = myLastTotal + dailyNet;
+          const finalFactoryBalance = baseFactoryBalance + otherNet + dailyNet;
+
+          // ==========================================================
+          // 🚀 [수정된 부분] 0,0,0 입력 시 '삭제'가 아니라 '0으로 세팅'
+          // ==========================================================
+          if (num1 === 0 && num2 === 0 && num3 === 0) {
+              // ⚠️ deleteField() 삭제! -> 대신 0으로 덮어씁니다.
+              todayPayload[fieldName] = {
+                  st: 0,
+                  rice: 0,
+                  empty: 0,
+                  total: myLastTotal, // ⭐ 중요: 어제 토탈값으로 원상복구
+                  time: "입력취소" 
+              };
+              todayPayload['factory'] = { 
+                  balance: finalFactoryBalance, // 내가 빠진 상태의 밸런스
+                  note: "입력 초기화됨" 
+              };
+              todayPayload['last_updated'] = serverTimestamp();
+
+              // 덮어쓰기 (merge: true)
+              await setDoc(docRef, todayPayload, { merge: true });
+              
+              showToast(`🗑️ [${manager}] 입력값 0으로 초기화 완료`, "success");
+              document.getElementById('res-balance').textContent = myLastTotal; // 어제 잔량 표시
+          } else {
+              // 정상 저장 로직 (동일)
+              todayPayload[fieldName] = { 
+                  st: num1, rice: num2, empty: num3, 
+                  total: finalPersonalTotal, 
+                  time: new Date().toLocaleTimeString() 
+              };
+              todayPayload['factory'] = { 
+                  balance: finalFactoryBalance, 
+                  note: "정상 기록됨" 
+              };
+              todayPayload['last_updated'] = serverTimestamp();
+
+              await setDoc(docRef, todayPayload, { merge: true });
+              document.getElementById('res-balance').textContent = finalPersonalTotal; 
+          }
+
+          // 4. 결과창 숫자 표시
+          document.getElementById('res-val1').textContent = num1;
+          document.getElementById('res-val2').textContent = num2;
+          document.getElementById('res-val3').textContent = num3;
+          
+          // 마무리
+          if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
+          document.getElementById('qe-form-content').classList.add('hidden');
+          document.getElementById('qe-result-content').classList.remove('hidden');
+          
+          if(typeof window.callAppsScript === 'function') {
+              window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
+          }
+          val1Input.value = ""; val2Input.value = ""; val3Input.value = "";
+
+      } catch(e) {
+          console.error(e);
+          showToast("저장 오류", "error");
+      } finally {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+      }
   }
 </script>
 </head>
@@ -1976,40 +2133,82 @@ function getFactoryLedgerStatus(e) {
   // ===============================================
     // 🏭 [누락된 함수 복구] 공장 합계 데이터 가져오기
     // ===============================================
-    async function updateFactoryStatus() {
-        // 1. 숫자가 들어갈 자리 찾기
-        const el19 = document.getElementById('val-f19');
-        const el20 = document.getElementById('val-f20');
-        const el21 = document.getElementById('val-f21');
+// 🏭 [파이어베이스 버전] 공장 현황판: 총출고(f19) / 총반납(f20) / 현재고(f21)
+window.updateFactoryStatus = async function() {
+    const el19 = document.getElementById('val-f19'); // 총 출고 (생탁+쌀)
+    const el20 = document.getElementById('val-f20'); // 총 반납 (빈박스)
+    const el21 = document.getElementById('val-f21'); // 공장 잔량
 
-        // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
-        if (!el19 || !el20 || !el21) return;
+    if (!el19 || !el20 || !el21) return;
 
-        // 1. [로딩 효과] 텍스트 대신 '반짝이는 회색 박스(스켈레톤)'를 보여줍니다.
-    // 사용자는 "아, 데이터를 가져오는 중이구나"라고 직관적으로 알게 됩니다.
+    // 로딩 중 표시 (반짝이 효과)
     const skeletonHTML = '<div class="h-8 w-20 bg-gray-200 rounded animate-pulse inline-block align-middle"></div>';
-    
     el19.innerHTML = skeletonHTML;
     el20.innerHTML = skeletonHTML;
     el21.innerHTML = skeletonHTML;
 
-        try {
-            // 3. 서버에 데이터 요청
-            const result = await callAppsScript('getFactoryStatus');
-            
-            if (result.status === 'success') {
-                // 4. 받아온 숫자 채워넣기
-                el19.textContent = result.totals.f19;
-                el20.textContent = result.totals.f20;
-                el21.textContent = result.totals.f21;
-            } else {
-                el19.textContent = '?'; // 실패 시 물음표
-            }
-        } catch (e) {
-            console.error("공장 현황 로드 실패:", e);
-            el19.textContent = '-'; // 에러 시 하이픈
+    try {
+        const { collection, query, orderBy, limit, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 최신 장부 1개 가져오기
+        const q = query(
+            collection(window.db, "daily_sales"),
+            orderBy("__name__", "desc"), 
+            limit(1)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            el19.textContent = '-'; el20.textContent = '-'; el21.textContent = '0';
+            return;
         }
+
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        const docDate = doc.id;
+
+        // 오늘 날짜 확인
+        const today = new Date();
+        const todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+        const isToday = (docDate === todayStr);
+
+        // 데이터 합산 준비
+        const kim = data.kim || { st:0, rice:0, empty:0 };
+        const jung = data.jung || { st:0, rice:0, empty:0 };
+        
+        // 1️⃣ f19: 총 출고량 (김 생탁+쌀 + 정 생탁+쌀)
+        const totalOut = (kim.st || 0) + (kim.rice || 0) + (jung.st || 0) + (jung.rice || 0);
+        
+        // 2️⃣ f20: 총 반납량 (김 빈박스 + 정 빈박스)
+        const totalEmpty = (kim.empty || 0) + (jung.empty || 0);
+
+        // 3️⃣ f21: 공장 잔량 (DB 값)
+        let factoryBalance = 0;
+        if (data.factory && data.factory.balance !== undefined) {
+            factoryBalance = data.factory.balance;
+        }
+
+        // 화면 표시
+        if (isToday) {
+            // 오늘 기록이 있으면 -> 오늘 집계 현황 표시
+            el19.textContent = totalOut;   // 🟢 총 출고
+            el20.textContent = totalEmpty; // 🔵 총 반납
+            el21.textContent = factoryBalance; // 🔴 현재고
+            el21.style.color = "red";
+        } else {
+            // 오늘 기록이 없으면 -> 출고/반납은 대기(-), 잔량은 어제 마감값(현재고)
+            el19.textContent = '-'; 
+            el20.textContent = '-';
+            el21.textContent = factoryBalance; 
+            el21.style.color = "red";
+        }
+
+    } catch (e) {
+        console.error("공장 현황 로드 실패:", e);
+        el19.textContent = '-'; el20.textContent = '-'; el21.textContent = '-';
     }
+}
 
     // ===============================================
     // 🗂️ 보고서 옵션 팝업 제어 (바텀 시트 애니메이션 적용)
@@ -2358,7 +2557,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
             </div>
 
             <button id="qe-submit-btn" 
-                    onclick="submitQuickDailyReport()" 
+                    onclick="saveToFirebase()" 
                     class="w-full mt-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-red-500/40 active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/10">
                  입력 완료
             </button>
@@ -2487,28 +2686,3 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
