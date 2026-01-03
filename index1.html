@@ -33,36 +33,56 @@
   }
 </script>
 <script type="module">
-  // ... (위쪽 import 및 설정 코드는 그대로 유지) ...
+  // 1. 필요한 도구들 가져오기 (이 부분이 없어서 안 됐던 겁니다!)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // 2. 사장님 앱 출입증 (Config)
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4f4rLPaanGV-72YZhn5sy_fRkTZk_sA0",
+    authDomain: "gangseo-app.firebaseapp.com",
+    projectId: "gangseo-app",
+    storageBucket: "gangseo-app.firebasestorage.app",
+    messagingSenderId: "166683314292",
+    appId: "1:166683314292:web:3e5e96ca88fece97086921"
+  };
+
+  // 3. 엔진 시동
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 전역 변수 설정 (콘솔 테스트용)
+  window.db = db;
+
+  // 🔥 [핵심] 0.1초 만에 저장하는 함수
   window.saveToFirebase = async function() {
+      // (1) 입력된 값 가져오기
       const manager = document.getElementById('qe-manager').value;
-      const val1 = Number(document.getElementById('qe-input-1').value) || 0; 
-      const val2 = Number(document.getElementById('qe-input-2').value) || 0; 
-      const val3 = Number(document.getElementById('qe-input-3').value) || 0; 
+      const val1 = Number(document.getElementById('qe-input-1').value) || 0; // 생탁
+      const val2 = Number(document.getElementById('qe-input-2').value) || 0; // 우리쌀
+      const val3 = Number(document.getElementById('qe-input-3').value) || 0; // 미출고
 
       if(!manager) { 
           alert("담당자를 선택해주세요!"); 
           return; 
       }
 
-      // ✨ [수정] 여기가 핵심! (이름 검사하는 촌스러운 코드 삭제)
-      // 명단표를 만들어서 짝을 맞춰줍니다. (훨씬 깔끔하죠?)
+      // (2) 명단표 (매칭)
       const userMap = {
           '김원대': 'kim',
           '정병준': 'jung'
       };
 
-      const fieldName = userMap[manager]; // 명단표에서 영문 ID를 쏙 뽑아옵니다.
+      const fieldName = userMap[manager]; // 영문 ID 변환
 
-      // (혹시라도 엉뚱한 이름이 들어오면 에러 처리)
       if (!fieldName) {
           alert("등록되지 않은 담당자입니다.");
           return;
       }
 
-      // 날짜 생성 (2026-01-03)
+      // (3) 저장할 데이터 포장하기
       const today = new Date();
+      // 날짜를 "2026-01-03" 형식으로 만듦
       const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
       
       const updateData = {
@@ -70,20 +90,28 @@
               st: val1,    
               rice: val2,  
               empty: val3, 
-              time: new Date().toLocaleTimeString() 
+              time: new Date().toLocaleTimeString() // 저장 시간
           },
-          last_updated: serverTimestamp() 
+          last_updated: serverTimestamp() // 서버 시간
       };
 
+      // (4) 파이어베이스로 로켓 발사! 🚀
       try {
+          // 'daily_sales' 장부에 '오늘 날짜' 문서로 저장 (덮어쓰기 모드)
           await setDoc(doc(db, "daily_sales", dateStr), updateData, { merge: true });
+          
           alert("🚀 저장 성공! (파이어베이스)");
+          
+          // 성공하면 모달 닫기
           if(typeof closeQuickEntryModal === 'function') closeQuickEntryModal();
+          
       } catch(e) {
           alert("에러 발생: " + e.message);
           console.error(e);
       }
   }
+
+  console.log("🔥 파이어베이스(DB) 및 저장 기능 장전 완료!");
 </script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
