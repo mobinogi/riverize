@@ -47,11 +47,11 @@
     appId: "1:166683314292:web:3e5e96ca88fece97086921"
   };
 
-  // 3. 엔진 시동!
+// 3. 엔진 시동 걸기
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 4. 전역 변수로 만들기 (다른 함수에서도 쓸 수 있게)
+  // 4. 전역 변수로 내보내기 (다른 코드에서도 쓸 수 있게)
   window.db = db;
   window.collection = collection;
   window.addDoc = addDoc;
@@ -60,10 +60,7 @@
   window.orderBy = orderBy;
   window.limit = limit;
 
-  console.log("🔥 파이어베이스(DB) 연결 성공!");
-  
-  // ✨ 연결 테스트: 콘솔창에 메시지 띄우기
-  // 개발자 도구(F12) -> Console 탭에서 window.db가 보이면 성공입니다.
+  console.log("🔥 파이어베이스(DB) 연결 성공! 엔진 가동 중...");
 </script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
