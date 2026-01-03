@@ -54,10 +54,13 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🔥 [하이브리드 V18] 순차적 역순 추적 (비용 절감형)
+// 🔥 [V22 Final] 직원 채용 대비 + 삭제/수정 완벽 대응 엔진
   window.saveToFirebase = async function() {
-      const { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } 
+      const { doc, getDoc, setDoc, updateDoc, deleteField, collection, query, orderBy, limit, getDocs, serverTimestamp } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+      // 0. DB 연결 확인 (안전장치)
+      if (!window.db) { showToast("데이터베이스 연결 대기중...", "error"); return; }
 
       const manager = document.getElementById('qe-manager').value;
       const val1Input = document.getElementById('qe-input-1');
@@ -73,74 +76,86 @@
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🔍 최적 경로 추적 중...</span>`;
+      submitBtn.innerHTML = `<span>🔒 정밀 저장 중...</span>`;
       submitBtn.disabled = true;
 
       try {
           const userMap = { '김원대': 'kim', '정병준': 'jung' };
-          const fieldName = userMap[manager];
+          const fieldName = userMap[manager]; // 나 (kim 또는 jung)
+          
           const today = new Date();
           const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
           const docRef = doc(window.db, "daily_sales", dateStr);
 
-          // ====================================================
-          // 🚀 [핵심] 순차적 역순 추적 (데이터 찾으면 즉시 중단)
-          // ====================================================
+          // 1. [과거 추적] 어제 이전의 '확정된' 데이터 확보
           const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(15));
           const qSnap = await getDocs(q);
           
-          let lastPersonalTotal = 0;
-          let latestFactoryBalance = 0;
+          let lastPersonalTotal = 0;   
+          let baseFactoryBalance = 0;  
 
-          // 1. 공장 밸런스는 '누구든 마지막에 쓴' 최신값 하나만 필요함
           for (const d of qSnap.docs) {
-              if (d.id < dateStr) {
+              if (d.id < dateStr) { // 오늘 날짜 제외하고 과거만 봄
                   const data = d.data();
-                  if (data.factory?.balance !== undefined) {
-                      latestFactoryBalance = data.factory.balance;
-                      break; // 공장 거 찾았으면 이 루프는 끝!
-                  }
+                  if (lastPersonalTotal === 0 && data[fieldName]?.total !== undefined) lastPersonalTotal = data[fieldName].total;
+                  if (baseFactoryBalance === 0 && data.factory?.balance !== undefined) baseFactoryBalance = data.factory.balance;
+                  if (lastPersonalTotal > 0 && baseFactoryBalance > 0) break;
               }
           }
+          if (baseFactoryBalance === 0) baseFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
 
-          // 2. 개인 토탈은 '내 이름'으로 된 최신값이 나올 때까지 뒤짐
-          for (const d of qSnap.docs) {
-              if (d.id < dateStr) {
-                  const data = d.data();
-                  if (data[fieldName]?.total !== undefined) {
-                      lastPersonalTotal = data[fieldName].total;
-                      break; // 내 토탈 찾았으면 이 루프도 끝!
-                  }
-              }
-          }
-
-          // 만약 오늘 누군가 이미 입력했다면 공장 밸런스만 오늘 치로 업데이트
+          // 2. [오늘 분석] 나를 제외한 '다른 모든 담당자'들의 오늘 실적 합산 (자동 감지)
           const todaySnap = await getDoc(docRef);
-          if (todaySnap.exists() && todaySnap.data().factory?.balance !== undefined) {
-              latestFactoryBalance = todaySnap.data().factory.balance;
+          let otherNet = 0;
+          
+          if (todaySnap.exists()) {
+              const todayData = todaySnap.data();
+              // 문서 내의 모든 키를 훑어서 계산 (확장성 확보)
+              Object.keys(todayData).forEach(key => {
+                  // factory, last_updated, 그리고 '나'를 제외한 모든 데이터 합산
+                  if (key !== 'factory' && key !== 'last_updated' && key !== fieldName) {
+                      const o = todayData[key];
+                      if (o && (o.st !== undefined || o.rice !== undefined)) {
+                          otherNet += (Number(o.st || 0) + Number(o.rice || 0)) - Number(o.empty || 0);
+                      }
+                  }
+              });
           }
 
-          // DB에 아예 데이터가 없으면 전광판 숫자 사용
-          if (latestFactoryBalance === 0) latestFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
-
-          // ====================================================
-          // 🚀 계산 및 저장 (동일)
-          // ====================================================
+          // 3. [최종 계산] 
           const finalPersonalTotal = lastPersonalTotal + dailyNet;
-          const finalFactoryBalance = latestFactoryBalance + dailyNet;
+          const finalFactoryBalance = baseFactoryBalance + otherNet + dailyNet;
 
-          await setDoc(docRef, {
-              [fieldName]: { st: num1, rice: num2, empty: num3, total: finalPersonalTotal, time: new Date().toLocaleTimeString() },
-              factory: { balance: finalFactoryBalance, note: "순차 추적 엔진" },
-              last_updated: serverTimestamp()
-          }, { merge: true });
+          // 4. [분기 처리] 삭제(0,0,0) vs 저장
+          if (num1 === 0 && num2 === 0 && num3 === 0) {
+              // 🗑️ 삭제: 내 데이터 지우고, 공장 잔량은 (어제+남들꺼)로 복구
+              if (todaySnap.exists()) {
+                  await updateDoc(docRef, {
+                      [fieldName]: deleteField(),
+                      "factory.balance": finalFactoryBalance,
+                      last_updated: serverTimestamp()
+                  });
+              }
+              showToast(`🗑️ [${manager}] 기록 삭제 완료`, "success");
+              // 삭제했으니 내 잔량은 '어제 잔량'으로 보여줌
+              document.getElementById('res-balance').textContent = lastPersonalTotal; 
+          } else {
+              // 💾 저장: 덮어쓰기 모드
+              await setDoc(docRef, {
+                  [fieldName]: { st: num1, rice: num2, empty: num3, total: finalPersonalTotal, time: new Date().toLocaleTimeString() },
+                  factory: { balance: finalFactoryBalance, note: "V22 정밀엔진" },
+                  last_updated: serverTimestamp()
+              }, { merge: true });
+              
+              document.getElementById('res-balance').textContent = finalPersonalTotal; 
+          }
 
-          // UI 업데이트
+          // 5. [마무리] UI 및 로그
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
+          
           document.getElementById('qe-form-content').classList.add('hidden');
           document.getElementById('qe-result-content').classList.remove('hidden');
-          document.getElementById('res-balance').textContent = finalPersonalTotal;
-
+          
           if(typeof window.callAppsScript === 'function') {
               window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
           }
@@ -148,7 +163,7 @@
 
       } catch(e) {
           console.error(e);
-          showToast("저장 오류", "error");
+          showToast("저장 중 오류가 발생했습니다.", "error");
       } finally {
           submitBtn.innerHTML = originalText;
           submitBtn.disabled = false;
