@@ -32,13 +32,13 @@
     darkMode: 'class' 
   }
 </script>
-  <script type="module">
-  // 1. 파이어베이스 도구 가져오기
+<script type="module">
+  // 1. 필요한 도구들 더 많이 가져오기 (doc, setDoc 추가됨)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // 🔴 2. [중요] 아까 복사한 '내 앱 설정'을 여기에 덮어씌우세요!
-    const firebaseConfig = {
+  // 2. 사장님 앱 출입증
+  const firebaseConfig = {
     apiKey: "AIzaSyB4f4rLPaanGV-72YZhn5sy_fRkTZk_sA0",
     authDomain: "gangseo-app.firebaseapp.com",
     projectId: "gangseo-app",
@@ -47,20 +47,60 @@
     appId: "1:166683314292:web:3e5e96ca88fece97086921"
   };
 
-// 3. 엔진 시동 걸기
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 4. 전역 변수로 내보내기 (다른 코드에서도 쓸 수 있게)
+  // 전역 변수 설정
   window.db = db;
-  window.collection = collection;
-  window.addDoc = addDoc;
-  window.getDocs = getDocs;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.limit = limit;
 
-  console.log("🔥 파이어베이스(DB) 연결 성공! 엔진 가동 중...");
+  // 🔥 [핵심] 0.1초 만에 저장하는 함수
+  window.saveToFirebase = async function() {
+      // (1) 입력된 값 가져오기
+      const manager = document.getElementById('qe-manager').value;
+      const val1 = Number(document.getElementById('qe-input-1').value) || 0; // 생탁
+      const val2 = Number(document.getElementById('qe-input-2').value) || 0; // 우리쌀
+      const val3 = Number(document.getElementById('qe-input-3').value) || 0; // 미출고
+
+      if(!manager) { 
+          alert("담당자를 선택해주세요!"); 
+          return; 
+      }
+
+      // (2) 저장할 데이터 포장하기
+      const today = new Date();
+      // 날짜를 "2026-01-03" 형식으로 만듦 (문서 이름으로 씀)
+      const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+      
+      // 김원대면 'kim', 정병준이면 'jung'이라는 방에 저장
+      const fieldName = (manager === '김원대') ? 'kim' : 'jung';
+      
+      const updateData = {
+          [fieldName]: {
+              st: val1,    
+              rice: val2,  
+              empty: val3, 
+              time: new Date().toLocaleTimeString() // 저장 시간
+          },
+          last_updated: serverTimestamp() // 서버 시간 도장 쾅!
+      };
+
+      // (3) 파이어베이스로 로켓 발사! 🚀
+      try {
+          // 'daily_sales'라는 장부에 '오늘 날짜' 페이지를 찾아서 덮어씀 (merge: true는 기존 데이터 유지)
+          await setDoc(doc(db, "daily_sales", dateStr), updateData, { merge: true });
+          
+          alert("🚀 저장 성공! (파이어베이스)");
+          
+          // 모달 닫기
+          if(typeof closeQuickEntryModal === 'function') closeQuickEntryModal();
+          
+      } catch(e) {
+          alert("에러 발생: " + e.message);
+          console.error(e);
+      }
+  }
+
+  console.log("🔥 파이어베이스 저장 기능 장전 완료!");
 </script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
@@ -2388,7 +2428,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
             </div>
 
             <button id="qe-submit-btn" 
-                    onclick="submitQuickDailyReport()" 
+                    onclick="saveToFirebase()" 
                     class="w-full mt-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-red-500/40 active:scale-95 transition-all flex items-center justify-center gap-2 border border-white/10">
                  입력 완료
             </button>
