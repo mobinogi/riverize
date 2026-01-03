@@ -2057,40 +2057,82 @@ function getFactoryLedgerStatus(e) {
   // ===============================================
     // 🏭 [누락된 함수 복구] 공장 합계 데이터 가져오기
     // ===============================================
-    async function updateFactoryStatus() {
-        // 1. 숫자가 들어갈 자리 찾기
-        const el19 = document.getElementById('val-f19');
-        const el20 = document.getElementById('val-f20');
-        const el21 = document.getElementById('val-f21');
+// 🏭 [파이어베이스 버전] 공장 현황판: 총출고(f19) / 총반납(f20) / 현재고(f21)
+window.updateFactoryStatus = async function() {
+    const el19 = document.getElementById('val-f19'); // 총 출고 (생탁+쌀)
+    const el20 = document.getElementById('val-f20'); // 총 반납 (빈박스)
+    const el21 = document.getElementById('val-f21'); // 공장 잔량
 
-        // (안전장치) 화면에 아직 날짜/합계 박스를 안 만들었으면 중단
-        if (!el19 || !el20 || !el21) return;
+    if (!el19 || !el20 || !el21) return;
 
-        // 1. [로딩 효과] 텍스트 대신 '반짝이는 회색 박스(스켈레톤)'를 보여줍니다.
-    // 사용자는 "아, 데이터를 가져오는 중이구나"라고 직관적으로 알게 됩니다.
+    // 로딩 중 표시 (반짝이 효과)
     const skeletonHTML = '<div class="h-8 w-20 bg-gray-200 rounded animate-pulse inline-block align-middle"></div>';
-    
     el19.innerHTML = skeletonHTML;
     el20.innerHTML = skeletonHTML;
     el21.innerHTML = skeletonHTML;
 
-        try {
-            // 3. 서버에 데이터 요청
-            const result = await callAppsScript('getFactoryStatus');
-            
-            if (result.status === 'success') {
-                // 4. 받아온 숫자 채워넣기
-                el19.textContent = result.totals.f19;
-                el20.textContent = result.totals.f20;
-                el21.textContent = result.totals.f21;
-            } else {
-                el19.textContent = '?'; // 실패 시 물음표
-            }
-        } catch (e) {
-            console.error("공장 현황 로드 실패:", e);
-            el19.textContent = '-'; // 에러 시 하이픈
+    try {
+        const { collection, query, orderBy, limit, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        
+        // 최신 장부 1개 가져오기
+        const q = query(
+            collection(window.db, "daily_sales"),
+            orderBy("__name__", "desc"), 
+            limit(1)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            el19.textContent = '-'; el20.textContent = '-'; el21.textContent = '0';
+            return;
         }
+
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        const docDate = doc.id;
+
+        // 오늘 날짜 확인
+        const today = new Date();
+        const todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
+        const isToday = (docDate === todayStr);
+
+        // 데이터 합산 준비
+        const kim = data.kim || { st:0, rice:0, empty:0 };
+        const jung = data.jung || { st:0, rice:0, empty:0 };
+        
+        // 1️⃣ f19: 총 출고량 (김 생탁+쌀 + 정 생탁+쌀)
+        const totalOut = (kim.st || 0) + (kim.rice || 0) + (jung.st || 0) + (jung.rice || 0);
+        
+        // 2️⃣ f20: 총 반납량 (김 빈박스 + 정 빈박스)
+        const totalEmpty = (kim.empty || 0) + (jung.empty || 0);
+
+        // 3️⃣ f21: 공장 잔량 (DB 값)
+        let factoryBalance = 0;
+        if (data.factory && data.factory.balance !== undefined) {
+            factoryBalance = data.factory.balance;
+        }
+
+        // 화면 표시
+        if (isToday) {
+            // 오늘 기록이 있으면 -> 오늘 집계 현황 표시
+            el19.textContent = totalOut;   // 🟢 총 출고
+            el20.textContent = totalEmpty; // 🔵 총 반납
+            el21.textContent = factoryBalance; // 🔴 현재고
+            el21.style.color = "red";
+        } else {
+            // 오늘 기록이 없으면 -> 출고/반납은 대기(-), 잔량은 어제 마감값(현재고)
+            el19.textContent = '-'; 
+            el20.textContent = '-';
+            el21.textContent = factoryBalance; 
+            el21.style.color = "red";
+        }
+
+    } catch (e) {
+        console.error("공장 현황 로드 실패:", e);
+        el19.textContent = '-'; el20.textContent = '-'; el21.textContent = '-';
     }
+}
 
     // ===============================================
     // 🗂️ 보고서 옵션 팝업 제어 (바텀 시트 애니메이션 적용)
