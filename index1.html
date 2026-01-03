@@ -54,9 +54,9 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🔥 [하이브리드 V13] 데이터 증발 방지 + 실시간 직접 조회 엔진
+// 🔥 [하이브리드 V18] 순차적 역순 추적 (비용 절감형)
   window.saveToFirebase = async function() {
-      const { doc, getDoc, setDoc, updateDoc, deleteField, collection, query, orderBy, limit, getDocs, serverTimestamp } 
+      const { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
       const manager = document.getElementById('qe-manager').value;
@@ -67,12 +67,13 @@
       const num1 = Number(val1Input.value) || 0; 
       const num2 = Number(val2Input.value) || 0; 
       const num3 = Number(val3Input.value) || 0; 
+      const dailyNet = (num1 + num2) - num3; 
 
       if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🔄 실시간 정합성 체크 중...</span>`;
+      submitBtn.innerHTML = `<span>🔍 최적 경로 추적 중...</span>`;
       submitBtn.disabled = true;
 
       try {
@@ -83,79 +84,71 @@
           const docRef = doc(window.db, "daily_sales", dateStr);
 
           // ====================================================
-          // 🚀 [핵심 보정] 저장 직전, DB에서 가장 최신 balance 직접 읽기
+          // 🚀 [핵심] 순차적 역순 추적 (데이터 찾으면 즉시 중단)
           // ====================================================
-          // 1. 오늘 문서가 이미 있는지 확인
-          const todaySnap = await getDoc(docRef);
-          let baseBalance = 0;
-          let basePersonalTotal = 0;
-
-          if (todaySnap.exists() && todaySnap.data().factory?.balance !== undefined) {
-              // 오늘 누군가 이미 입력했다면 그 숫자를 기준점으로 잡음 (증발 방지)
-              baseBalance = Number(todaySnap.data().factory.balance);
-              basePersonalTotal = Number(todaySnap.data()[fieldName]?.total || 0);
-          } 
+          const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(15));
+          const qSnap = await getDocs(q);
           
-          // 2. 만약 오늘 첫 입력이라면, 어제 기록을 뒤짐
-          if (baseBalance === 0) {
-              const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
-              const querySnapshot = await getDocs(q);
-              for (const d of querySnapshot.docs) {
-                  if (d.id < dateStr) {
-                      if (baseBalance === 0) baseBalance = Number(d.data().factory?.balance || 0);
-                      if (basePersonalTotal === 0) basePersonalTotal = Number(d.data()[fieldName]?.total || 0);
-                      if (baseBalance > 0 && basePersonalTotal > 0) break;
+          let lastPersonalTotal = 0;
+          let latestFactoryBalance = 0;
+
+          // 1. 공장 밸런스는 '누구든 마지막에 쓴' 최신값 하나만 필요함
+          for (const d of qSnap.docs) {
+              if (d.id < dateStr) {
+                  const data = d.data();
+                  if (data.factory?.balance !== undefined) {
+                      latestFactoryBalance = data.factory.balance;
+                      break; // 공장 거 찾았으면 이 루프는 끝!
                   }
               }
           }
 
-          // DB에도 없으면 최후의 수단으로 전광판 숫자 사용
-          if (baseBalance === 0) baseBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
-
-          // --- 2단계: 정밀 계산 ---
-          const dailyNet = (num1 + num2) - num3; 
-          const finalFactoryBalance = baseBalance + dailyNet;
-          const finalPersonalTotal = (basePersonalTotal === 0 && todaySnap.exists()) 
-                                     ? Number(todaySnap.data()[fieldName]?.total || 0) + dailyNet // 이미 오늘 데이터가 있는 경우
-                                     : basePersonalTotal + dailyNet;
-
-          // ====================================================
-          // 🚀 [저장 및 UI 업데이트]
-          // ====================================================
-          if (num1 === 0 && num2 === 0 && num3 === 0) {
-              await updateDoc(docRef, { [fieldName]: deleteField(), last_updated: serverTimestamp() });
-              showToast(`🗑️ [${manager}] 삭제 완료`, "success");
-              if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
-              closeQuickEntryModal();
-              return;
+          // 2. 개인 토탈은 '내 이름'으로 된 최신값이 나올 때까지 뒤짐
+          for (const d of qSnap.docs) {
+              if (d.id < dateStr) {
+                  const data = d.data();
+                  if (data[fieldName]?.total !== undefined) {
+                      lastPersonalTotal = data[fieldName].total;
+                      break; // 내 토탈 찾았으면 이 루프도 끝!
+                  }
+              }
           }
+
+          // 만약 오늘 누군가 이미 입력했다면 공장 밸런스만 오늘 치로 업데이트
+          const todaySnap = await getDoc(docRef);
+          if (todaySnap.exists() && todaySnap.data().factory?.balance !== undefined) {
+              latestFactoryBalance = todaySnap.data().factory.balance;
+          }
+
+          // DB에 아예 데이터가 없으면 전광판 숫자 사용
+          if (latestFactoryBalance === 0) latestFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
+
+          // ====================================================
+          // 🚀 계산 및 저장 (동일)
+          // ====================================================
+          const finalPersonalTotal = lastPersonalTotal + dailyNet;
+          const finalFactoryBalance = latestFactoryBalance + dailyNet;
 
           await setDoc(docRef, {
               [fieldName]: { st: num1, rice: num2, empty: num3, total: finalPersonalTotal, time: new Date().toLocaleTimeString() },
-              factory: { balance: finalFactoryBalance, note: "정밀 합산 완료" },
+              factory: { balance: finalFactoryBalance, note: "순차 추적 엔진" },
               last_updated: serverTimestamp()
           }, { merge: true });
 
+          // UI 업데이트
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
-
-          // 결과 표시
           document.getElementById('qe-form-content').classList.add('hidden');
           document.getElementById('qe-result-content').classList.remove('hidden');
-          document.getElementById('res-manager').textContent = manager;
-          document.getElementById('res-val1').textContent = num1;
-          document.getElementById('res-val2').textContent = num2;
-          document.getElementById('res-val3').textContent = num3;
-          document.getElementById('res-balance').textContent = finalPersonalTotal; 
+          document.getElementById('res-balance').textContent = finalPersonalTotal;
 
           if(typeof window.callAppsScript === 'function') {
               window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
           }
-
           val1Input.value = ""; val2Input.value = ""; val3Input.value = "";
 
       } catch(e) {
           console.error(e);
-          showToast("연산 오류 발생", "error");
+          showToast("저장 오류", "error");
       } finally {
           submitBtn.innerHTML = originalText;
           submitBtn.disabled = false;
