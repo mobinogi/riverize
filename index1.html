@@ -54,64 +54,70 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-  // 🔥 [핵심] 0.1초 만에 저장하는 함수
+// 2. 🔥 하이브리드 세이브 (사장님의 결과 박스 연동 버전)
   window.saveToFirebase = async function() {
-      // (1) 입력된 값 가져오기
+      // (1) 입력 데이터 수집
       const manager = document.getElementById('qe-manager').value;
-      const val1 = Number(document.getElementById('qe-input-1').value) || 0; // 생탁
-      const val2 = Number(document.getElementById('qe-input-2').value) || 0; // 우리쌀
-      const val3 = Number(document.getElementById('qe-input-3').value) || 0; // 미출고
+      const val1 = document.getElementById('qe-input-1').value || 0;
+      const val2 = document.getElementById('qe-input-2').value || 0;
+      const val3 = document.getElementById('qe-input-3').value || 0;
 
-      if(!manager) { 
-          alert("담당자를 선택해주세요!"); 
-          return; 
-      }
+      if(!manager) { alert("담당자를 선택해주세요!"); return; }
 
-      // (2) 명단표 (매칭)
-      const userMap = {
-          '김원대': 'kim',
-          '정병준': 'jung'
-      };
+      // (2) 버튼 로딩 표시
+      const submitBtn = document.getElementById('qe-submit-btn');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = `<span>🚀 전송 중...</span>`;
+      submitBtn.disabled = true;
 
-      const fieldName = userMap[manager]; // 영문 ID 변환
-
-      if (!fieldName) {
-          alert("등록되지 않은 담당자입니다.");
-          return;
-      }
-
-      // (3) 저장할 데이터 포장하기
-      const today = new Date();
-      // 날짜를 "2026-01-03" 형식으로 만듦
-      const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
-      
-      const updateData = {
-          [fieldName]: {
-              st: val1,    
-              rice: val2,  
-              empty: val3, 
-              time: new Date().toLocaleTimeString() // 저장 시간
-          },
-          last_updated: serverTimestamp() // 서버 시간
-      };
-
-      // (4) 파이어베이스로 로켓 발사! 🚀
       try {
-          // 'daily_sales' 장부에 '오늘 날짜' 문서로 저장 (덮어쓰기 모드)
-          await setDoc(doc(db, "daily_sales", dateStr), updateData, { merge: true });
+          // --- 🚀 1단계: 파이어베이스 초고속 저장 ---
+          const userMap = { '김원대': 'kim', '정병준': 'jung' };
+          const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
           
-          alert("🚀 저장 성공! (파이어베이스)");
-          
-          // 성공하면 모달 닫기
-          if(typeof closeQuickEntryModal === 'function') closeQuickEntryModal();
-          
+          await setDoc(doc(window.db, "daily_sales", dateStr), {
+              [userMap[manager]]: { 
+                  st: Number(val1), rice: Number(val2), empty: Number(val3), 
+                  time: new Date().toLocaleTimeString() 
+              },
+              last_updated: serverTimestamp()
+          }, { merge: true });
+
+          // --- 🖼️ 2단계: 사장님이 만든 [결과 박스] 화면 전환 ---
+          // 입력폼 숨기고 결과창 보이기
+          document.getElementById('qe-form-content').classList.add('hidden');
+          document.getElementById('qe-result-content').classList.remove('hidden');
+          // X 버튼도 결과창 볼 때는 거슬리니까 숨기기 (선택사항)
+          if(document.getElementById('qe-close-btn')) document.getElementById('qe-close-btn').classList.add('hidden');
+
+          // 결과 박스에 데이터 매핑 (사장님이 만드신 ID들)
+          document.getElementById('res-manager').textContent = manager;
+          document.getElementById('res-val1').textContent = val1;
+          document.getElementById('res-val2').textContent = val2;
+          document.getElementById('res-val3').textContent = val3;
+
+          // 공장 잔량(f21) 업데이트 후 결과창에 반영
+          if(typeof window.updateFactoryStatus === 'function') {
+              window.updateFactoryStatus().then(() => {
+                  const stock = document.getElementById('val-f21')?.textContent || "0";
+                  document.getElementById('res-balance').textContent = stock;
+              });
+          }
+
+          // --- 🐢 3단계: GAS 엑셀 백업 (백그라운드) ---
+          if(typeof window.callAppsScript === 'function') {
+              window.callAppsScript('writeDailyLog', { 
+                  manager: manager, val1: val1, val2: val2, val3: val3 
+              }).catch(e => console.log("엑셀 백업은 나중에: ", e));
+          }
+
       } catch(e) {
-          alert("에러 발생: " + e.message);
-          console.error(e);
+          alert("오류 발생: " + e.message);
+      } finally {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
       }
   }
-
-  console.log("🔥 파이어베이스(DB) 및 저장 기능 장전 완료!");
 </script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
