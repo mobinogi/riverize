@@ -180,7 +180,10 @@
               await setDoc(docRef, todayPayload, { merge: true });
               document.getElementById('res-balance').textContent = finalPersonalTotal; 
           }
-
+          document.getElementById('res-val1').textContent = num1;
+          document.getElementById('res-val2').textContent = num2;
+          document.getElementById('res-val3').textContent = num3;
+        
           // 마무리
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
           document.getElementById('qe-form-content').classList.add('hidden');
