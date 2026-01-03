@@ -54,50 +54,11 @@
   // 전역 변수 설정 (콘솔 테스트용)
   window.db = db;
 
-// 🟢 [1] 사전 로딩 함수 (버튼 누를 때 실행됨)
-  window.loadUserData = async function(managerName) {
-      if (!managerName) return;
-      
-      // 1. 안내 메시지 띄우기 (로딩 시작)
-      showToast(`⏳ ${managerName}님의 장부를 찾는 중...`, "info");
-      
-      const { collection, query, orderBy, limit, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-      
-      const userMap = { '김원대': 'kim', '정병준': 'jung' };
-      const fieldName = userMap[managerName];
-      const today = new Date();
-      const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
-
-      // 2. 과거 데이터 15개 뒤지기 (오늘 날짜 제외)
-      const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(15));
-      const qSnap = await getDocs(q);
-      
-      let myLastTotal = 0;
-      
-      for (const d of qSnap.docs) {
-          if (d.id < dateStr) { // 오늘은 무시하고 어제 이전만 봄
-              const data = d.data();
-              if (data[fieldName]?.total !== undefined) {
-                  myLastTotal = data[fieldName].total;
-                  break; // 찾았다!
-              }
-          }
-      }
-
-      // 3. 찾은 값을 전역 변수에 저장 (나중에 저장 버튼 누를 때 씀)
-      window.currentUserTotal = myLastTotal;
-      
-      // 4. 완료 메시지
-      showToast(`✅ ${managerName} 전잔: ${myLastTotal}개 확인됨`, "success");
-  };
-
-
-  // 🔴 [2] 저장 함수 (저장 버튼 누를 때 실행됨)
+// 🔥 [V27] "너도 같이 가자!" 동료 데이터 자동 계승 엔진
   window.saveToFirebase = async function() {
       const { doc, getDoc, setDoc, updateDoc, deleteField, serverTimestamp, collection, query, orderBy, limit, getDocs } 
           = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
-      // hidden input에 들어간 값(김원대/정병준)을 가져옴
       const manager = document.getElementById('qe-manager').value;
       const val1Input = document.getElementById('qe-input-1');
       const val2Input = document.getElementById('qe-input-2');
@@ -108,60 +69,104 @@
       const num3 = Number(val3Input.value) || 0; 
       const dailyNet = (num1 + num2) - num3; 
 
-      if(!manager) { showToast("담당자 버튼을 눌러주세요!", "error"); return; }
-      
-      // 🛡️ 안전장치: 버튼 눌렀을 때 저장해둔 전잔량을 가져옴 (없으면 0)
-      const loadedTotal = window.currentUserTotal !== undefined ? window.currentUserTotal : 0;
+      if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>💾 저장 중...</span>`;
+      submitBtn.innerHTML = `<span>🤝 동료 데이터 계승 중...</span>`;
       submitBtn.disabled = true;
 
       try {
           const userMap = { '김원대': 'kim', '정병준': 'jung' };
-          const fieldName = userMap[manager];
+          const fieldName = userMap[manager]; // 나
+          const otherName = (fieldName === 'kim') ? 'jung' : 'kim'; // 동료
+          
           const today = new Date();
           const dateStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,'0') + "-" + String(today.getDate()).padStart(2,'0');
           const docRef = doc(window.db, "daily_sales", dateStr);
 
-          // === 공장 밸런스 계산 (실시간 DB 조회) ===
-          // 1. 어제 마감된 공장 밸런스 찾기
-          const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(15));
+          // ==========================================================
+          // 📜 [1단계] "바로 어제(혹은 최신)" 문서 딱 하나만 가져와서 분석
+          // ==========================================================
+          // 이제 15개씩 뒤질 필요가 거의 없습니다. 계승되니까요.
+          // 그래도 혹시 모르니 5개 정도만 넉넉히 봅니다.
+          const q = query(collection(window.db, "daily_sales"), orderBy("__name__", "desc"), limit(5));
           const qSnap = await getDocs(q);
+          
+          let myLastTotal = 0;
+          let otherLastTotal = 0;
           let baseFactoryBalance = 0;
+
+          // 과거 데이터 찾기
           for (const d of qSnap.docs) {
-              if (d.id < dateStr && d.data().factory?.balance !== undefined) {
-                  baseFactoryBalance = d.data().factory.balance;
-                  break;
+              if (d.id < dateStr) {
+                  const data = d.data();
+                  
+                  // 내 전잔 찾기
+                  if (myLastTotal === 0 && data[fieldName]?.total !== undefined) myLastTotal = data[fieldName].total;
+                  
+                  // ⭐ [핵심] 동료 전잔도 같이 찾기!
+                  if (otherLastTotal === 0 && data[otherName]?.total !== undefined) otherLastTotal = data[otherName].total;
+                  
+                  // 공장 전잔
+                  if (baseFactoryBalance === 0 && data.factory?.balance !== undefined) baseFactoryBalance = data.factory.balance;
+                  
+                  // 셋 다 찾았으면 바로 탈출
+                  if (myLastTotal > 0 && otherLastTotal > 0 && baseFactoryBalance > 0) break;
               }
           }
-          if(baseFactoryBalance === 0) baseFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
+          // 공장값 없으면 전광판 사용
+          if (baseFactoryBalance === 0) baseFactoryBalance = Number(document.getElementById('val-f21')?.textContent) || 0;
 
-          // 2. 오늘 타인 실적 합산 (나 빼고 다 더해)
+
+          // ==========================================================
+          // 🤝 [2단계] 오늘 문서 상태 확인 (동료가 이미 썼나?)
+          // ==========================================================
           const todaySnap = await getDoc(docRef);
+          let todayPayload = {}; // 저장할 데이터 보따리
+
+          // 1. 내 데이터 준비
+          const finalPersonalTotal = myLastTotal + dailyNet;
+          todayPayload[fieldName] = { 
+              st: num1, rice: num2, empty: num3, 
+              total: finalPersonalTotal, 
+              time: new Date().toLocaleTimeString() 
+          };
+
+          // 2. 동료 데이터 준비 (여기가 사장님 아이디어 핵심!)
           let otherNet = 0;
-          if (todaySnap.exists()) {
-              const todayData = todaySnap.data();
-              Object.keys(todayData).forEach(key => {
-                  if (key !== 'factory' && key !== 'last_updated' && key !== fieldName) {
-                      const o = todayData[key];
-                      if (o && (o.st !== undefined || o.rice !== undefined)) {
-                          otherNet += (Number(o.st || 0) + Number(o.rice || 0)) - Number(o.empty || 0);
-                      }
-                  }
-              });
+          
+          if (todaySnap.exists() && todaySnap.data()[otherName]) {
+              // A. 동료가 이미 오늘 먼저 와서 썼음 -> 건드리지 말고 그 사람 실적 합산
+              const o = todaySnap.data()[otherName];
+              otherNet = (Number(o.st||0) + Number(o.rice||0)) - Number(o.empty||0);
+              // todayPayload[otherName] 은 추가 안 함 (이미 DB에 있으니까 merge로 유지됨)
+          } else {
+              // B. 동료가 오늘 아직 안 씀 -> ⭐ 강제 계승 (0점 처리해서 데려감)
+              todayPayload[otherName] = {
+                  st: 0, rice: 0, empty: 0,
+                  total: otherLastTotal, // 어제꺼 그대로 물려줌
+                  time: "자동이월"
+              };
+              otherNet = 0; // 오늘 변동 없음
           }
 
-          // === 최종 결과 합산 ===
-          // 내 토탈 = 아까 버튼 눌렀을 때 가져온 값 + 오늘 실적
-          const finalPersonalTotal = loadedTotal + dailyNet;
-          // 공장 밸런스 = 어제 공장값 + 남들 오늘 실적 + 내 오늘 실적
+          // 3. 공장 밸런스 계산
           const finalFactoryBalance = baseFactoryBalance + otherNet + dailyNet;
+          todayPayload['factory'] = { 
+              balance: finalFactoryBalance, 
+              note: "계승형 통합엔진" 
+          };
+          todayPayload['last_updated'] = serverTimestamp();
 
-          // === 저장 및 삭제 분기 ===
+
+          // ==========================================================
+          // 💾 [3단계] 저장 (삭제 or 업데이트)
+          // ==========================================================
           if (num1 === 0 && num2 === 0 && num3 === 0) {
+              // 삭제 시: 내 껀 지우고, 동료 껀 냅두고(또는 계승하고), 밸런스 맞춤
               if (todaySnap.exists()) {
+                   // 삭제할 땐 updateDoc으로 내 필드만 콕 집어 삭제
                   await updateDoc(docRef, {
                       [fieldName]: deleteField(),
                       "factory.balance": finalFactoryBalance,
@@ -169,19 +174,14 @@
                   });
               }
               showToast("삭제 완료", "success");
-              // 삭제 후 내 잔량은 원상복구된 값(어제 잔량)으로 표시
-              document.getElementById('res-balance').textContent = loadedTotal; 
+              document.getElementById('res-balance').textContent = myLastTotal; 
           } else {
-              await setDoc(docRef, {
-                  [fieldName]: { st: num1, rice: num2, empty: num3, total: finalPersonalTotal, time: new Date().toLocaleTimeString() },
-                  factory: { balance: finalFactoryBalance, note: "버튼형 V24" },
-                  last_updated: serverTimestamp()
-              }, { merge: true });
-              
+              // 저장 시: setDoc + merge (내꺼 + 동료꺼(없으면 자동생성) + 밸런스)
+              await setDoc(docRef, todayPayload, { merge: true });
               document.getElementById('res-balance').textContent = finalPersonalTotal; 
           }
 
-          // 마무리 UI 처리
+          // 마무리
           if(typeof window.updateFactoryStatus === 'function') await window.updateFactoryStatus();
           document.getElementById('qe-form-content').classList.add('hidden');
           document.getElementById('qe-result-content').classList.remove('hidden');
@@ -2528,12 +2528,12 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
                 </label>
                 <div class="flex gap-3">
                     <button id="qe-btn-kim" 
-                            onclick="selectQuickManager('김원대'); loadUserData('김원대')" 
+                            onclick="selectQuickManager('김원대')" 
                             class="flex-1 py-3 rounded-xl border border-white/10 bg-black/30 text-gray-300 font-bold hover:bg-white/10 transition-all shadow-inner">
                         김원대
                     </button>
                     <button id="qe-btn-jung" 
-                            onclick="selectQuickManager('정병준'); loadUserData('정병준')" 
+                            onclick="selectQuickManager('정병준')" 
                             class="flex-1 py-3 rounded-xl border border-white/10 bg-black/30 text-gray-300 font-bold hover:bg-white/10 transition-all shadow-inner">
                         정병준
                     </button>
