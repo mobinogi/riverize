@@ -360,7 +360,7 @@
             <span id="current-date">불러오는 중...</span>
         </p>
         
-        <button onclick="updateFactoryStatus(); this.querySelector('svg').classList.add('animate-spin-once'); setTimeout(() => this.querySelector('svg').classList.remove('animate-spin-once'), 700);" 
+        <button onclick="updateFactoryStatus(); const svg=this.querySelector('svg'); svg.style.transition='transform 1s ease-in-out'; svg.dataset.rot=(Number(svg.dataset.rot)||0)+360; svg.style.transform='rotate('+svg.dataset.rot+'deg)';" 
                 class="p-1 text-gray-400 transition-colors duration-200 hover:text-gray-900 focus:outline-none">
             
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -2686,3 +2686,4 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 </div>
 </body>
 </html>
+
