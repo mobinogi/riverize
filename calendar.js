@@ -44,19 +44,13 @@ function initCalendar() {
     }
 }
 
-// === 3. 달력 이동 및 데이터 조회 ===
-function changeMonth(offset) {
-    currentMonth += offset;
-    if (currentMonth < 1) {
-        currentMonth = 12;
-        currentYear--;
-    } else if (currentMonth > 12) {
-        currentMonth = 1;
-        currentYear++;
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
     }
-    // 월이 바뀌면 데이터를 다시 불러옵니다.
-    getReportFilesByMonth(currentYear, currentMonth);
-}
+
 
 function getReportFilesByMonth(year, month) {
     // 로딩 표시 (index.html에 showLoading 함수가 있다고 가정)
@@ -157,19 +151,20 @@ function renderCalendar() {
 // === 5. 이벤트 핸들러 (클릭/삭제) ===
 
 // 날짜 클릭 (새 일보 작성)
-function onDateClick(day) {
-    // index.html에 있는 모달 띄우기 로직 (openDateModal 등이 있다고 가정, 혹은 직접 구현)
-    // 기존 코드를 참고하여 '날짜 선택 모달'을 띄웁니다.
-    const dateStr = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    
-    // (기존 index.html 로직: 모달 열고 hidden 값 설정)
-    const modal = document.getElementById('date-modal');
-    if(modal) {
-        document.getElementById('selected-date-input').value = dateStr;
-        document.getElementById('modal-date-title').textContent = `${currentMonth}월 ${day}일 업무를 선택하세요`;
-        modal.classList.remove('hidden');
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url);
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
     }
-}
+
 
 // 일보 아이콘 클릭 (열기)
 function handleReportClick(url) {
