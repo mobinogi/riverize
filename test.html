@@ -1694,7 +1694,12 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // 9. [최종 통합] 초기화 및 이벤트 리스너
     // ===============================================
     document.addEventListener('DOMContentLoaded', () => {
-    
+    if(typeof initCalendar === 'function') {
+        initCalendar(); 
+    } else {
+        console.error("calendar.js가 로드되지 않았습니다.");
+    }
+});
     // --- (A) 초기 변수 및 UI 설정 ---
     const today = new Date();
     currentYear = today.getFullYear();
