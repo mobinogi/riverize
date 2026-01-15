@@ -2125,6 +2125,33 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     });
 }
 
+  function selectColor(color) {
+    document.getElementById('selected-color').value = color;
+
+    // 모든 버튼 스타일 초기화
+    ['btn-red', 'btn-blue', 'btn-black'].forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) btn.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400');
+    });
+
+    // 선택한 버튼 강조
+    const selectedBtn = document.getElementById(`btn-${color}`);
+    if(selectedBtn) selectedBtn.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400');
+}
+
+// 2. 보고서 옵션 모달 닫기 함수
+function closeReportOptionModal() {
+    const modal = document.getElementById('report-option-modal');
+    const sheet = document.getElementById('ro-sheet');
+    const backdrop = document.getElementById('ro-backdrop');
+
+    if(sheet) sheet.style.transform = 'translateY(100%)'; // 아래로 슬라이드
+    if(backdrop) backdrop.classList.remove('opacity-100');
+
+    setTimeout(() => {
+        if(modal) modal.classList.add('hidden');
+    }, 300);
+}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
