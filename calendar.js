@@ -7,7 +7,7 @@
 // ==========================================
 // 1. [스마트 연결] 테스트 페이지용 브릿지
 // ==========================================
-const TEST_API_URL = "여기에_웹앱_배포주소_붙여넣으세요"; // (예: https://script.google.com/macros/s/.../exec)
+const TEST_API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; // (예: https://script.google.com/macros/s/.../exec)
 
 // google.script.run이 없으면(테스트 페이지면), fetch로 연결해주는 마법의 코드
 if (typeof google === 'undefined' || typeof google.script === 'undefined') {
