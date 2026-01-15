@@ -27,6 +27,7 @@
   <script src="newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="chart1.js"></script>
+  <script src="calendar.js"></script>
   <script>
   tailwind.config = {
     darkMode: 'class' 
@@ -360,7 +361,7 @@
             <span id="current-date">불러오는 중...</span>
         </p>
         
-        <button onclick="updateFactoryStatus(); this.querySelector('svg').classList.add('animate-spin-once'); setTimeout(() => this.querySelector('svg').classList.remove('animate-spin-once'), 700);" 
+        <button onclick="updateFactoryStatus(); const svg=this.querySelector('svg'); svg.style.transition='transform 1s ease-in-out'; svg.dataset.rot=(Number(svg.dataset.rot)||0)+360; svg.style.transform='rotate('+svg.dataset.rot+'deg)';" 
                 class="p-1 text-gray-400 transition-colors duration-200 hover:text-gray-900 focus:outline-none">
             
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -891,8 +892,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
     const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
   
-    let reportsMap = {}; 
-    let currentYear, currentMonth;
+    let reportsMap = {};
     let selectedDateForGeneration = null;
     let isDataLoading = false; 
 
@@ -1696,7 +1696,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     currentMonth = today.getMonth() + 1;
     document.getElementById('current-date').textContent = formatDate(today);
     document.getElementById('app-status').textContent = '상태: 준비 완료.';
-
+    initCalendarFeatures();
     // 2. 그냥 바로 시작합니다 (지도는 헤드에서 이미 로딩됨)
     console.log("🚀 앱 시작");
 
@@ -1847,13 +1847,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // ===============================================
     // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
     // ===============================================
-
-    async function changeMonth(delta) {
-      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
-      currentYear = date.getFullYear();
-      currentMonth = date.getMonth() + 1;
-      fetchReportsForMonth(currentYear, currentMonth);
-    }
   
     async function callAppsScript(action, params = {}) {
         const url = new URL(API_URL);
@@ -1938,91 +1931,8 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     }
 
   
-    // 캘린더 렌더링 관련
-    async function fetchReportsForMonth(year, month, isInitial = false) {
-    const key = year + '-' + month;
-    
-    // 1. 이미 로딩된 데이터면 바로 보여주고 끝냄 (로딩 안 띄움)
-    if (reportsMap[key] === 'completed') { 
-        renderCalendar(); 
-        return; 
-    }
-    
-    // 🚨 [수정 포인트] 전체 화면 로딩(showLoader) 삭제!
-    // 대신 '달력 박스 전용 로딩막'을 찾아서 켭니다.
-    const localLoader = document.getElementById('calendar-loader');
-    if (localLoader) localLoader.classList.remove('hidden'); // 로딩막 켜기
 
-    try {
-        const result = await callAppsScript('getReportFilesByMonth', { year, month });
-        if (Array.isArray(result)) { 
-            result.forEach(r => reportsMap[r.date] = r); 
-            reportsMap[key] = 'completed'; 
-        }
-    } finally { 
-        // 🚨 [수정 포인트] 작업 끝났으니 로컬 로딩막 끄기
-        if (localLoader) localLoader.classList.add('hidden'); // 로딩막 끄기
-        
-        renderCalendar(); 
-        
-        const statusEl = document.getElementById('review-status');
-        if(statusEl) statusEl.textContent = '상태: 월별 보고서 정보 로딩 완료.';
-    }
-}
-  
-     function renderCalendar() {
-        const container = document.getElementById('calendar-days');
-        if (!container) return;
-        container.innerHTML = '';
-        document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
-        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성';
-        
-        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        
-        // 빈 공간 채우기
-        for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
-        
-        // 날짜 채우기
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
-            const hasReport = reportsMap[dateKey];
-            let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
-            
-            let clickHandler = '';
-            
-            if (hasReport) {
-                // ✅ 보고서가 있으면 롱프레스/터치 이벤트 연결
-                const reportId = hasReport.id;
-                const reportUrl = hasReport.url;
-                const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
-                
-                // 롱프레스 관련 이벤트 핸들러
-                clickHandler = `
-                    onclick="handleReportClick('${reportUrl}')"
-                    onmousedown="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
-                    onmouseup="endPressReport()"
-                    onmouseleave="endPressReport()"
-                    ontouchstart="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
-                    ontouchend="endPressReport()"
-                `;
-            } else if (!isSunday) {
-                // ✅ 보고서가 없으면 기존 onDateClick 연결 (생성 모달)
-                clickHandler = `onclick="onDateClick(${day})"`;
-            } else {
-                // ✅ 일요일은 아무 것도 없음
-                clickHandler = ``;
-            }
-            
-            // 최종 HTML 생성
-            container.innerHTML += `
-                <div class="p-2 flex justify-center">
-                    <div class="${cls}" ${clickHandler}>${day}</div>
-                </div>
-            `;
-        }
-   }
+
   
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
@@ -2051,19 +1961,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         }
     }
   
-    function onDateClick(day, isSunday) {
-      if (isSunday) return;
-      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-      selectedDateForGeneration = formattedDate;
-      const report = reportsMap[formattedDate];
-      if (report && report.url) {
-        openSheetApp(report.url);
-      } else {
-        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
-        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
-        openModal();
-      }
-    }
 
 /**
  * [수정] 공장 장부용 합계 조회 (현재 좌표 F26~28 유지 + 오늘 파일만 확인)
@@ -2684,5 +2581,33 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     </svg>
     <span class="font-bold text-gray-100">클릭 시 해당 기사로 이동합니다.🔗</span>
 </div>
+      <div id="holiday-modal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-80">
+        <h3 class="text-lg font-bold mb-4 text-gray-800">📅 날짜 꾸미기</h3>
+        <p id="modal-date-display" class="text-sm text-gray-500 mb-4 text-center font-mono">2026-02-17</p>
+
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-700 mb-1">라벨 (예: 설날, 휴무)</label>
+            <input type="text" id="holiday-label" class="w-full border rounded p-2 focus:ring-2 focus:ring-orange-500 outline-none">
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-700 mb-1">숫자 색상</label>
+            <div class="flex gap-2">
+                <button onclick="selectColor('red')" id="btn-red" class="flex-1 py-2 rounded border bg-red-50 text-red-600 font-bold">빨강</button>
+                <button onclick="selectColor('blue')" id="btn-blue" class="flex-1 py-2 rounded border bg-blue-50 text-blue-500 font-bold">파랑</button>
+                <button onclick="selectColor('black')" id="btn-black" class="flex-1 py-2 rounded border bg-gray-50 text-gray-600 font-bold">검정</button>
+            </div>
+            <input type="hidden" id="selected-color" value="black">
+        </div>
+
+        <div class="flex gap-2">
+            <button onclick="closeHolidayModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold">취소</button>
+            <button onclick="saveHolidaySetting()" class="flex-1 bg-orange-500 text-white py-3 rounded-lg font-bold shadow-md">저장</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
+
+
