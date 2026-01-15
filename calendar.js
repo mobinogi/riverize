@@ -1,3 +1,7 @@
+/**
+ * calendar.js
+ * GitHub Pages(테스트)와 Google Apps Script(실제) 양쪽에서 작동하는 달력 로직
+ */
 
 // 1. [설정] 사장님의 웹 앱 배포 주소 (API_URL)
 const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec";
