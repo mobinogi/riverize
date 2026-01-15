@@ -1706,8 +1706,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     currentMonth = today.getMonth() + 1;
     document.getElementById('current-date').textContent = formatDate(today);
     document.getElementById('app-status').textContent = '상태: 준비 완료.';
-    initCalendar();
-    initCalendarFeatures();
     // 2. 그냥 바로 시작합니다 (지도는 헤드에서 이미 로딩됨)
     console.log("🚀 앱 시작");
 
