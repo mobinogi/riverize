@@ -1,7 +1,7 @@
 /**
  * calendar.js
- * - 기능: 다중 선택, 롱프레스 설정
- * - ★핵심 추가: 텍스트 중앙 정렬, 연속 날짜 유효성 검사
+ * - 디자인: h-20 고정, 일반 모드 시 hover 테두리 제거 (완전 순정)
+ * - 기능: 편집 모드 시에만 테두리 표시, 다중 선택, 띠지 중앙 정렬
  */
 
 // 1. [설정] API 주소
@@ -105,7 +105,7 @@ function getReportFilesByMonth(year, month) {
 }
 
 // ==========================================
-// 6. 렌더링 (★핵심: 텍스트 중앙 정렬 로직 포함)
+// 6. 렌더링 (★ 순정 디자인: hover 테두리 제거)
 // ==========================================
 function renderCalendar() {
     const container = document.getElementById('calendar-days');
@@ -133,40 +133,32 @@ function renderCalendar() {
         const label = config.label || "";
         const colorType = config.color || (isSunday ? 'red' : 'black');
 
-        // 숫자 스타일
-        let numClass = "text-gray-700 font-bold z-10 relative";
-        if (colorType === 'red') numClass = "text-red-500 font-bold z-10 relative";
-        else if (colorType === 'blue') numClass = "text-blue-500 font-bold z-10 relative";
+        // 숫자 스타일 (z-index 추가)
+        let numClass = "font-bold text-sm ml-1 mt-1 z-10"; 
+        if (colorType === 'red') numClass += " text-red-500";
+        else if (colorType === 'blue') numClass += " text-blue-500";
+        else numClass += " text-gray-700";
 
-        // --- [띠지 & 텍스트 중앙 정렬 로직] ---
+        // --- [띠지 & 텍스트 중앙 정렬] ---
         let barHtml = "";
         
         if (label) {
-            // 1. 내 라벨과 같은 날짜가 앞/뒤로 몇 개나 이어져 있는지 계산
-            let prevCount = 0;
-            let nextCount = 0;
-
-            // 뒤로 탐색 (Previous)
+            // 연결성 체크
+            let prevCount = 0, nextCount = 0;
             for(let p = day - 1; p >= 1; p--) {
                 const pKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(p).padStart(2,'0')}`;
-                if(holidayConfig[pKey]?.label === label) prevCount++;
-                else break;
+                if(holidayConfig[pKey]?.label === label) prevCount++; else break;
             }
-
-            // 앞으로 탐색 (Next)
             for(let n = day + 1; n <= daysInMonth; n++) {
                 const nKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-                if(holidayConfig[nKey]?.label === label) nextCount++;
-                else break;
+                if(holidayConfig[nKey]?.label === label) nextCount++; else break;
             }
 
-            const totalLen = prevCount + 1 + nextCount; // 전체 연속된 길이
-            const myPosition = prevCount; // 0부터 시작하는 나의 위치 (0이면 맨 앞)
-            
-            // ★ 중앙 인덱스 계산 (예: 길이 3이면 1번(가운데), 길이 2면 0번(첫째))
+            const totalLen = prevCount + 1 + nextCount;
+            const myPosition = prevCount; 
             const centerIndex = Math.floor((totalLen - 1) / 2);
-            
             const isCenter = (myPosition === centerIndex);
+            
             const isPrevSame = (prevCount > 0);
             const isNextSame = (nextCount > 0);
 
@@ -175,40 +167,41 @@ function renderCalendar() {
 
             // 모양
             let barStyleClass = "";
-            if (!isPrevSame && isNextSame) barStyleClass = "rounded-l-md ml-1"; // 시작
-            else if (isPrevSame && isNextSame) barStyleClass = ""; // 중간
-            else if (isPrevSame && !isNextSame) barStyleClass = "rounded-r-md mr-1"; // 끝
-            else barStyleClass = "rounded-md mx-1"; // 단독
+            if (!isPrevSame && isNextSame) barStyleClass = "rounded-l-md ml-1"; 
+            else if (isPrevSame && isNextSame) barStyleClass = ""; 
+            else if (isPrevSame && !isNextSame) barStyleClass = "rounded-r-md mr-1"; 
+            else barStyleClass = "rounded-md mx-1"; 
 
-            // 내용 (중앙일 때만 텍스트 표시, 아니면 공백)
-            const barContent = isCenter ? label : "";
-
-            barHtml = `<div class="absolute bottom-1 left-0 right-0 h-5 text-[10px] flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}">
-                <span class="${isCenter ? 'opacity-100' : 'opacity-0'} font-bold" style="z-index: 20;">${label}</span>
+            barHtml = `<div class="absolute bottom-1 left-0 right-0 h-4 flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}" style="z-index: 0;">
+                <span class="${isCenter ? 'opacity-100' : 'opacity-0'} text-[10px] font-bold" style="z-index: 10;">${label}</span>
             </div>`;
         }
-        // ----------------------------------------
 
-        // 선택 효과
+        // --- [선택 효과] ---
+        // ★ 중요: 평소에는 아무 효과 없음. '편집 모드'일 때만 Ring 표시
         let selectionClass = "";
         if (isEditMode && selectedDates.includes(dateKey)) {
-            selectionClass = "bg-green-100 ring-2 ring-green-500 rounded-lg";
+            selectionClass = "bg-green-50 ring-2 ring-green-500 z-20"; 
         }
         
+        // 일보 마커
         const reportMarker = hasReport ? `<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500"></div>` : "";
 
+        // ★ HTML 조립: border-transparent, hover:border-gray-200 제거함 (완전 순정)
         container.innerHTML += `
-            <div class="h-20 p-0.5 relative cursor-pointer border border-transparent hover:border-gray-200 rounded-lg ${selectionClass}"
+            <div class="h-20 relative cursor-pointer rounded-lg transition-all ${selectionClass}"
                  ontouchstart="handleTouchStart('${dateKey}', ${day}, ${isSunday})"
                  ontouchend="handleTouchEnd()"
                  onmousedown="handleMouseDown('${dateKey}', ${day}, ${isSunday})"
                  onmouseup="handleMouseUp()"
                  onclick="handleClick('${dateKey}', ${day}, ${isSunday})">
-                <div class="flex flex-col h-full justify-between pointer-events-none">
-                    <span class="${numClass} ml-1 mt-1">${day}</span>
-                    ${reportMarker}
-                    ${barHtml} 
+                
+                <div class="absolute top-0 left-0">
+                    <span class="${numClass}">${day}</span>
                 </div>
+
+                ${reportMarker}
+                ${barHtml}
             </div>
         `;
     }
@@ -252,13 +245,12 @@ function onLongPress(dateKey, day, isSunday) {
 
     if (isEditMode) {
         // [편집모드]
-        // 만약 현재 날짜가 선택된 목록에 없다면, 현재 날짜를 추가하고 시작
         if (!selectedDates.includes(dateKey)) {
             selectedDates.push(dateKey);
             renderCalendar();
         }
         
-        // ★ 연속성 검사 (Smart check)
+        // 떨어진 날짜 체크
         if (!checkConsecutive(selectedDates)) {
             showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
             return;
@@ -266,7 +258,7 @@ function onLongPress(dateKey, day, isSunday) {
 
         openHolidayModalMulti();
     } else {
-        // [일반모드] 삭제
+        // [일반모드] 삭제/옵션
         const hasReport = reportsMap[dateKey];
         if (hasReport) {
              if(typeof openReportOptionModal === 'function') openReportOptionModal(hasReport.fileId, dateKey);
@@ -274,20 +266,16 @@ function onLongPress(dateKey, day, isSunday) {
     }
 }
 
-// ★ 연속 날짜인지 확인하는 함수 (사장님 요청사항)
+// 연속성 체크
 function checkConsecutive(dates) {
     if (dates.length <= 1) return true;
-    
-    // 날짜순 정렬
     const sorted = dates.slice().sort();
-    
     for (let i = 0; i < sorted.length - 1; i++) {
         const curr = new Date(sorted[i]);
         const next = new Date(sorted[i+1]);
         const diffTime = Math.abs(next - curr);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        
-        if (diffDays > 1) return false; // 1일 차이가 아니면 떨어진 것임
+        if (diffDays > 1) return false;
     }
     return true;
 }
@@ -296,7 +284,7 @@ function checkConsecutive(dates) {
 // 8. 설정 모달 로직
 // ==========================================
 function openHolidayModalMulti() {
-    selectedDates.sort(); // 보여줄 때 정렬
+    selectedDates.sort();
 
     let title = "";
     if (selectedDates.length === 1) title = selectedDates[0];
@@ -316,7 +304,6 @@ function saveHolidaySetting() {
     const label = document.getElementById('holiday-label').value;
     const color = document.getElementById('selected-color').value || 'red';
 
-    // 선택된 날짜에 일괄 적용
     selectedDates.forEach(key => {
         if (!label) delete holidayConfig[key];
         else holidayConfig[key] = { label, color };
