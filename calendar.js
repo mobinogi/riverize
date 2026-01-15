@@ -1,12 +1,12 @@
 /**
  * calendar.js
- * GitHub Pages(테스트)와 Google Apps Script(실제) 양쪽에서 작동하는 달력 로직
+ * - GitHub Test 페이지와 Google Apps Script 양쪽에서 작동하는 하이브리드 달력
  */
 
-// 1. [설정] 사장님의 웹 앱 배포 주소 (API_URL)
+// 1. [설정] 사장님의 웹 앱 주소 (API_URL)
 const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec";
 
-// 2. [통신 함수] fetch를 이용해 구글 서버와 대화하는 함수
+// 2. [통신 함수] 구글 서버와 대화하는 '진짜' 입
 async function callCalendarApi(action, params = {}) {
     const url = new URL(CALENDAR_API_URL);
     url.searchParams.set('action', action);
@@ -21,7 +21,7 @@ async function callCalendarApi(action, params = {}) {
     }
 }
 
-// 3. [브릿지] google.script.run이 없는 환경(GitHub)을 위한 연결 다리
+// 3. [브릿지] GitHub 페이지에서 'google.script.run'을 흉내내는 코드
 if (typeof google === 'undefined' || typeof google.script === 'undefined') {
     console.log("🌍 GitHub 환경 감지: Bridge 모드로 작동합니다.");
     window.google = {
@@ -31,7 +31,7 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
                     return {
                         withFailureHandler: function(failureCallback) { return this; },
                         
-                        // ★ 여기가 핵심입니다! 함수 이름을 fetch 요청으로 연결
+                        // ★ [수정 완료] 여기에 모든 함수가 연결되어 있어야 합니다!
                         loadCalendarConfig: function() {
                             callCalendarApi('loadCalendarConfig').then(successCallback);
                         },
@@ -39,6 +39,7 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
                             callCalendarApi('saveCalendarConfig', {json: json}).then(successCallback);
                         },
                         getReportFilesByMonth: function(year, month) {
+                            // 여기가 비어 있어서 에러가 났던 겁니다! 복구 완료!
                             callCalendarApi('getReportFilesByMonth', {year: year, month: month}).then(successCallback);
                         },
                         deleteReportFile: function(fileId) {
@@ -59,9 +60,10 @@ let holidayConfig = {};
 let currentYear, currentMonth;
 let isEditMode = false;    
 let editingDateKey = "";   
+let selectedDateForGeneration = null; // 모달용 변수도 여기로 이사
 
 // ==========================================
-// 5. 초기화 함수 (HTML에서 호출하는 이름: initCalendar)
+// 5. 초기화 함수 (initCalendar)
 // ==========================================
 function initCalendar() {
     const today = new Date();
@@ -96,6 +98,11 @@ function changeMonth(offset) {
     currentMonth += offset;
     if (currentMonth < 1) { currentMonth = 12; currentYear--; }
     else if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+    
+    // 월 변경 시 캐시 초기화 (필요시)
+    const key = currentYear + '-' + currentMonth;
+    if(reportsMap[key]) delete reportsMap[key];
+
     getReportFilesByMonth(currentYear, currentMonth);
 }
 
@@ -106,8 +113,14 @@ function getReportFilesByMonth(year, month) {
 
     // 서버 요청
     google.script.run.withSuccessHandler(function(data) {
-        reportsMap = data || {}; 
-        renderCalendar(); // 데이터 받으면 그리기
+        // 데이터 병합
+        if (Array.isArray(data)) {
+            data.forEach(r => reportsMap[r.date] = r);
+        } else {
+            reportsMap = Object.assign(reportsMap, data || {});
+        }
+        
+        renderCalendar(); // 그리기
     }).getReportFilesByMonth(year, month);
 }
 
@@ -151,13 +164,17 @@ function renderCalendar() {
             clickAction = `onclick="openHolidayModal('${dateKey}', '${label}', '${colorType}')"`;
         } else {
             if (hasReport) {
-                // 일보가 있으면 -> index.html의 함수나 window.open 사용
-                // window.openSheetApp이 있다면 그걸 쓰고, 없으면 window.open
+                // 일보가 있으면 -> url 열기
                 clickAction = `onclick="window.open('${hasReport.url}', '_blank')"`;
             } else {
-                // 일보가 없으면 -> 작성 (onDateClick은 index.html에 없으면 여기서 처리하거나 빈 함수)
-                // index.html에 onDateClick이 남아있다면 그걸 호출
-                clickAction = `onclick="if(typeof onDateClick === 'function') onDateClick(${day}); else alert('${day}일 일보 작성');"`;
+                // 일보가 없으면 -> 작성 모달 띄우기 (index.html에 있는 onDateClick 활용)
+                // 만약 index.html의 onDateClick을 지웠다면 아래 alert가 뜹니다.
+                if (typeof onDateClick === 'function') {
+                     clickAction = `onclick="onDateClick(${day}, ${isSunday})"`;
+                } else {
+                     // 비상용 작성 로직
+                     clickAction = `onclick="alert('${day}일 일보를 작성합니다 (연결 필요)')"`;
+                }
             }
         }
 
@@ -183,7 +200,6 @@ function openHolidayModal(dateKey, label, color) {
     editingDateKey = dateKey;
     document.getElementById('modal-date-display').textContent = dateKey;
     document.getElementById('holiday-label').value = label;
-    // 색상 버튼 초기화 로직은 간소화 (필요시 추가)
     document.getElementById('holiday-modal').classList.remove('hidden');
 }
 
