@@ -1,4 +1,50 @@
 /**
+ * [테스트용 가짜 서버]
+ * GitHub 등 테스트 페이지에서 google.script.run이 없어서 생기는 오류를 방지합니다.
+ * 실제 앱(Google Apps Script)에서는 이 코드가 무시되고 진짜 서버와 통신합니다.
+ */
+if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+    console.warn("⚠️ 테스트 환경 감지됨: 가짜 서버(Mock)를 사용합니다.");
+    
+    window.google = {
+        script: {
+            run: {
+                withSuccessHandler: function(callback) {
+                    return {
+                        // 1. 설정 불러오기 (가짜)
+                        loadCalendarConfig: function() {
+                            const saved = localStorage.getItem('MOCK_CALENDAR_CONFIG') || "{}";
+                            callback(saved);
+                        },
+                        // 2. 설정 저장하기 (가짜)
+                        saveCalendarConfig: function(json) {
+                            localStorage.setItem('MOCK_CALENDAR_CONFIG', json);
+                            console.log("설정 저장됨(Local):", json);
+                            // 저장 후 아무것도 리턴 안 해도 됨 (혹은 메시지)
+                        },
+                        // 3. 일보 데이터 가져오기 (가짜)
+                        getReportFilesByMonth: function(year, month) {
+                            console.log(`일보 데이터 요청(Mock): ${year}-${month}`);
+                            // 테스트용 더미 데이터 (필요하면 수정해서 쓰세요)
+                            const mockReports = {
+                                [`${year}-${String(month).padStart(2,'0')}-05`]: { id: 'test1', url: '#' },
+                                [`${year}-${String(month).padStart(2,'0')}-15`]: { id: 'test2', url: '#' }
+                            };
+                            callback(mockReports);
+                        },
+                        // 4. 일보 삭제 (가짜)
+                        deleteReportFile: function(id) {
+                            alert("테스트 환경: 일보 삭제 시늉만 합니다.");
+                            callback("삭제 완료");
+                        }
+                    };
+                }
+            }
+        }
+    };
+}
+
+/**
  * calendar.js
  * - 달력 렌더링, 월 이동, 일보 데이터 조회
  * - 일보 클릭/삭제 (롱프레스)
