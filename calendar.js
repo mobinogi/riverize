@@ -1,12 +1,13 @@
 /**
  * calendar.js
- * - 기능: 달력 렌더링, 범위 선택(Range), 휴일 띠지 표시, GitHub Pages <-> Apps Script 통신
+ * - 기능: 다중 선택, 롱프레스 설정
+ * - ★핵심 추가: 텍스트 중앙 정렬, 연속 날짜 유효성 검사
  */
 
-// 1. [설정] 사장님의 웹 앱 주소
+// 1. [설정] API 주소
 const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec";
 
-// 2. [통신] fetch 함수
+// 2. [통신]
 async function callCalendarApi(action, params = {}) {
     const url = new URL(CALENDAR_API_URL);
     url.searchParams.set('action', action);
@@ -20,28 +21,18 @@ async function callCalendarApi(action, params = {}) {
     }
 }
 
-// 3. [브릿지] GitHub 환경용 가짜 google.script.run (여기에 saveCalendarConfig 추가함!)
+// 3. [브릿지]
 if (typeof google === 'undefined' || typeof google.script === 'undefined') {
     window.google = {
         script: {
             run: {
-                withSuccessHandler: function(successCallback) {
+                withSuccessHandler: function(cb) {
                     return {
-                        withFailureHandler: function(failureCallback) { return this; },
-                        
-                        // ★ [수정] 여기에 saveCalendarConfig가 빠져서 에러가 났던 겁니다. 복구 완료!
-                        loadCalendarConfig: function() {
-                            callCalendarApi('loadCalendarConfig').then(successCallback);
-                        },
-                        saveCalendarConfig: function(json) {
-                            callCalendarApi('saveCalendarConfig', {json: json}).then(successCallback);
-                        },
-                        getReportFilesByMonth: function(year, month) {
-                            callCalendarApi('getReportFilesByMonth', {year: year, month: month}).then(successCallback);
-                        },
-                        deleteReportFile: function(fileId) {
-                            callCalendarApi('deleteReportFile', {fileId: fileId}).then(successCallback);
-                        }
+                        withFailureHandler: function() { return this; },
+                        loadCalendarConfig: function() { callCalendarApi('loadCalendarConfig').then(cb); },
+                        saveCalendarConfig: function(json) { callCalendarApi('saveCalendarConfig', {json: json}).then(cb); },
+                        getReportFilesByMonth: function(y, m) { callCalendarApi('getReportFilesByMonth', {year: y, month: m}).then(cb); },
+                        deleteReportFile: function(fid) { callCalendarApi('deleteReportFile', {fileId: fid}).then(cb); }
                     };
                 }
             }
@@ -57,9 +48,9 @@ let holidayConfig = {};
 let currentYear, currentMonth;
 let isEditMode = false;    
 
-// 범위 선택용 변수
-let rangeStart = null; 
-let rangeEnd = null;
+// 다중 선택용
+let selectedDates = []; 
+let longPressTimer; 
 
 // ==========================================
 // 5. 초기화
@@ -68,26 +59,25 @@ function initCalendar() {
     const today = new Date();
     currentYear = today.getFullYear();
     currentMonth = today.getMonth() + 1;
-    console.log("📅 달력 초기화...");
 
-    // 설정 로드 -> 데이터 로드
     google.script.run.withSuccessHandler(function(data) {
         try { holidayConfig = JSON.parse(data); } catch(e) { holidayConfig = {}; }
         getReportFilesByMonth(currentYear, currentMonth);
     }).loadCalendarConfig();
 
-    // 편집 모드 토글 이벤트
     const toggleBtn = document.getElementById('edit-mode-toggle');
     if(toggleBtn) {
         toggleBtn.addEventListener('change', function(e) {
             isEditMode = e.target.checked;
-            // 모드 변경 시 선택 초기화
-            rangeStart = null; 
-            rangeEnd = null;
-            document.getElementById('calendar-days').classList.toggle('editing-mode', isEditMode);
+            selectedDates = []; 
+            const container = document.getElementById('calendar-days');
+            if(isEditMode) {
+                container.classList.add('editing-mode');
+                showToast("🛠️ 편집 모드: 날짜를 선택하고, 마지막 날짜를 꾹 누르세요.");
+            } else {
+                container.classList.remove('editing-mode');
+            }
             renderCalendar();
-            
-            if(isEditMode) showToast("🛠️ 편집 모드: 시작 날짜와 끝 날짜를 터치하세요.");
         });
     }
 }
@@ -96,11 +86,7 @@ function changeMonth(offset) {
     currentMonth += offset;
     if (currentMonth < 1) { currentMonth = 12; currentYear--; }
     else if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-    
-    // 월 변경 시 캐시 초기화
-    const key = currentYear + '-' + currentMonth;
-    if(reportsMap[key]) delete reportsMap[key]; // 간단한 갱신
-
+    selectedDates = [];
     getReportFilesByMonth(currentYear, currentMonth);
 }
 
@@ -109,7 +95,6 @@ function getReportFilesByMonth(year, month) {
     if(titleEl) titleEl.textContent = `${year}년 ${month}월 (로딩...)`;
 
     google.script.run.withSuccessHandler(function(data) {
-        // 데이터 병합
         if (Array.isArray(data)) {
             data.forEach(r => reportsMap[r.date] = r);
         } else {
@@ -120,7 +105,7 @@ function getReportFilesByMonth(year, month) {
 }
 
 // ==========================================
-// 6. 렌더링 (핵심: 띠지 그리기)
+// 6. 렌더링 (★핵심: 텍스트 중앙 정렬 로직 포함)
 // ==========================================
 function renderCalendar() {
     const container = document.getElementById('calendar-days');
@@ -148,85 +133,78 @@ function renderCalendar() {
         const label = config.label || "";
         const colorType = config.color || (isSunday ? 'red' : 'black');
 
-        // --- 1. 날짜 숫자 스타일 ---
+        // 숫자 스타일
         let numClass = "text-gray-700 font-bold z-10 relative";
         if (colorType === 'red') numClass = "text-red-500 font-bold z-10 relative";
         else if (colorType === 'blue') numClass = "text-blue-500 font-bold z-10 relative";
 
-        // --- 2. 연속된 라벨(띠지) 처리 로직 ---
+        // --- [띠지 & 텍스트 중앙 정렬 로직] ---
         let barHtml = "";
-        let barClass = "";
-        let barText = "";
-
+        
         if (label) {
-            // 어제랑 같은 라벨인지 확인 (연속성)
-            const prevDate = new Date(currentYear, currentMonth - 1, day - 1);
-            const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}-${String(prevDate.getDate()).padStart(2,'0')}`;
-            const prevConfig = holidayConfig[prevKey] || {};
-            const isPrevSame = (prevConfig.label === label);
+            // 1. 내 라벨과 같은 날짜가 앞/뒤로 몇 개나 이어져 있는지 계산
+            let prevCount = 0;
+            let nextCount = 0;
 
-            // 내일이랑 같은 라벨인지 확인
-            const nextDate = new Date(currentYear, currentMonth - 1, day + 1);
-            const nextKey = `${nextDate.getFullYear()}-${String(nextDate.getMonth()+1).padStart(2,'0')}-${String(nextDate.getDate()).padStart(2,'0')}`;
-            const nextConfig = holidayConfig[nextKey] || {};
-            const isNextSame = (nextConfig.label === label);
+            // 뒤로 탐색 (Previous)
+            for(let p = day - 1; p >= 1; p--) {
+                const pKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(p).padStart(2,'0')}`;
+                if(holidayConfig[pKey]?.label === label) prevCount++;
+                else break;
+            }
 
-            // 띠지 색상
+            // 앞으로 탐색 (Next)
+            for(let n = day + 1; n <= daysInMonth; n++) {
+                const nKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
+                if(holidayConfig[nKey]?.label === label) nextCount++;
+                else break;
+            }
+
+            const totalLen = prevCount + 1 + nextCount; // 전체 연속된 길이
+            const myPosition = prevCount; // 0부터 시작하는 나의 위치 (0이면 맨 앞)
+            
+            // ★ 중앙 인덱스 계산 (예: 길이 3이면 1번(가운데), 길이 2면 0번(첫째))
+            const centerIndex = Math.floor((totalLen - 1) / 2);
+            
+            const isCenter = (myPosition === centerIndex);
+            const isPrevSame = (prevCount > 0);
+            const isNextSame = (nextCount > 0);
+
+            // 색상
             let bgClass = colorType === 'red' ? 'bg-red-100 text-red-600' : (colorType === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-700');
 
-            // 띠지 모양 결정
-            if (!isPrevSame && isNextSame) {
-                // [시작] (오른쪽으로 트임)
-                barClass = `absolute bottom-1 left-1 right-0 rounded-l-md h-5 text-[10px] flex items-center pl-1 whitespace-nowrap overflow-hidden ${bgClass}`;
-                barText = label; 
-            } else if (isPrevSame && isNextSame) {
-                // [중간] (양옆 트임)
-                barClass = `absolute bottom-1 left-0 right-0 h-5 ${bgClass}`;
-            } else if (isPrevSame && !isNextSame) {
-                // [끝] (왼쪽으로 트임)
-                barClass = `absolute bottom-1 left-0 right-1 rounded-r-md h-5 ${bgClass}`;
-            } else {
-                // [단독] (둥글게)
-                barClass = `absolute bottom-1 left-1 right-1 rounded-md h-5 text-[10px] flex items-center justify-center ${bgClass}`;
-                barText = label;
-            }
-            
-            barHtml = `<div class="${barClass}">${barText}</div>`;
+            // 모양
+            let barStyleClass = "";
+            if (!isPrevSame && isNextSame) barStyleClass = "rounded-l-md ml-1"; // 시작
+            else if (isPrevSame && isNextSame) barStyleClass = ""; // 중간
+            else if (isPrevSame && !isNextSame) barStyleClass = "rounded-r-md mr-1"; // 끝
+            else barStyleClass = "rounded-md mx-1"; // 단독
+
+            // 내용 (중앙일 때만 텍스트 표시, 아니면 공백)
+            const barContent = isCenter ? label : "";
+
+            barHtml = `<div class="absolute bottom-1 left-0 right-0 h-5 text-[10px] flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}">
+                <span class="${isCenter ? 'opacity-100' : 'opacity-0'} font-bold" style="z-index: 20;">${label}</span>
+            </div>`;
         }
+        // ----------------------------------------
 
-        // --- 3. 범위 선택 하이라이트 (편집 모드용) ---
+        // 선택 효과
         let selectionClass = "";
-        if (isEditMode && rangeStart) {
-            const curr = new Date(dateKey).getTime();
-            const start = new Date(rangeStart).getTime();
-            const end = rangeEnd ? new Date(rangeEnd).getTime() : start;
-            
-            // start와 end 순서 바껴도 처리
-            const s = Math.min(start, end);
-            const e = Math.max(start, end);
-
-            if (curr >= s && curr <= e) {
-                selectionClass = "bg-green-100 ring-2 ring-green-400 rounded-lg";
-            }
+        if (isEditMode && selectedDates.includes(dateKey)) {
+            selectionClass = "bg-green-100 ring-2 ring-green-500 rounded-lg";
         }
         
-        // --- 4. 클릭 액션 ---
-        let clickAction = "";
-        if (isEditMode) {
-            clickAction = `onclick="handleDateSelection('${dateKey}')"`;
-        } else {
-            if (hasReport) clickAction = `onclick="window.open('${hasReport.url}', '_blank')"`;
-            else clickAction = `onclick="if(typeof onDateClick === 'function') onDateClick(${day}, ${isSunday});"`;
-        }
-
-        // --- 5. 최종 HTML 조립 ---
-        // 날짜 박스 자체를 relative로 해서 띠지가 겹치지 않게 함
-        // report-exists(일보 있음)는 점 표시로 대체하거나 배경색 유지
         const reportMarker = hasReport ? `<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500"></div>` : "";
 
         container.innerHTML += `
-            <div class="h-20 p-0.5 relative cursor-pointer hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 rounded-lg ${selectionClass}" ${clickAction}>
-                <div class="flex flex-col h-full justify-between">
+            <div class="h-20 p-0.5 relative cursor-pointer border border-transparent hover:border-gray-200 rounded-lg ${selectionClass}"
+                 ontouchstart="handleTouchStart('${dateKey}', ${day}, ${isSunday})"
+                 ontouchend="handleTouchEnd()"
+                 onmousedown="handleMouseDown('${dateKey}', ${day}, ${isSunday})"
+                 onmouseup="handleMouseUp()"
+                 onclick="handleClick('${dateKey}', ${day}, ${isSunday})">
+                <div class="flex flex-col h-full justify-between pointer-events-none">
                     <span class="${numClass} ml-1 mt-1">${day}</span>
                     ${reportMarker}
                     ${barHtml} 
@@ -237,82 +215,120 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 7. 범위 선택 및 저장 로직 (New!)
+// 7. 이벤트 핸들러
 // ==========================================
-function handleDateSelection(dateKey) {
-    if (!rangeStart) {
-        // 첫 번째 클릭: 시작점 설정
-        rangeStart = dateKey;
-        rangeEnd = null; // 초기화
+function handleTouchStart(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
+function handleMouseDown(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
+
+function startPress(dateKey, day, isSunday) {
+    isLongPress = false;
+    longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        onLongPress(dateKey, day, isSunday);
+    }, 600);
+}
+
+function handleTouchEnd() { clearTimeout(longPressTimer); }
+function handleMouseUp() { clearTimeout(longPressTimer); }
+
+function handleClick(dateKey, day, isSunday) {
+    if (isLongPress) return;
+
+    if (isEditMode) {
+        // [편집모드] 선택/해제
+        if (selectedDates.includes(dateKey)) selectedDates = selectedDates.filter(d => d !== dateKey);
+        else selectedDates.push(dateKey);
         renderCalendar();
-    } else if (!rangeEnd) {
-        // 두 번째 클릭: 끝점 설정하고 모달 열기
-        rangeEnd = dateKey;
-        renderCalendar(); // 범위 그려주기
-        
-        // 순서 정렬
-        if (new Date(rangeStart) > new Date(rangeEnd)) {
-            [rangeStart, rangeEnd] = [rangeEnd, rangeStart];
-        }
-        
-        // 모달 열기
-        setTimeout(() => openHolidayModalRange(), 200);
     } else {
-        // 세 번째 클릭: 다시 시작점부터
-        rangeStart = dateKey;
-        rangeEnd = null;
-        renderCalendar();
+        // [일반모드]
+        const hasReport = reportsMap[dateKey];
+        if (hasReport) window.open(hasReport.url, '_blank');
+        else if(typeof onDateClick === 'function') onDateClick(day, isSunday);
     }
 }
 
-function openHolidayModalRange() {
-    let title = rangeStart;
-    if (rangeStart !== rangeEnd) title += ` ~ ${rangeEnd}`;
+function onLongPress(dateKey, day, isSunday) {
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    if (isEditMode) {
+        // [편집모드]
+        // 만약 현재 날짜가 선택된 목록에 없다면, 현재 날짜를 추가하고 시작
+        if (!selectedDates.includes(dateKey)) {
+            selectedDates.push(dateKey);
+            renderCalendar();
+        }
+        
+        // ★ 연속성 검사 (Smart check)
+        if (!checkConsecutive(selectedDates)) {
+            showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
+            return;
+        }
+
+        openHolidayModalMulti();
+    } else {
+        // [일반모드] 삭제
+        const hasReport = reportsMap[dateKey];
+        if (hasReport) {
+             if(typeof openReportOptionModal === 'function') openReportOptionModal(hasReport.fileId, dateKey);
+        }
+    }
+}
+
+// ★ 연속 날짜인지 확인하는 함수 (사장님 요청사항)
+function checkConsecutive(dates) {
+    if (dates.length <= 1) return true;
+    
+    // 날짜순 정렬
+    const sorted = dates.slice().sort();
+    
+    for (let i = 0; i < sorted.length - 1; i++) {
+        const curr = new Date(sorted[i]);
+        const next = new Date(sorted[i+1]);
+        const diffTime = Math.abs(next - curr);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (diffDays > 1) return false; // 1일 차이가 아니면 떨어진 것임
+    }
+    return true;
+}
+
+// ==========================================
+// 8. 설정 모달 로직
+// ==========================================
+function openHolidayModalMulti() {
+    selectedDates.sort(); // 보여줄 때 정렬
+
+    let title = "";
+    if (selectedDates.length === 1) title = selectedDates[0];
+    else title = `${selectedDates[0]} ~ ${selectedDates[selectedDates.length-1]} (${selectedDates.length}일)`;
     
     document.getElementById('modal-date-display').textContent = title;
     
-    // 기존 설정값이 있으면 가져오기 (첫날 기준)
-    const config = holidayConfig[rangeStart] || {};
+    const firstKey = selectedDates[0];
+    const config = holidayConfig[firstKey] || {};
     document.getElementById('holiday-label').value = config.label || "";
-    selectColor(config.color || 'red'); // tests.html에 있는 함수 호출
+    if(typeof selectColor === 'function') selectColor(config.color || 'red');
 
     document.getElementById('holiday-modal').classList.remove('hidden');
-}
-
-function closeHolidayModal() {
-    document.getElementById('holiday-modal').classList.add('hidden');
-    // 모달 닫으면 선택 해제
-    rangeStart = null;
-    rangeEnd = null;
-    renderCalendar();
 }
 
 function saveHolidaySetting() {
     const label = document.getElementById('holiday-label').value;
     const color = document.getElementById('selected-color').value || 'red';
 
-    // 범위 내 모든 날짜에 설정 적용
-    const start = new Date(rangeStart);
-    const end = new Date(rangeEnd);
-    
-    // 하루씩 증가시키며 저장
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const key = `${y}-${m}-${day}`;
-        
+    // 선택된 날짜에 일괄 적용
+    selectedDates.forEach(key => {
         if (!label) delete holidayConfig[key];
         else holidayConfig[key] = { label, color };
-    }
+    });
 
-    // 화면 갱신 & 모달 닫기
     renderCalendar();
-    closeHolidayModal(); // 여기서 rangeStart/End 초기화됨
     
-    // ★ 서버 저장 (이제 에러 안 남!)
+    document.getElementById('holiday-modal').classList.add('hidden');
+    selectedDates = []; 
+
     showToast("저장 중...");
     google.script.run.withSuccessHandler(function() {
-        showToast("설정이 저장되었습니다.", "success");
+        showToast("저장되었습니다.", "success");
     }).saveCalendarConfig(JSON.stringify(holidayConfig));
 }
