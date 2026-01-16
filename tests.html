@@ -2636,36 +2636,7 @@ function handleClick(dateKey, day, isSunday) {
     }
 }
 
-// 5. [롱프레스 발생 시] -> 편집모드면 '다중설정', 아니면 '삭제옵션'
-function onLongPress(dateKey, day, isSunday) {
-    if (navigator.vibrate) navigator.vibrate(50); // 징~ 진동
 
-    if (isEditMode) {
-        // [편집 모드] 다중 선택 설정창 진입
-        if (!selectedDates.includes(dateKey)) {
-            selectedDates.push(dateKey); // 누른 날짜도 포함
-            renderCalendar();
-        }
-        
-        // 떨어져 있는 날짜인지 검사
-        if (!checkConsecutive(selectedDates)) {
-            showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
-            return;
-        }
-
-        openHolidayModalMulti(); // 설정 모달 열기
-    } else {
-        // [순정 모드] 삭제/옵션 모달 열기 (기존 함수 연결)
-        const hasReport = reportsMap[dateKey];
-        if (hasReport) {
-             // 기존에 있던 모달 여는 함수 호출
-             if(typeof openReportOptionModal === 'function') {
-                 // 파라미터: fileId, url, 날짜텍스트
-                 openReportOptionModal(hasReport.id || hasReport.fileId, hasReport.url, `${currentYear}년 ${currentMonth}월 ${day}일`);
-             }
-        }
-    }
-}
 
 
 // 6. [유효성 검사] 날짜가 이어져 있는지 확인
@@ -2821,22 +2792,31 @@ function handleUnifiedClick(dateKey, day, isSunday) {
     }
 }
 
-// 4. [편집모드용] 롱프레스 처리 (다중 선택 모달)
+// ============================================================
+// [누락된 함수 추가] 편집모드 롱프레스 시 실행될 함수
+// ============================================================
 function onLongPressMulti(dateKey) {
+    // 1. 진동 피드백 (징~)
     if (navigator.vibrate) navigator.vibrate(50);
-    
-    // 누른 날짜도 선택에 포함
+
+    // 2. 현재 꾹 누른 날짜도 선택에 포함시킴
     if (!selectedDates.includes(dateKey)) {
         selectedDates.push(dateKey);
-        renderCalendar();
+        renderCalendar(); // 화면 갱신 (초록 테두리 표시)
     }
-    
-    // 연속 체크 후 모달 열기
-    if (typeof checkConsecutive === 'function' && !checkConsecutive(selectedDates)) {
-        if(typeof showToast === 'function') showToast("❌ 떨어진 날짜는 같이 설정 불가!", "error");
-        return;
+
+    // 3. 연속 날짜인지 체크 (떨어져 있으면 경고)
+    if (typeof checkConsecutive === 'function') {
+        if (!checkConsecutive(selectedDates)) {
+            if(typeof showToast === 'function') showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
+            return;
+        }
     }
-    if(typeof openHolidayModalMulti === 'function') openHolidayModalMulti();
+
+    // 4. 다중 선택 설정 모달 열기
+    if(typeof openHolidayModalMulti === 'function') {
+        openHolidayModalMulti();
+    }
 }
   
 </script>
