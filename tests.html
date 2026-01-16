@@ -2692,30 +2692,49 @@ function openHolidayModalMulti() {
 }
 
 
-// 8. [모달 로직] 저장 버튼 클릭 시
+// [수정] 깃허브용 저장 함수 (fetch 사용)
 function saveHolidaySetting() {
-    const label = document.getElementById('holiday-label').value;
-    const color = document.getElementById('selected-color').value || 'red';
+    const labelInput = document.getElementById('holiday-label');
+    const colorInput = document.getElementById('selected-color');
+    const label = labelInput ? labelInput.value : "";
+    const color = colorInput ? colorInput.value : "red";
 
-    // 선택된 날짜들에 설정 적용
+    // 데이터 갱신 로직 (기존 유지)
+    if(typeof selectedDates === 'undefined') return;
     selectedDates.forEach(key => {
-        if (!label) delete holidayConfig[key]; // 라벨 비우면 삭제
-        else holidayConfig[key] = { label, color };
+        if (!label) { if(typeof holidayConfig !== 'undefined') delete holidayConfig[key]; } 
+        else { if(typeof holidayConfig !== 'undefined') holidayConfig[key] = { label, color }; }
     });
 
-    renderCalendar(); // 화면 갱신
+    if(typeof renderCalendar === 'function') renderCalendar();
     
-    document.getElementById('holiday-modal').classList.add('hidden');
-    selectedDates = []; // 선택 초기화
+    // 모달 닫기
+    const modal = document.getElementById('holiday-modal');
+    if(modal) modal.classList.add('hidden');
+    selectedDates = []; 
 
-    if(typeof showToast === 'function') showToast("저장 중...");
-    
-    // 서버 저장 (calendar.js의 saveCalendarConfig 호출)
-    if (typeof google !== 'undefined' && google.script) {
-        google.script.run.withSuccessHandler(function() {
-            if(typeof showToast === 'function') showToast("저장되었습니다.", "success");
-        }).saveCalendarConfig(JSON.stringify(holidayConfig));
-    }
+    if(typeof showToast === 'function') showToast("서버에 저장 중...");
+
+    // ★★★ [핵심] 깃허브에서는 google.script.run 대신 이걸 씁니다! ★★★
+    // API_URL 변수는 index.html 상단에 있는 주소 그대로 씁니다.
+    fetch(API_URL, {
+        method: "POST", // "저장해줘!" (쓰기 요청)
+        body: JSON.stringify({
+            action: "saveCalendarConfig",
+            data: JSON.stringify(holidayConfig) // 달력 데이터 전체 포장
+        })
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.status === 'success') {
+            if(typeof showToast === 'function') showToast("✅ 저장 성공!", "success");
+        } else {
+            alert("저장 실패: " + response.message);
+        }
+    })
+    .catch(error => {
+        alert("통신 오류: " + error);
+    });
 }
 
 // 9. [모달 UI] 색상 선택 버튼
