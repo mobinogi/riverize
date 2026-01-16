@@ -27,7 +27,6 @@
   <script src="newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="chart1.js"></script>
-  <script src="calendar.js"></script>
   <script>
   tailwind.config = {
     darkMode: 'class' 
@@ -428,6 +427,9 @@
 
                       <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
                     </div>
+
+                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative">
+                      
                       
                       <div class="flex justify-between items-center mb-4">
                           <button onclick="changeMonth(-1)" class="p-2 text-gray-600 hover:text-green-600 transition-colors rounded-full">
@@ -456,16 +458,7 @@
                         <span id="summary-button-text">XX월 매출현황표 생성</span>
                       </button>
 
-                      <div class="flex justify-between items-center pt-4 border-t mt-2">
-    <p id="review-status" class="text-sm text-gray-500">
-        상태: 월별 보고서 정보를 불러오는 중...
-    </p>
-
-    <label class="flex items-center space-x-2 cursor-pointer select-none">
-        <span class="text-xs font-bold text-gray-500">편집 모드</span>
-        <input type="checkbox" id="edit-mode-toggle" class="w-4 h-4 accent-orange-500 cursor-pointer">
-    </label>
-</div>
+                      <p id="review-status" class="text-sm text-gray-500 pt-4">상태: 월별 보고서 정보를 불러오는 중...</p>
                     <div id="calendar-loader" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl hidden">
                     <div class="w-12 h-12 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin mb-3"></div>
                     <p class="text-sm font-bold text-gray-600 animate-pulse">
@@ -898,8 +891,9 @@
     const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
     const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
   
-    
-    
+    let reportsMap = {}; 
+    let currentYear, currentMonth;
+    let selectedDateForGeneration = null;
     let isDataLoading = false; 
 
     let isMapInitialized = false;     
@@ -1695,23 +1689,21 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // 9. [최종 통합] 초기화 및 이벤트 리스너
     // ===============================================
     document.addEventListener('DOMContentLoaded', () => {
-    if(typeof initCalendar === 'function') {
-        initCalendar(); 
-    } else {
-        console.error("calendar.js가 로드되지 않았습니다.");
-    }
+    
     // --- (A) 초기 변수 및 UI 설정 ---
     const today = new Date();
     currentYear = today.getFullYear();
     currentMonth = today.getMonth() + 1;
     document.getElementById('current-date').textContent = formatDate(today);
     document.getElementById('app-status').textContent = '상태: 준비 완료.';
+
     // 2. 그냥 바로 시작합니다 (지도는 헤드에서 이미 로딩됨)
     console.log("🚀 앱 시작");
 
             // 1. 🚀 [수정 완료] 새 레이아웃 시스템 초기화 (즉시 실행)
             if (typeof changeView === 'function') changeView('write');
 
+            fetchReportsForMonth(currentYear, currentMonth, true); // 캘린더 데이터 로드
             updateFactoryStatus(); // 공장 잔량 채우기
 
             // 검색창 이벤트
@@ -1850,7 +1842,229 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             throw new Error(`API 호출 실패 (${error.message})`);
         }
     }
+
+
+    // ===============================================
+    // 8. 앱스 스크립트 통신 & 캘린더/보고서 로직
+    // ===============================================
+
+    async function changeMonth(delta) {
+      const date = new Date(currentYear, currentMonth - 1 + delta, 1);
+      currentYear = date.getFullYear();
+      currentMonth = date.getMonth() + 1;
+      fetchReportsForMonth(currentYear, currentMonth);
+    }
   
+    async function callAppsScript(action, params = {}) {
+        const url = new URL(API_URL);
+        url.searchParams.set('action', action);
+        for (const key in params) url.searchParams.set(key, params[key]);
+        const response = await fetch(url.toString());
+        return await response.json();
+    }
+
+    async function generateTodayReport() {
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        showLoader('새 일일 보고서 배송 중...', true);
+    
+        try {
+            const result = await callAppsScript('generate'); 
+            if (result.status === 'success' && result.url) {
+                openSheetApp(result.url, newWindow); 
+                reloadCurrentMonth();
+            } else { 
+              if(newWindow) newWindow.close(); alert('실패: ' + result.message); }
+        } catch (e) { 
+          if(newWindow) newWindow.close(); alert('오류: ' + e.message); } 
+        finally { hideLoader(); }
+    }
+
+    async function createMonthlySummary() {
+      showLoader(currentMonth + '월 매출현황 보고서를 배달중...', true);
+      try {
+        const result = await callAppsScript('createSummary', {
+          year: currentYear,
+          month: currentMonth
+        });
+        if (result.status === 'success' && result.url) {
+          hideLoader();
+          openSheetApp(result.url);
+        } else {
+          hideLoader();
+          alert('월별 통계 생성 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+      } catch (error) {
+        hideLoader();
+        alert('월별 통계 생성 오류: ' + error.message);
+      }
+    }
+  
+    async function confirmGenerateReport() {
+        if (!selectedDateForGeneration) { closeModal(); return; }
+        const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
+        const [year, month, day] = selectedDateForGeneration.split('-').map(Number);
+        closeModal(); showLoader('보고서 생성 중...');
+        try {
+            const result = await callAppsScript('generateByDate', { year, month, day, shouldPropagate: true });
+            if (result.status === 'success') {
+                if (result.newReport) reportsMap[result.newReport.date] = result.newReport;
+                renderCalendar();
+                openSheetApp(result.url, newWindow);
+            } else { if(newWindow) newWindow.close(); alert('실패'); }
+        } catch (e) { if(newWindow) newWindow.close(); alert('오류'); } finally { hideLoader(); }
+    }
+
+    /**
+     * [신규] 보고서 옵션 모달/시트 닫기
+     */
+    function closeReportOptionModal() {
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+        const modal = document.getElementById('report-option-modal');
+
+        // ✅ [제거] 모달이 닫힐 때 그림자 클래스를 제거합니다.
+        sheet.classList.remove('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+      
+        // 1. 애니메이션 (스르륵 내려감)
+        // TailwindCSS 트랜지션 클래스를 사용하여 애니메이션 실행
+        backdrop.classList.add('opacity-0');
+        sheet.classList.add('translate-y-full');
+
+        // 2. 애니메이션 완료 후 완전히 숨기기
+        // 300ms(0.3s)는 CSS의 duration-300과 일치해야 자연스러움
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); 
+    }
+
+  
+    // 캘린더 렌더링 관련
+    async function fetchReportsForMonth(year, month, isInitial = false) {
+    const key = year + '-' + month;
+    
+    // 1. 이미 로딩된 데이터면 바로 보여주고 끝냄 (로딩 안 띄움)
+    if (reportsMap[key] === 'completed') { 
+        renderCalendar(); 
+        return; 
+    }
+    
+    // 🚨 [수정 포인트] 전체 화면 로딩(showLoader) 삭제!
+    // 대신 '달력 박스 전용 로딩막'을 찾아서 켭니다.
+    const localLoader = document.getElementById('calendar-loader');
+    if (localLoader) localLoader.classList.remove('hidden'); // 로딩막 켜기
+
+    try {
+        const result = await callAppsScript('getReportFilesByMonth', { year, month });
+        if (Array.isArray(result)) { 
+            result.forEach(r => reportsMap[r.date] = r); 
+            reportsMap[key] = 'completed'; 
+        }
+    } finally { 
+        // 🚨 [수정 포인트] 작업 끝났으니 로컬 로딩막 끄기
+        if (localLoader) localLoader.classList.add('hidden'); // 로딩막 끄기
+        
+        renderCalendar(); 
+        
+        const statusEl = document.getElementById('review-status');
+        if(statusEl) statusEl.textContent = '상태: 월별 보고서 정보 로딩 완료.';
+    }
+}
+  
+     function renderCalendar() {
+        const container = document.getElementById('calendar-days');
+        if (!container) return;
+        container.innerHTML = '';
+        document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
+        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성';
+        
+        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        
+        // 빈 공간 채우기
+        for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+        
+        // 날짜 채우기
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+            const hasReport = reportsMap[dateKey];
+            let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
+            
+            let clickHandler = '';
+            
+            if (hasReport) {
+                // ✅ 보고서가 있으면 롱프레스/터치 이벤트 연결
+                const reportId = hasReport.id;
+                const reportUrl = hasReport.url;
+                const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+                
+                // 롱프레스 관련 이벤트 핸들러
+                clickHandler = `
+                    onclick="handleReportClick('${reportUrl}')"
+                    onmousedown="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
+                    onmouseup="endPressReport()"
+                    onmouseleave="endPressReport()"
+                    ontouchstart="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
+                    ontouchend="endPressReport()"
+                `;
+            } else if (!isSunday) {
+                // ✅ 보고서가 없으면 기존 onDateClick 연결 (생성 모달)
+                clickHandler = `onclick="onDateClick(${day})"`;
+            } else {
+                // ✅ 일요일은 아무 것도 없음
+                clickHandler = ``;
+            }
+            
+            // 최종 HTML 생성
+            container.innerHTML += `
+                <div class="p-2 flex justify-center">
+                    <div class="${cls}" ${clickHandler}>${day}</div>
+                </div>
+            `;
+        }
+   }
+  
+    function preloadAdjacentMonths(year, month) {
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMonthKey = prevYear + '-' + prevMonth;
+        const nextDate = new Date(year, month, 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = nextDate.getMonth() + 1;
+        const nextMonthKey = nextYear + '-' + nextMonth;
+        if (!reportsMap[prevMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: prevYear, month: prevMonth }).then(result => {
+                if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[prevMonthKey] = 'completed';
+                }
+            });
+        }
+        if (!reportsMap[nextMonthKey]) {
+            callAppsScript('getReportFilesByMonth', { year: nextYear, month: nextMonth }).then(result => {
+                 if (Array.isArray(result)) {
+                    result.forEach(report => { reportsMap[report.date] = report; });
+                    reportsMap[nextMonthKey] = 'completed';
+                }
+            });
+        }
+    }
+  
+    function onDateClick(day, isSunday) {
+      if (isSunday) return;
+      const formattedDate = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      selectedDateForGeneration = formattedDate;
+      const report = reportsMap[formattedDate];
+      if (report && report.url) {
+        openSheetApp(report.url);
+      } else {
+        const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        openModal();
+      }
+    }
+
 /**
  * [수정] 공장 장부용 합계 조회 (현재 좌표 F26~28 유지 + 오늘 파일만 확인)
  */
@@ -2001,6 +2215,98 @@ window.updateFactoryStatus = async function() {
     // ===============================================
     let selectedReportId = null;
 
+    function openReportOptionModal(id, url, dateStr) {
+        selectedReportId = id;
+        document.getElementById('option-date-title').textContent = dateStr;
+        
+        // 버튼 이벤트 연결
+        document.getElementById('btn-open-report').onclick = function() {
+            openSheetApp(url);
+            closeReportOptionModal();
+        };
+        
+        document.getElementById('btn-delete-report').onclick = function() {
+            // 삭제 확인 (시스템 confirm 사용)
+            if (confirm("정말 삭제하시겠습니까? (휴지통으로 이동)")) {
+                deleteReportAction(id, dateStr);
+            }
+        };
+
+        const modal = document.getElementById('report-option-modal');
+        const sheet = document.getElementById('ro-sheet');
+        const backdrop = document.getElementById('ro-backdrop');
+
+        // ✅ [추가] 모달이 열릴 때 그림자 클래스를 추가합니다.
+        sheet.classList.add('shadow-[0_-4px_20px_rgba(0,0,0,0.2)]');
+
+        // 1. 껍데기 보이기
+        modal.classList.remove('hidden');
+
+        // 2. 애니메이션 (스르륵 올라옴)
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            sheet.classList.remove('translate-y-full');
+        }, 10);
+    }
+
+    // ===============================================
+    // 🖱️ [복구] 달력 꾹 누르기 (Long Press) 로직
+    // ===============================================
+    let reportPressTimer;
+    let isLongPressed = false; // 꾹 누르기 성공 여부 플래그
+
+    /**
+     * 1. 누르기 시작 (타이머 시작)
+     */
+    function startPressReport(el, id, url, dateStr) {
+        // 이전 타이머 취소 (안전장치)
+        clearTimeout(reportPressTimer);
+        
+        // 꾹 누르기 시작
+        isLongPressed = false;
+        
+        // 눌렸을 때 살짝 작아지는 효과 (눌리는 모션)
+        el.style.transform = "scale(0.9)"; 
+
+        // 🚨 [타이머 시작] 0.8초 뒤에 팝업을 띄우도록 예약
+        reportPressTimer = setTimeout(() => {
+            isLongPressed = true; // 롱프레스 성공!
+            if (navigator.vibrate) navigator.vibrate(50); 
+            
+            // 옵션 팝업창 띄우기
+            openReportOptionModal(id, url, dateStr);
+            
+            // 팝업이 뜨면 스타일 복귀 (다음 동작을 위해)
+            el.style.transform = "";
+        }, 800); // 0.8초 설정
+    }
+
+    /**
+     * 2. 손 뗌 (타이머 취소)
+     */
+    function endPressReport() {
+        clearTimeout(reportPressTimer);
+        // 눌렀을 때 변했던 스타일 복귀
+        const activeEls = document.querySelectorAll('.date-box');
+        activeEls.forEach(el => {
+            // 🚨 [수정됨] 여기서도 "scale(1)" 대신 빈 값("")으로 초기화!
+            // 그래야 스타일 속성이 사라지고, 다시 CSS hover 효과(scale 1.1)가 먹힙니다.
+            el.style.transform = ""; 
+        });
+    }
+
+    /**
+     * 3. 짧은 클릭 처리 (롱프레스가 성공했으면 클릭 무시)
+     */
+    function handleReportClick(url) {
+        // 롱프레스 플래그가 참이면 (이미 팝업이 떴으면)
+        if (isLongPressed) {
+            isLongPressed = false; // 플래그 리셋 후
+            return; // 클릭 무시
+        }
+        // 짧은 클릭 액션
+        openSheetApp(url); 
+    }
 
    /**
  * UI 작업 로그를 서버에 비동기적으로 전송합니다. (로그 기록용)
@@ -2020,6 +2326,57 @@ function logClientActionAsync(actionName) {
     }
 }
 
+/**
+ * [수정됨] 달력 강제 새로고침 (메모리 초기화 기능 추가)
+ */
+function reloadCurrentMonth() {
+    // 1. 이번 달 상태 키 (예: '2025-12')
+    const key = currentYear + '-' + currentMonth;
+    
+    // 2. '로딩 완료' 도장 지우기
+    delete reportsMap[key]; 
+    
+    // 3. 🚨 [핵심 추가] 이번 달에 해당하는 '날짜별 데이터'도 싹 지워야 합니다!
+    // 예: '2025-12-01', '2025-12-04' 등...
+    const prefix = currentYear + '-' + String(currentMonth).padStart(2, '0');
+    
+    Object.keys(reportsMap).forEach(dateKey => {
+        if (dateKey.startsWith(prefix)) {
+            delete reportsMap[dateKey]; // 메모리에서 삭제!
+        }
+    });
+    
+    // 4. 안내 메시지
+    showToast(`${currentMonth}월 데이터를 최신으로 갱신합니다.`, 'success');
+    
+    // 5. 이제 깨끗한 상태에서 다시 받아옴
+    fetchReportsForMonth(currentYear, currentMonth);
+}
+/**
+ * [복구됨] 보고서 삭제 실행 함수
+ */
+async function deleteReportAction(fileId, dateStr) {
+    showLoader(`"${dateStr}" 보고서 삭제 중...`);
+    closeReportOptionModal(); 
+    
+    try {
+        const result = await callAppsScript('deleteReportFile', { fileId: fileId });
+        
+        if (result.status === 'success') {
+            showToast("보고서가 삭제되었습니다.", "success");
+            
+            // ✅ 삭제 후 달력 새로고침 (아까 추가한 기능 포함)
+            reloadCurrentMonth(); 
+            
+        } else {
+            showToast("삭제 실패: " + result.message, "error");
+        }
+    } catch (e) {
+        showToast("서버 오류: " + e.message, "error");
+    } finally {
+        hideLoader();
+    }
+}
   /**
  * [수정됨] 보고서 삭제 함수 (캐시 삭제 기능 추가)
  */
@@ -2126,33 +2483,6 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     });
 }
 
-  function selectColor(color) {
-    document.getElementById('selected-color').value = color;
-
-    // 모든 버튼 스타일 초기화
-    ['btn-red', 'btn-blue', 'btn-black'].forEach(id => {
-        const btn = document.getElementById(id);
-        if(btn) btn.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400');
-    });
-
-    // 선택한 버튼 강조
-    const selectedBtn = document.getElementById(`btn-${color}`);
-    if(selectedBtn) selectedBtn.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400');
-}
-
-// 2. 보고서 옵션 모달 닫기 함수
-function closeReportOptionModal() {
-    const modal = document.getElementById('report-option-modal');
-    const sheet = document.getElementById('ro-sheet');
-    const backdrop = document.getElementById('ro-backdrop');
-
-    if(sheet) sheet.style.transform = 'translateY(100%)'; // 아래로 슬라이드
-    if(backdrop) backdrop.classList.remove('opacity-100');
-
-    setTimeout(() => {
-        if(modal) modal.classList.add('hidden');
-    }, 300);
-}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -2354,34 +2684,6 @@ function closeReportOptionModal() {
     </svg>
     <span class="font-bold text-gray-100">클릭 시 해당 기사로 이동합니다.🔗</span>
 </div>
-      <div id="holiday-modal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl p-6 w-80">
-        <h3 class="text-lg font-bold mb-4 text-gray-800">📅 날짜 꾸미기</h3>
-        <p id="modal-date-display" class="text-sm text-gray-500 mb-4 text-center font-mono">2026-02-17</p>
-
-        <div class="mb-4">
-            <label class="block text-xs font-bold text-gray-700 mb-1">라벨 (예: 설날, 휴무)</label>
-            <input type="text" id="holiday-label" class="w-full border rounded p-2 focus:ring-2 focus:ring-orange-500 outline-none">
-        </div>
-
-        <div class="mb-6">
-            <label class="block text-xs font-bold text-gray-700 mb-1">숫자 색상</label>
-            <div class="flex gap-2">
-                <button onclick="selectColor('red')" id="btn-red" class="flex-1 py-2 rounded border bg-red-50 text-red-600 font-bold">빨강</button>
-                <button onclick="selectColor('blue')" id="btn-blue" class="flex-1 py-2 rounded border bg-blue-50 text-blue-500 font-bold">파랑</button>
-                <button onclick="selectColor('black')" id="btn-black" class="flex-1 py-2 rounded border bg-gray-50 text-gray-600 font-bold">검정</button>
-            </div>
-            <input type="hidden" id="selected-color" value="black">
-        </div>
-
-        <div class="flex gap-2">
-            <button onclick="closeHolidayModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold">취소</button>
-            <button onclick="saveHolidaySetting()" class="flex-1 bg-orange-500 text-white py-3 rounded-lg font-bold shadow-md">저장</button>
-        </div>
-    </div>
-</div>
 </body>
 </html>
-
-
 
