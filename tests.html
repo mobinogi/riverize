@@ -2028,7 +2028,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     }
 }
   
-// [수정됨] 안쪽 div의 클릭 이벤트를 제거하여 충돌 방지
+// [디자인 100% 복구] 사장님 원본 HTML 클래스 그대로 사용 (h-14, pt-1 등)
 function renderCalendar() {
     const container = document.getElementById('calendar-days');
     if (!container) return;
@@ -2055,13 +2055,13 @@ function renderCalendar() {
         const label = config.label || "";
         const colorType = config.color || (isSunday ? 'red' : 'black');
 
-        // 스타일 설정
+        // [스타일 유지] 사장님 원본 스타일
         let numStyle = "font-size: 14px; position: relative; z-index: 2;"; 
         if (colorType === 'red') numStyle += " color: #ef4444;"; 
         else if (colorType === 'blue') numStyle += " color: #3b82f6;"; 
         else numStyle += " color: #374151;";
 
-        // 띠지 로직
+        // [띠지 HTML]
         let barHtml = "";
         if (label) {
             let prevCount=0, nextCount=0;
@@ -2087,14 +2087,14 @@ function renderCalendar() {
             </div>`;
         }
 
-        // 편집모드 선택 효과
+        // [편집모드 선택 효과]
         let selectionClass = "";
         if (isEditMode && selectedDates.includes(dateKey)) {
             selectionClass = "ring-1 ring-green-500 bg-green-50"; 
         }
 
-        // ★★★ 핵심 수정: 안쪽 div에 있던 onclick, onmousedown 등 모든 이벤트 제거함 ★★★
-        // 모든 이벤트는 바깥쪽(부모) div에서 handleClick 하나로 통합 관리합니다.
+        // ★ [HTML 구조 원상복구] ★
+        // 사장님 tests(7).html에 있던 'h-14 relative border...' 클래스 그대로 적용
         container.innerHTML += `
             <div class="h-14 relative border border-transparent hover:border-gray-200 cursor-pointer flex flex-col items-center justify-start pt-1 ${selectionClass}"
                  ontouchstart="handleTouchStart('${dateKey}', ${day}, ${isSunday})"
