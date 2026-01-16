@@ -938,6 +938,74 @@ const markerColors = {
     '정병준': 'red'   
 };
 
+// ============================================================
+// 2. [초기화] 페이지 로드 시 실행 (최종 수정본)
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 앱 시작");
+
+    // 1. 날짜 및 상태 표시
+    const today = new Date();
+    const dateEl = document.getElementById('current-date');
+    if(dateEl) dateEl.textContent = formatDate(today);
+    
+    const statusEl = document.getElementById('app-status');
+    if(statusEl) statusEl.textContent = '상태: 준비 완료.';
+
+    // 2. 레이아웃 초기화
+    if (typeof changeView === 'function') changeView('write');
+
+    // 3. ★ 데이터 로드 (보고서 & 공장현황)
+    if (typeof fetchReportsForMonth === 'function') {
+        fetchReportsForMonth(currentYear, currentMonth, true);
+    }
+    if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
+    
+    // 4. ★ 띠지 설정(휴일 등) 로드
+    if (typeof google !== 'undefined' && google.script) {
+        google.script.run.withSuccessHandler(function(data) {
+            try { 
+                holidayConfig = JSON.parse(data); 
+                renderCalendar(); // 설정 로드 후 달력 다시 그리기
+            } catch(e) { holidayConfig = {}; }
+        }).loadCalendarConfig();
+    }
+
+    // 5. ★ 편집 모드 토글 이벤트 연결 (중복 제거됨!)
+    const toggleBtn = document.getElementById('edit-mode-toggle');
+    if(toggleBtn) {
+        toggleBtn.addEventListener('change', function(e) {
+            isEditMode = e.target.checked;
+            selectedDates = []; // 모드 변경 시 선택 초기화
+            renderCalendar();   // 화면 갱신
+            
+            // 안내 메시지
+            if(isEditMode && typeof showToast === 'function') {
+                showToast("🛠️ 편집 모드: 날짜를 선택하세요.");
+            }
+        });
+    }
+
+    // 6. 검색창 이벤트
+    const searchInput = document.getElementById('map-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => {
+            document.getElementById('client-list-panel')?.classList.add('hidden');
+            document.getElementById('btn-restore-sidebar')?.classList.remove('hidden');
+        });
+    }
+
+    // 7. [중요] 스무스 스와이프 엔진 (모달 닫기용)
+    if(typeof setupSmoothSwipe === 'function') {
+        setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
+        setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
+        setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
+    }
+
+    // 8. 유가 정보 로드
+    if (typeof loadOilPrice === 'function') loadOilPrice();
+});
+
     // ===============================================
     // 2. 유틸리티 & UI 헬퍼 함수
     // ===============================================
@@ -1711,98 +1779,6 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
     }
    
-    // ============================================================
-    // 2. [초기화] 페이지 로드 시 실행
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log("🚀 앱 시작");
-
-        // 날짜 및 상태 표시
-        const today = new Date();
-        const dateEl = document.getElementById('current-date');
-        if(dateEl) dateEl.textContent = formatDate(today);
-        
-        const statusEl = document.getElementById('app-status');
-        if(statusEl) statusEl.textContent = '상태: 준비 완료.';
-
-        // 레이아웃 초기화
-        if (typeof changeView === 'function') changeView('write');
-
-        // ★ 데이터 로드 (보고서 & 띠지 설정)
-        if (typeof fetchReportsForMonth === 'function') {
-            fetchReportsForMonth(currentYear, currentMonth, true);
-        }
-        if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
-        
-        // 띠지 설정 로드
-        if (typeof google !== 'undefined' && google.script) {
-            google.script.run.withSuccessHandler(function(data) {
-                try { 
-                    holidayConfig = JSON.parse(data); 
-                    renderCalendar(); // 설정 로드 후 다시 그리기
-                } catch(e) { holidayConfig = {}; }
-            }).loadCalendarConfig();
-        }
-
-        // ★ 편집 모드 토글 이벤트 연결
-        const toggleBtn = document.getElementById('edit-mode-toggle');
-        if(toggleBtn) {
-            toggleBtn.addEventListener('change', function(e) {
-                isEditMode = e.target.checked;
-                selectedDates = []; // 모드 변경 시 선택 초기화
-                renderCalendar();   // 화면 갱신
-            });
-        }
-
-        // 기타 이벤트 (검색창, 유가 정보 등)
-        const searchInput = document.getElementById('map-search-input');
-        if (searchInput) {
-            searchInput.addEventListener('focus', () => {
-                document.getElementById('client-list-panel')?.classList.add('hidden');
-                document.getElementById('btn-restore-sidebar')?.classList.remove('hidden');
-            });
-        }
-        if (typeof loadOilPrice === 'function') loadOilPrice();
-    });
-
-    // 6. [추가됨] ★★★ 편집 모드 토글 스위치 이벤트 ★★★
-    // 이게 있어야 버튼을 눌렀을 때 초록색 테두리 모드로 바뀝니다.
-    const toggleBtn = document.getElementById('edit-mode-toggle');
-    if(toggleBtn) {
-        toggleBtn.addEventListener('change', function(e) {
-            isEditMode = e.target.checked; // 전역 변수 변경
-            selectedDates = [];            // 선택 초기화
-            renderCalendar();              // 화면 갱신
-            
-            // 안내 메시지 (선택사항)
-            if(isEditMode && typeof showToast === 'function') {
-                showToast("🛠️ 편집 모드: 날짜를 선택하세요.");
-            }
-        });
-    }
-
-    // 7. 검색창 이벤트
-    const searchInput = document.getElementById('map-search-input');
-    if (searchInput) {
-        searchInput.addEventListener('focus', () => {
-            const panel = document.getElementById('client-list-panel');
-            const restoreBtn = document.getElementById('btn-restore-sidebar');
-            if(panel) panel.classList.add('hidden');
-            if(restoreBtn) restoreBtn.classList.remove('hidden');
-        });
-    }
-
-    // 8. 스무스 스와이프 엔진
-    if(typeof setupSmoothSwipe === 'function') {
-        setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
-        setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
-        setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
-    }
-    
-    // 9. 유가 정보 로드
-    if (typeof loadOilPrice === 'function') loadOilPrice();
-});
-    
     function openDeletePrompt(client, user) {
         deleteTargetClient = client; deleteTargetUser = user;
         document.getElementById('delete-target-name').textContent = client.name;
