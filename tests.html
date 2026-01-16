@@ -989,17 +989,30 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("데이터 로드 실패:", err);
     });
 
-    // 5. ★ 편집 모드 토글 이벤트 연결 (중복 제거됨!)
+    // 5. ★ [업그레이드] 슈퍼 편집 모드 토글 (이걸 복사해서 넣으세요!)
     const toggleBtn = document.getElementById('edit-mode-toggle');
+    const floatingBar = document.getElementById('edit-floating-bar');
+    const calendarContainer = document.getElementById('calendar-grid'); 
+    const body = document.body;
+
     if(toggleBtn) {
         toggleBtn.addEventListener('change', function(e) {
             isEditMode = e.target.checked;
-            selectedDates = []; // 모드 변경 시 선택 초기화
-            renderCalendar();   // 화면 갱신
+            selectedDates = []; 
             
-            // 안내 메시지
-            if(isEditMode && typeof showToast === 'function') {
-                showToast("🛠️ 편집 모드: 날짜를 선택하세요.");
+            if (isEditMode) {
+                // [ON] 켜졌을 때: 흔들흔들 + 어둡게 + 바 올리기
+                if(calendarContainer) calendarContainer.classList.add('editing-mode');
+                body.classList.add('editing-mode-active');
+                if(floatingBar) floatingBar.classList.remove('translate-y-full');
+                
+                if(typeof showToast === 'function') showToast("🛠️ 편집 모드 시작!");
+            } else {
+                // [OFF] 꺼졌을 때: 원상복구
+                if(calendarContainer) calendarContainer.classList.remove('editing-mode');
+                body.classList.remove('editing-mode-active');
+                if(floatingBar) floatingBar.classList.add('translate-y-full');
+                renderCalendar(); 
             }
         });
     }
@@ -3106,6 +3119,23 @@ function onLongPressMulti(dateKey) {
             </button>
         </div>
     </div>
+</div>
+      <div id="edit-dimmed-layer" class="editing-mode-overlay"></div>
+
+<div id="edit-floating-bar" class="fixed bottom-0 left-0 w-full bg-gray-900 text-white p-4 transform translate-y-full transition-transform duration-300 z-[60] flex justify-between items-center shadow-2xl safe-area-bottom">
+    <div class="flex items-center gap-3">
+        <span class="flex h-3 w-3 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+        </span>
+        <div class="flex flex-col">
+            <span class="font-bold text-lg">편집 모드 실행 중</span>
+            <span class="text-xs text-gray-400">날짜를 선택해 설정을 변경하세요</span>
+        </div>
+    </div>
+    <button onclick="document.getElementById('edit-mode-toggle').click()" class="bg-white text-gray-900 px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+        완료
+    </button>
 </div>
 </body>
 </html>
