@@ -1132,73 +1132,73 @@ body.editing-mode-active #calendar-grid {
 /* [style.css 맨 마지막에 이 코드로 덮어쓰세요!] */
 
 /* =========================================
-   🌌 찐 오로라 에디션 (Real Aurora Flow) 🌌
+   🔥 찐 에너지 방출 에디션 (Super Energy Aura) 🔥
    ========================================= */
 
-/* 1. 색감이 물결치듯 흐르는 애니메이션 */
-@keyframes aurora-flow {
+/* 1. 빛이 일렁이는 애니메이션 (색상이 계속 흐름) */
+@keyframes energy-flow {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* 2. 어두운 배경 (딤드) */
+/* 2. 어두운 배경 (딤드) - 집중도 UP */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); /* 집중도 높게 아주 어둡게 */
+    background: rgba(0, 0, 0, 0.85); /* 아주 어둡게 */
     z-index: 50;
     pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
 .editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
-/* 3. ★ 달력 본체 (흰색 배경 유지) */
+/* 3. ★ 달력 본체 (눈이 편안한 영역) */
 .editing-mode-active #calendar-grid {
     position: relative !important;
-    z-index: 100 !important;
-    background-color: #ffffff !important; /* 내용물은 잘 보여야 하니까 흰색 */
+    z-index: 100 !important; /* 무조건 제일 위 */
+    background-color: #ffffff !important; /* ★ 안쪽은 무조건 흰색 (눈 보호) */
     border-radius: 16px;
-    /* 기존 촌스러운 그림자 제거 */
-    box-shadow: none !important; 
+    box-shadow: none !important; /* 기본 그림자 제거 */
     transform: scale(1.02);
     transition: transform 0.4s ease;
 }
 
-/* 4. ★ 핵심: 뒤에서 흐르는 오로라 빛 (가상 요소) */
+/* 4. [1단계] 안쪽 강한 빛 (에너지 코어) */
 .editing-mode-active #calendar-grid::before {
     content: "";
     position: absolute;
-    /* 달력보다 살짝 더 크게 퍼지게 설정 */
-    top: -6px; left: -6px; right: -6px; bottom: -6px;
-    z-index: -1; /* 달력 뒤로 숨기기 */
+    top: -5px; left: -5px; right: -5px; bottom: -5px;
+    z-index: -1; /* 달력 뒤 */
     
-    /* 🌈 찐 오로라 컬러 팔레트 (저 사이트 느낌) */
+    /* 🌈 에너지가 흐르는 색상 (자연스러운 오로라톤) */
     background: linear-gradient(
-        60deg,
-        #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82
+        45deg,
+        #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000
     );
+    background-size: 400%; /* 그라데이션을 길게 늘려서 흐르게 함 */
     
-    /* 빛이 부드럽게 번지도록 블러 처리 */
-    filter: blur(15px);
     border-radius: 20px;
-    
-    /* 배경을 크게 늘려서 움직일 공간 확보 */
-    background-size: 300% 300%;
-    
-    /* 물결치는 애니메이션 (3초 주기로 부드럽게) */
-    animation: aurora-flow 3s ease alternate infinite;
-    
-    opacity: 0.9; /* 은은하게 */
+    filter: blur(20px); /* 적당히 뭉개서 빛처럼 */
+    opacity: 1;
+    animation: energy-flow 20s linear infinite; /* 천천히 흐름 */
 }
 
-/* (옵션) 더 강한 빛을 원하면 하나 더 겹침 (더 멀리 퍼지는 빛) */
+/* 5. [2단계] 바깥쪽 멀리 퍼지는 빛 (불특정한 길이로 퍼짐) */
 .editing-mode-active #calendar-grid::after {
     content: "";
     position: absolute;
-    top: -15px; left: -15px; right: -15px; bottom: -15px;
-    z-index: -2;
-    background: inherit; /* 위랑 같은 색상 */
-    background-size: 300% 300%;
-    filter: blur(30px); /* 훨씬 더 많이 뭉개서 아우라처럼 */
-    animation: aurora-flow 3s ease alternate infinite;
-    opacity: 0.5;
+    /* 박스보다 훨씬 크게 잡아서 빛을 멀리 보냄 */
+    top: -30px; left: -30px; right: -30px; bottom: -30px; 
+    z-index: -2; /* 가장 뒤 */
+    
+    /* 위랑 똑같은 색상이지만 */
+    background: linear-gradient(
+        45deg,
+        #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000
+    );
+    background-size: 400%;
+    
+    border-radius: 50px; /* 더 둥글게 퍼짐 */
+    filter: blur(50px); /* ★ 엄청나게 뭉개서 연기처럼 만듦 */
+    opacity: 0.6; /* 은은하게 */
+    animation: energy-flow 20s linear infinite;
 }
