@@ -426,33 +426,28 @@
     거래처 현황 지도 보기
 </button>
 
-                      <p id="app-status" class="text-sm text-gray-500 pt-2">상태: 대시보드 불러오는 중...</p>
-                    </div>
-
-                    <div id="content-review" class="sub-tab-content hidden space-y-6 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative">
-                      
-                      
-                      <div id="calendar-header" class="flex justify-between items-center mb-4 px-1 pt-2">
+                      <div class="flex justify-between items-center mt-2 px-2 border-t pt-2">
+    <p id="app-status" class="text-xs text-gray-500">상태: 준비 완료.</p>
     
-    <div class="flex items-center gap-2">
-        <button onclick="changeMonth(-1)" class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        
-        <div id="current-month-display" onclick="reloadCurrentMonth()" title="새로고침" class="text-xl font-bold text-gray-800 cursor-pointer select-none active:scale-95 transition-transform">
-            불러오는 중...
-        </div>
-        
-        <button onclick="changeMonth(1)" class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </button>
-    </div>
-
-    <label class="flex items-center space-x-1 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-white hover:border-orange-300 transition-all shadow-sm">
-        <input type="checkbox" id="edit-mode-toggle" class="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 accent-orange-500">
-        <span class="text-xs font-bold text-gray-600">🛠 편집</span>
+    <label class="flex items-center space-x-1 cursor-pointer">
+        <span class="text-xs text-gray-500">편집 모드</span>
+        <input type="checkbox" id="edit-mode-toggle" class="accent-orange-500 w-4 h-4">
     </label>
-
+</div>
+                      
+                      
+                      <div id="calendar-header" class="flex justify-between items-center mb-2 px-1 pt-2">
+    <button onclick="changeMonth(-1)" class="p-1 text-gray-500 hover:text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    </button>
+    
+    <div id="current-month-display" onclick="reloadCurrentMonth()" class="text-xl text-gray-800 cursor-pointer select-none">
+        불러오는 중...
+    </div>
+    
+    <button onclick="changeMonth(1)" class="p-1 text-gray-500 hover:text-gray-800">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+    </button>
 </div>
 
                       <div class="calendar-grid text-center text-sm font-medium">
