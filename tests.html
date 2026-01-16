@@ -963,25 +963,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
     
-    // [디버깅용] 데이터가 진짜 오는지 확인하는 코드
-if (typeof google !== 'undefined' && google.script) {
-    google.script.run.withSuccessHandler(function(data) {
-        console.log("🔥 서버에서 가져온 띠지 데이터:", data); // [확인] F12 눌러서 콘솔 보세요!
+// 3. ★ 데이터 로드 (보고서 & 공장현황) - 기존 코드 유지
+    if (typeof fetchReportsForMonth === 'function') {
+        fetchReportsForMonth(currentYear, currentMonth, true);
+    }
+    if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
+
+    // ▼▼▼ [여기!] 아래 코드를 붙여넣으세요 ▼▼▼
+    
+    // 4. [깃허브용] 캘린더 띠지 정보 불러오기
+    console.log("🔄 캘린더 설정 로드 요청 중...");
+    fetch(API_URL + "?action=loadCalendarConfig") 
+    .then(res => res.json())
+    .then(data => {
+        console.log("🔥 서버에서 받은 달력 데이터:", data);
         
-        try { 
-            holidayConfig = JSON.parse(data); 
-            renderCalendar(); // 데이터 받았으니 다시 그리기
-            
-            // 데이터 잘 왔으면 토스트 메시지 띄우기 (확인용)
-            if(data && data !== '{}' && typeof showToast === 'function') {
-                showToast("📅 저장된 띠지 정보를 불러왔습니다!");
-            }
-        } catch(e) { 
-            console.error("데이터 파싱 실패:", e);
-            holidayConfig = {}; 
+        // 데이터가 비어있지 않으면 적용
+        if (data && Object.keys(data).length > 0) {
+            holidayConfig = data; 
+            renderCalendar(); // 화면 다시 그리기 (빨간 글씨 적용됨)
+            if(typeof showToast === 'function') showToast("📅 캘린더 설정을 불러왔습니다!");
         }
-    }).loadCalendarConfig();
-}
+    })
+    .catch(err => {
+        console.error("데이터 로드 실패:", err);
+    });
 
     // 5. ★ 편집 모드 토글 이벤트 연결 (중복 제거됨!)
     const toggleBtn = document.getElementById('edit-mode-toggle');
