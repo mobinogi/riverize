@@ -1086,3 +1086,26 @@ body.sidebar-collapsed #main-content-wrapper {
     transform: translateX(-50%) translateY(0);
     transition-delay: 0.1s;
 }
+
+/* [슈퍼 편집 모드 스타일] */
+@keyframes soft-wiggle {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(0.5deg); }
+    75% { transform: rotate(-0.5deg); }
+    100% { transform: rotate(0deg); }
+}
+.editing-mode .grid > div:not(.text-gray-400) { 
+    border: 2px dashed #f97316 !important;
+    background-color: #fff7ed;
+    animation: soft-wiggle 0.3s ease-in-out infinite;
+    z-index: 50;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.3);
+}
+.editing-mode-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7); z-index: 40;
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.editing-mode-active .editing-mode-overlay { opacity: 1; }
+.editing-mode-active #calendar-grid { position: relative; z-index: 50; }
