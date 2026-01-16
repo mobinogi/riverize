@@ -1132,65 +1132,73 @@ body.editing-mode-active #calendar-grid {
 /* [style.css 맨 마지막에 이 코드로 덮어쓰세요!] */
 
 /* =========================================
-   🌈 슈퍼 오로라 에디션 편집 모드 스타일 🌈
+   🌌 찐 오로라 에디션 (Real Aurora Flow) 🌌
    ========================================= */
 
-/* 1. 오로라 회전 애니메이션 */
-@keyframes aurora-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* 1. 색감이 물결치듯 흐르는 애니메이션 */
+@keyframes aurora-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* 2. 어두운 배경 (딤드) */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.8); /* 조금 더 진하게 */
+    background: rgba(0, 0, 0, 0.85); /* 집중도 높게 아주 어둡게 */
     z-index: 50;
-    pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
 .editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
-/* 3. ★ 핵심: 달력 컨테이너 (주인공) */
+/* 3. ★ 달력 본체 (흰색 배경 유지) */
 .editing-mode-active #calendar-grid {
     position: relative !important;
-    z-index: 100 !important; /* 무조건 제일 위 */
-    background-color: #ffffff !important; /* 배경 흰색 필수 */
+    z-index: 100 !important;
+    background-color: #ffffff !important; /* 내용물은 잘 보여야 하니까 흰색 */
     border-radius: 16px;
-    padding: 15px !important; /* 오로라가 보일 공간 확보 */
-    transform: scale(1.03); /* 살짝 튀어나옴 */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 쫀득한 등장 */
-    /* 기존 정적 그림자는 제거 */
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3); 
-    overflow: visible; /* 오로라가 밖으로 퍼지게 */
+    /* 기존 촌스러운 그림자 제거 */
+    box-shadow: none !important; 
+    transform: scale(1.02);
+    transition: transform 0.4s ease;
 }
 
-/* 4. ★ 진짜 핵심: 빙글빙글 도는 오로라 배경 (가상 요소) */
+/* 4. ★ 핵심: 뒤에서 흐르는 오로라 빛 (가상 요소) */
 .editing-mode-active #calendar-grid::before {
-    content: '';
+    content: "";
     position: absolute;
-    /* 달력보다 조금 더 크게 */
-    top: -8px; left: -8px; right: -8px; bottom: -8px;
-    z-index: -1; /* 달력 뒤로 보냄 */
-    border-radius: 20px; /* 달력보다 조금 더 둥글게 */
+    /* 달력보다 살짝 더 크게 퍼지게 설정 */
+    top: -6px; left: -6px; right: -6px; bottom: -6px;
+    z-index: -1; /* 달력 뒤로 숨기기 */
     
-    /* 🌈 오로라 색상 팔레트 (코닉 그라디언트) */
-    background: conic-gradient(
-        from 0deg,
-        #ff4545, /* 레드 */
-        #ffa534, /* 오렌지 */
-        #ffe234, /* 옐로우 */
-        #34ff6d, /* 그린 */
-        #34e3ff, /* 시안 */
-        #344fff, /* 블루 */
-        #a534ff, /* 퍼플 */
-        #ff34c3, /* 핑크 */
-        #ff4545  /* 다시 레드 (자연스러운 연결) */
+    /* 🌈 찐 오로라 컬러 팔레트 (저 사이트 느낌) */
+    background: linear-gradient(
+        60deg,
+        #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82
     );
     
-    /* 빛 번짐 효과 (블러) */
-    filter: blur(12px);
-    opacity: 0.8;
+    /* 빛이 부드럽게 번지도록 블러 처리 */
+    filter: blur(15px);
+    border-radius: 20px;
+    
+    /* 배경을 크게 늘려서 움직일 공간 확보 */
+    background-size: 300% 300%;
+    
+    /* 물결치는 애니메이션 (3초 주기로 부드럽게) */
+    animation: aurora-flow 3s ease alternate infinite;
+    
+    opacity: 0.9; /* 은은하게 */
+}
 
-    /* 빙글빙글 애니메이션 실행 */
-    animation: aurora-spin 4s linear infinite;
+/* (옵션) 더 강한 빛을 원하면 하나 더 겹침 (더 멀리 퍼지는 빛) */
+.editing-mode-active #calendar-grid::after {
+    content: "";
+    position: absolute;
+    top: -15px; left: -15px; right: -15px; bottom: -15px;
+    z-index: -2;
+    background: inherit; /* 위랑 같은 색상 */
+    background-size: 300% 300%;
+    filter: blur(30px); /* 훨씬 더 많이 뭉개서 아우라처럼 */
+    animation: aurora-flow 3s ease alternate infinite;
+    opacity: 0.5;
 }
