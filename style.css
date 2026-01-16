@@ -1088,89 +1088,80 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* ========================================================
-   🛡️ [완벽_차단] 흰색 방어벽 + 후광(Backlight) + 마이크로 위글 🛡️
+   🛡️ [최종_진짜_해결] 흰색 철벽 방어 + 선택 박스 축소 🛡️
    ======================================================== */
 
-/* 1. 빛이 숨 쉬듯 일렁이는 애니메이션 (이제 뒤쪽 배경에서만 작동) */
+/* 1. 빛이 숨 쉬듯 일렁이는 애니메이션 (배경용) */
 @keyframes real-glow-pulse {
-    0%, 100% {
-        opacity: 0.6;
-        filter: blur(20px);
-        transform: scale(1);
-    }
-    50% {
-        opacity: 1; /* 빛이 강해짐 */
-        filter: blur(30px); /* 빛이 더 넓게 퍼짐 */
-        transform: scale(1.02); /* 빛 덩어리가 살짝 커짐 */
-    }
+    0%, 100% { opacity: 0.6; filter: blur(20px); transform: scale(1); }
+    50% { opacity: 1; filter: blur(30px); transform: scale(1.02); }
 }
 
-/* 2. ★ [초소형 위글] 1.05배 -> 1.02배 (진짜 티만 나게!) */
-@keyframes soft-wiggle-scale {
-    0% { transform: scale(1.02) rotate(0deg); }
-    25% { transform: scale(1.02) rotate(0.5deg); } 
-    75% { transform: scale(1.02) rotate(-0.5deg); }
-    100% { transform: scale(1.02) rotate(0deg); }
+/* 2. 위글위글 (선택된 박스 흔들기) */
+@keyframes soft-wiggle-tight {
+    0% { transform: scale(0.9) rotate(0deg); } /* 0.9배로 축소! */
+    25% { transform: scale(0.9) rotate(0.5deg); } 
+    75% { transform: scale(0.9) rotate(-0.5deg); }
+    100% { transform: scale(0.9) rotate(0deg); }
 }
 
 /* 3. 어두운 배경 (딤드) */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); 
+    background: rgba(0, 0, 0, 0.9); /* 더 어둡게 */
     z-index: 50;
     pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
 .editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
-/* 4. ★ 달력 컨테이너 (빛 차단 방어벽) */
+/* 4. ★ 달력 컨테이너 (흰색 절대 사수) */
 body.editing-mode-active div#calendar-grid {
     position: relative !important;
     z-index: 100 !important; 
     
-    /* ★ 배경 완전 불투명 흰색 (빛 침투 차단) */
-    background-color: #ffffff !important;
+    /* [Tailwind 무력화] 강제 흰색 적용 */
+    --tw-bg-opacity: 1 !important;
+    background-color: rgb(255, 255, 255) !important;
     background: #ffffff !important;
-    background-clip: padding-box; /* 배경이 테두리 밖으로 안 나가게 */
+    
+    /* ★ 중요: 배경이 테두리 밖으로 안 새어나가게 */
+    background-clip: border-box !important;
     
     border-radius: 16px;
-    transition: all 0.4s ease;
-    
-    /* 박스 자체의 그림자는 제거하거나 아주 얇은 검은색만 줌 (주황색 제거) */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; 
-    
-    /* ★ 중요: 여기 있던 animation(glow)를 뺐습니다! 박스는 가만히 있어야 함 */
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important; /* 검은 그림자만 남김 */
 }
 
-/* 5. ★ [핵심] 조명을 박스 뒤로 뺌 (Backlight) */
+/* 5. ★ [후광] 달력 뒤에서만 빛나게 (Before) */
 body.editing-mode-active div#calendar-grid::before {
     content: "";
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: -1; /* 달력 뒤 */
+    top: 5px; left: 5px; right: 5px; bottom: 5px; /* 박스보다 작게 시작 */
+    z-index: -1; /* 달력 뒤로 */
     
-    border-radius: 16px;
+    border-radius: 20px;
+    background: linear-gradient(45deg, #ff8c00, #ff4500); /* 진한 주황 */
     
-    /* 찐한 주황색 조명 */
-    background: linear-gradient(45deg, #ff8c00, #ff4500);
-    
-    /* 뒤에서 빛이 숨 쉼 */
+    /* 뒤에서 퍼지는 효과 */
     animation: real-glow-pulse 3s ease-in-out infinite;
 }
 
-/* 6. [위글위글] 선택된 날짜 (마이크로 사이즈) */
+/* 6. ★ [핵심] 선택된 박스 크기 축소 (Size Down) */
 .selected-wiggle { 
     border: 2px dashed #f97316 !important; 
     background-color: #fff7ed !important;   
     color: #ea580c !important; 
     font-weight: 900 !important;
     
-    /* 1.02배 짜리 애니메이션 적용 */
-    animation: soft-wiggle-scale 0.3s ease-in-out infinite !important; 
+    /* ★ scale(0.9)가 포함된 애니메이션 적용 -> 박스가 작아짐 */
+    animation: soft-wiggle-tight 0.3s ease-in-out infinite !important; 
     
     z-index: 110 !important; 
     position: relative;
-    /* 그림자도 더 작게 줄임 */
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4) !important; 
-}
-    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.5) !important; 
+    
+    /* 패딩을 줄여서 박스 자체를 물리적으로 줄임 */
+    padding: 0px !important; 
+    width: 90% !important; /* 부모 너비의 90%만 차지 */
+    margin: 0 auto !important; /* 가운데 정렬 */
+    
+    box-shadow: 0 2px 5px rgba(249, 115, 22, 0.3) !important; 
 }
