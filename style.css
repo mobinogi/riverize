@@ -1088,93 +1088,79 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* ========================================================
-   ☀️ [최종_진짜_마지막] 갓 레이(Sun Ray) + 선택 위글 ☀️
+   ✨ [최종_진짜_해결] 리얼 광원(Glow) + 완전 흰색 박스 ✨
    ======================================================== */
 
-/* 1. 빛줄기가 회전하는 애니메이션 */
-@keyframes sun-ray-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* 1. 빛이 숨 쉬듯 일렁이는 애니메이션 (회전 X, 부드러운 펄스 O) */
+@keyframes real-glow-pulse {
+    0%, 100% {
+        /* 기본 상태: 은은한 빛 */
+        box-shadow: 
+            0 0 20px rgba(255, 160, 50, 0.3),  /* 안쪽 연한 빛 */
+            0 0 40px rgba(255, 140, 0, 0.2),   /* 중간 빛 */
+            0 0 80px rgba(255, 100, 0, 0.1);   /* 멀리 퍼지는 빛 */
+    }
+    50% {
+        /* 강조 상태: 빛이 강해짐 */
+        box-shadow: 
+            0 0 25px rgba(255, 160, 50, 0.5),
+            0 0 50px rgba(255, 140, 0, 0.3),
+            0 0 100px rgba(255, 100, 0, 0.2);
+    }
 }
 
-@keyframes soft-wiggle {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(1deg); } 
-    75% { transform: rotate(-1deg); }
-    100% { transform: rotate(0deg); }
+/* 2. 위글위글 (확대된 상태로 흔들림) */
+@keyframes soft-wiggle-scale {
+    0% { transform: scale(1.1) rotate(0deg); }
+    25% { transform: scale(1.1) rotate(1deg); } 
+    75% { transform: scale(1.1) rotate(-1deg); }
+    100% { transform: scale(1.1) rotate(0deg); }
 }
 
-/* 2. 어두운 배경 (딤드) */
+/* 3. 어두운 배경 (딤드) */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); /* 아주 어둡게 */
+    background: rgba(0, 0, 0, 0.85); 
     z-index: 50;
     pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
 .editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
-/* 3. ★ 달력 컨테이너 (여기가 흰색이 안 되는 이유 해결) */
-.editing-mode-active #calendar-grid {
+/* 4. ★ 달력 컨테이너 (흰색 고정 + 리얼 광원) */
+/* 주소를 길게 써서 우선순위 확보 */
+body.editing-mode-active div#calendar-grid {
     position: relative !important;
-    z-index: 100 !important; /* 무조건 제일 위 */
-    background-color: #ffffff !important; /* ★ 흰색 페인트칠 */
-    background-image: none !important; /* 혹시 모를 배경이미지 제거 */
+    z-index: 100 !important; 
+    
+    /* ★ [핵심] 흰색 배경 3중 잠금 장치 (절대 투명해지지 않음) */
+    --tw-bg-opacity: 1 !important;
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
+    background: #ffffff !important;
+    
     border-radius: 16px;
-    box-shadow: 0 0 20px rgba(255,255,255, 0.5) !important; /* 자체 발광 살짝 */
-    transform: scale(1.02);
-    transition: transform 0.4s ease;
+    
+    /* 기존 ::before 제거하고, 본체에 직접 광원 애니메이션 적용 */
+    /* transform: scale(1.02); <-- 이거 빼야 빛이 더 자연스러움 */
+    transition: all 0.4s ease;
+    
+    /* 리얼 광원 애니메이션 실행 */
+    animation: real-glow-pulse 4s ease-in-out infinite;
 }
 
-/* 4. ★ [핵심] 썬 레이 (Sun Ray) - 뻗어나가는 빛줄기 */
-.editing-mode-active #calendar-grid::before {
-    content: "";
-    position: absolute;
-    /* 박스보다 훨씬 크게 잡아야 빛줄기가 길게 보임 */
-    top: -150%; left: -150%; right: -150%; bottom: -150%;
-    z-index: -1; /* 달력 뒤로 */
-    
-    /* ☀️ 빛줄기 패턴 (투명-색상-투명 반복) */
-    background: repeating-conic-gradient(
-        from 0deg,
-        transparent 0deg,
-        transparent 10deg,
-        rgba(255, 160, 50, 0.1) 10deg, /* 연한 주황 빛 */
-        rgba(255, 140, 0, 0.6) 15deg,  /* 진한 주황 빛 (강렬함) */
-        rgba(255, 160, 50, 0.1) 20deg, /* 연한 주황 빛 */
-        transparent 20deg,
-        transparent 30deg
-    );
-    
-    /* 원형으로 마스크를 씌워서 끝부분 자연스럽게 */
-    -webkit-mask-image: radial-gradient(black, transparent 70%);
-    mask-image: radial-gradient(black, transparent 70%);
-    
-    /* 천천히 회전 */
-    animation: sun-ray-spin 60s linear infinite;
-}
+/* (기존 ::before, ::after 가상 요소는 삭제됨) */
 
-/* 5. [보조] 뒤쪽의 은은한 광원 (빛줄기만 있으면 어색하니까) */
-.editing-mode-active #calendar-grid::after {
-    content: "";
-    position: absolute;
-    top: -20px; left: -20px; right: -20px; bottom: -20px;
-    z-index: -2;
-    background: radial-gradient(circle, rgba(255,100,0,0.4) 0%, transparent 70%);
-    filter: blur(20px);
-}
-
-
-/* 6. ★ [위글위글] 내가 선택한 놈만 주황색 + 춤추기 */
+/* 5. [위글위글] 선택된 날짜 */
 .selected-wiggle { 
     border: 2px dashed #f97316 !important; 
     background-color: #fff7ed !important;   
     color: #ea580c !important; 
     font-weight: 900 !important;
     
-    animation: soft-wiggle 0.3s ease-in-out infinite; /* 춤추기 */
+    /* 확대 + 흔들림 동시 적용 */
+    animation: soft-wiggle-scale 0.3s ease-in-out infinite !important; 
     
     z-index: 110 !important; 
     position: relative;
-    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.5); 
-    transform: scale(1.1) !important; 
+    /* 선택된 놈도 자체 발광 살짝 */
+    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.6) !important; 
 }
