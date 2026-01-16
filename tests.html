@@ -1982,59 +1982,130 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     }
 }
   
-     function renderCalendar() {
-        const container = document.getElementById('calendar-days');
-        if (!container) return;
-        container.innerHTML = '';
-        document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
-        document.getElementById('summary-button-text').textContent = currentMonth + '월 매출현황표 생성';
+// [순정 코드 기반 + 띠지 기능 추가]
+function renderCalendar() {
+    const container = document.getElementById('calendar-days');
+    if (!container) return;
+    container.innerHTML = '';
+
+    document.getElementById('current-month-display').textContent = currentYear + '년 ' + currentMonth + '월';
+    
+    // [추가된 부분] 만약 summary-button-text가 있다면 텍스트 변경 (없으면 에러 방지)
+    const summaryBtn = document.getElementById('summary-button-text');
+    if(summaryBtn) summaryBtn.textContent = currentMonth + '월 매출현황표 생성';
+    
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    
+    // 빈 공간 채우기
+    for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
+    
+    // 날짜 채우기
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
+        const hasReport = reportsMap[dateKey];
+
+        // [추가된 부분 1] 라벨(띠지) 정보 가져오기
+        const config = holidayConfig[dateKey] || {}; // holidayConfig가 없으면 빈 객체
+        const label = config.label || "";
+        const colorType = config.color || (isSunday ? 'red' : 'black'); // 색상 설정
+
+        // [기존 코드 유지] 클래스 설정
+        let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
         
-        const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        // [추가된 부분 2] 숫자 색상 강제 적용 (라벨 설정이 있을 경우)
+        let numStyle = ""; 
+        if (config.color === 'red') numStyle = "color: #ef4444 !important;";
+        else if (config.color === 'blue') numStyle = "color: #3b82f6 !important;";
+        else if (config.color === 'black') numStyle = "color: #374151 !important;";
         
-        // 빈 공간 채우기
-        for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="p-2"></div>';
-        
-        // 날짜 채우기
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateKey = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-            const isSunday = new Date(currentYear, currentMonth - 1, day).getDay() === 0;
-            const hasReport = reportsMap[dateKey];
-            let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
+        // [기존 코드 유지] 클릭 핸들러 설정
+        let clickHandler = '';
+        if (hasReport) {
+            const reportId = hasReport.id || hasReport.fileId; // id 또는 fileId 호환
+            const reportUrl = hasReport.url;
+            const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
             
-            let clickHandler = '';
-            
-            if (hasReport) {
-                // ✅ 보고서가 있으면 롱프레스/터치 이벤트 연결
-                const reportId = hasReport.id;
-                const reportUrl = hasReport.url;
-                const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
-                
-                // 롱프레스 관련 이벤트 핸들러
-                clickHandler = `
-                    onclick="handleReportClick('${reportUrl}')"
-                    onmousedown="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
-                    onmouseup="endPressReport()"
-                    onmouseleave="endPressReport()"
-                    ontouchstart="startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
-                    ontouchend="endPressReport()"
-                `;
-            } else if (!isSunday) {
-                // ✅ 보고서가 없으면 기존 onDateClick 연결 (생성 모달)
-                clickHandler = `onclick="onDateClick(${day})"`;
-            } else {
-                // ✅ 일요일은 아무 것도 없음
-                clickHandler = ``;
-            }
-            
-            // 최종 HTML 생성
-            container.innerHTML += `
-                <div class="p-2 flex justify-center">
-                    <div class="${cls}" ${clickHandler}>${day}</div>
-                </div>
+            clickHandler = `
+                onclick="if(typeof handleReportClick === 'function') handleReportClick('${reportUrl}'); else window.open('${reportUrl}', '_blank');"
+                onmousedown="if(typeof startPressReport === 'function') startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')" 
+                onmouseup="if(typeof endPressReport === 'function') endPressReport()"
+                onmouseleave="if(typeof endPressReport === 'function') endPressReport()"
+                ontouchstart="if(typeof startPressReport === 'function') startPressReport(this, '${reportId}', '${reportUrl}', '${dateStr}')"
+                ontouchend="if(typeof endPressReport === 'function') endPressReport()"
             `;
+        } else if (!isSunday) {
+            // isEditMode 체크를 추가하여 편집모드일 때는 날짜 생성을 막고 선택만 되게 할 수도 있음 (현재는 순정 유지)
+            clickHandler = `onclick="if(typeof onDateClick === 'function') onDateClick(${day}, ${isSunday})"`;
+        } else {
+            clickHandler = ``;
         }
-   }
+
+        // [추가된 부분 3] 띠지(Bar) HTML 생성 로직
+        let barHtml = "";
+        if (label) {
+            let prevCount = 0, nextCount = 0;
+            // 앞뒤 날짜 확인하여 연결성 계산
+            for(let p = day - 1; p >= 1; p--) {
+                const pKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(p).padStart(2,'0')}`;
+                if(holidayConfig[pKey]?.label === label) prevCount++; else break;
+            }
+            for(let n = day + 1; n <= daysInMonth; n++) {
+                const nKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
+                if(holidayConfig[nKey]?.label === label) nextCount++; else break;
+            }
+
+            const totalLen = prevCount + 1 + nextCount;
+            const myPosition = prevCount; // 0부터 시작
+            const centerIndex = Math.floor((totalLen - 1) / 2);
+            const isCenter = (myPosition === centerIndex);
+            
+            const isPrevSame = (prevCount > 0);
+            const isNextSame = (nextCount > 0);
+
+            // 색상 클래스
+            let bgClass = colorType === 'red' ? 'bg-red-100 text-red-600' : (colorType === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-700');
+            
+            // 모양 클래스 (둥글기)
+            let barStyleClass = "";
+            if (!isPrevSame && isNextSame) barStyleClass = "rounded-l-md ml-1"; 
+            else if (isPrevSame && isNextSame) barStyleClass = ""; // 중간은 직각
+            else if (isPrevSame && !isNextSame) barStyleClass = "rounded-r-md mr-1"; 
+            else barStyleClass = "rounded-md mx-1"; // 단독
+
+            // ★ 띠지 HTML (숫자 바로 밑에 absolute로 배치)
+            barHtml = `<div class="absolute -bottom-1 left-0 right-0 h-3 flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}" style="z-index: 0;">
+                <span class="${isCenter ? 'opacity-100' : 'opacity-0'} text-[9px] font-bold" style="z-index: 10;">${label}</span>
+            </div>`;
+        }
+
+        // [추가된 부분 4] 편집 모드 선택 효과 (테두리만)
+        let selectionClass = "";
+        if (isEditMode && selectedDates.includes(dateKey)) {
+            selectionClass = "ring-2 ring-green-500 rounded-lg";
+        }
+
+        // [최종 HTML 조립]
+        // 사장님 순정 구조: <div class="p-2 flex justify-center"> <div class="date-box ..."> </div> </div>
+        // 여기에 relative와 selectionClass를 부모 div에 주고, barHtml을 추가함.
+        container.innerHTML += `
+            <div class="p-2 flex justify-center relative cursor-pointer ${selectionClass}"
+                 onclick="handleClick('${dateKey}', ${day}, ${isSunday})"
+                 ontouchstart="handleTouchStart('${dateKey}', ${day}, ${isSunday})"
+                 ontouchend="handleTouchEnd()"
+                 onmousedown="handleMouseDown('${dateKey}', ${day}, ${isSunday})"
+                 onmouseup="handleMouseUp()">
+                 
+                <div class="${cls}" style="${numStyle} z-index: 2; position: relative;" ${clickHandler}>
+                    ${day}
+                </div>
+                
+                ${barHtml}
+            </div>
+        `;
+    }
+}
   
     function preloadAdjacentMonths(year, month) {
         const prevDate = new Date(year, month - 2, 1);
