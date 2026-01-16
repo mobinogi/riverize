@@ -963,15 +963,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
     
-    // 4. ★ 띠지 설정(휴일 등) 로드
-    if (typeof google !== 'undefined' && google.script) {
-        google.script.run.withSuccessHandler(function(data) {
-            try { 
-                holidayConfig = JSON.parse(data); 
-                renderCalendar(); // 설정 로드 후 달력 다시 그리기
-            } catch(e) { holidayConfig = {}; }
-        }).loadCalendarConfig();
-    }
+    // [디버깅용] 데이터가 진짜 오는지 확인하는 코드
+if (typeof google !== 'undefined' && google.script) {
+    google.script.run.withSuccessHandler(function(data) {
+        console.log("🔥 서버에서 가져온 띠지 데이터:", data); // [확인] F12 눌러서 콘솔 보세요!
+        
+        try { 
+            holidayConfig = JSON.parse(data); 
+            renderCalendar(); // 데이터 받았으니 다시 그리기
+            
+            // 데이터 잘 왔으면 토스트 메시지 띄우기 (확인용)
+            if(data && data !== '{}' && typeof showToast === 'function') {
+                showToast("📅 저장된 띠지 정보를 불러왔습니다!");
+            }
+        } catch(e) { 
+            console.error("데이터 파싱 실패:", e);
+            holidayConfig = {}; 
+        }
+    }).loadCalendarConfig();
+}
 
     // 5. ★ 편집 모드 토글 이벤트 연결 (중복 제거됨!)
     const toggleBtn = document.getElementById('edit-mode-toggle');
