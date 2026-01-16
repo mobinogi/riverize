@@ -2566,6 +2566,182 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
     });
 }
 
+// ============================================================
+// [통합 이벤트 핸들러] 편집모드 & 순정기능(작성/삭제) 완벽 연결
+// ============================================================
+
+// 1. 전역 변수 설정
+let selectedDates = []; // 다중 선택된 날짜들
+let longPressTimer;     // 롱프레스 타이머
+let isLongPress = false; // 롱프레스 감지 플래그
+
+// 2. 터치/마우스 시작 (롱프레스 타이머 가동)
+function handleTouchStart(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
+function handleMouseDown(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
+
+function startPress(dateKey, day, isSunday) {
+    isLongPress = false;
+    // 0.6초 뒤에 롱프레스로 인정
+    longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        onLongPress(dateKey, day, isSunday); 
+    }, 600);
+}
+
+// 3. 터치/마우스 끝 (타이머 해제)
+function handleTouchEnd() { clearTimeout(longPressTimer); }
+function handleMouseUp() { clearTimeout(longPressTimer); }
+
+
+// 4. [클릭 발생 시] -> 편집모드면 '선택', 아니면 '일보열기/작성'
+function handleClick(dateKey, day, isSunday) {
+    if (isLongPress) return; // 롱프레스였다면 클릭 동작 무시
+
+    if (isEditMode) {
+        // [편집 모드] 날짜 선택 토글
+        if (selectedDates.includes(dateKey)) {
+            selectedDates = selectedDates.filter(d => d !== dateKey);
+        } else {
+            selectedDates.push(dateKey);
+        }
+        renderCalendar(); // 선택된 초록 테두리 갱신
+    } else {
+        // [순정 모드] 기존 기능 연결
+        const hasReport = reportsMap[dateKey];
+        
+        if (hasReport) {
+            // 일보가 있으면 -> 시트 열기 (기존 함수 활용)
+            if (typeof openSheetApp === 'function') openSheetApp(hasReport.url);
+            else window.open(hasReport.url, '_blank');
+        } else {
+            // 일보가 없으면 -> 작성 모달 열기 (기존 함수 활용)
+            if (typeof onDateClick === 'function') onDateClick(day, isSunday);
+        }
+    }
+}
+
+
+// 5. [롱프레스 발생 시] -> 편집모드면 '다중설정', 아니면 '삭제옵션'
+function onLongPress(dateKey, day, isSunday) {
+    if (navigator.vibrate) navigator.vibrate(50); // 징~ 진동
+
+    if (isEditMode) {
+        // [편집 모드] 다중 선택 설정창 진입
+        if (!selectedDates.includes(dateKey)) {
+            selectedDates.push(dateKey); // 누른 날짜도 포함
+            renderCalendar();
+        }
+        
+        // 떨어져 있는 날짜인지 검사
+        if (!checkConsecutive(selectedDates)) {
+            showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
+            return;
+        }
+
+        openHolidayModalMulti(); // 설정 모달 열기
+    } else {
+        // [순정 모드] 삭제/옵션 모달 열기 (기존 함수 연결)
+        const hasReport = reportsMap[dateKey];
+        if (hasReport) {
+             // 기존에 있던 모달 여는 함수 호출
+             if(typeof openReportOptionModal === 'function') {
+                 // 파라미터: fileId, url, 날짜텍스트
+                 openReportOptionModal(hasReport.id || hasReport.fileId, hasReport.url, `${currentYear}년 ${currentMonth}월 ${day}일`);
+             }
+        }
+    }
+}
+
+
+// 6. [유효성 검사] 날짜가 이어져 있는지 확인
+function checkConsecutive(dates) {
+    if (dates.length <= 1) return true;
+    
+    const sorted = dates.slice().sort(); // 날짜순 정렬
+    for (let i = 0; i < sorted.length - 1; i++) {
+        const curr = new Date(sorted[i]);
+        const next = new Date(sorted[i+1]);
+        const diffTime = Math.abs(next - curr);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (diffDays > 1) return false; // 하루 차이가 아니면 떨어진 것
+    }
+    return true;
+}
+
+
+// 7. [모달 로직] 설정창 열기
+function openHolidayModalMulti() {
+    selectedDates.sort();
+
+    let title = "";
+    if (selectedDates.length === 1) title = selectedDates[0];
+    else title = `${selectedDates[0]} ~ ${selectedDates[selectedDates.length-1]} (${selectedDates.length}일)`;
+    
+    // 모달에 날짜 띄우기
+    const displayEl = document.getElementById('modal-date-display');
+    if(displayEl) displayEl.textContent = title;
+    
+    // 기존 설정값 가져오기 (첫번째 날짜 기준)
+    const firstKey = selectedDates[0];
+    const config = holidayConfig[firstKey] || {};
+    
+    const labelInput = document.getElementById('holiday-label');
+    if(labelInput) labelInput.value = config.label || "";
+    
+    if(typeof selectColor === 'function') selectColor(config.color || 'red');
+
+    // 모달 보여주기
+    document.getElementById('holiday-modal').classList.remove('hidden');
+}
+
+
+// 8. [모달 로직] 저장 버튼 클릭 시
+function saveHolidaySetting() {
+    const label = document.getElementById('holiday-label').value;
+    const color = document.getElementById('selected-color').value || 'red';
+
+    // 선택된 날짜들에 설정 적용
+    selectedDates.forEach(key => {
+        if (!label) delete holidayConfig[key]; // 라벨 비우면 삭제
+        else holidayConfig[key] = { label, color };
+    });
+
+    renderCalendar(); // 화면 갱신
+    
+    document.getElementById('holiday-modal').classList.add('hidden');
+    selectedDates = []; // 선택 초기화
+
+    if(typeof showToast === 'function') showToast("저장 중...");
+    
+    // 서버 저장 (calendar.js의 saveCalendarConfig 호출)
+    if (typeof google !== 'undefined' && google.script) {
+        google.script.run.withSuccessHandler(function() {
+            if(typeof showToast === 'function') showToast("저장되었습니다.", "success");
+        }).saveCalendarConfig(JSON.stringify(holidayConfig));
+    }
+}
+
+// 9. [모달 UI] 색상 선택 버튼
+function selectColor(color) {
+    const hiddenInput = document.getElementById('selected-color');
+    if(hiddenInput) hiddenInput.value = color;
+
+    ['btn-red', 'btn-blue', 'btn-black'].forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) {
+            btn.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400');
+            btn.classList.add('opacity-70');
+        }
+    });
+
+    const selectedBtn = document.getElementById(`btn-${color}`);
+    if(selectedBtn) {
+        selectedBtn.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400');
+        selectedBtn.classList.remove('opacity-70');
+    }
+}
+
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
