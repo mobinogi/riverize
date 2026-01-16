@@ -1711,48 +1711,59 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         window.location.href = `tmap://route?goalname=${encodeURIComponent(safeName)}&goalx=${lon}&goaly=${lat}`;
     }
    
-// ===============================================
-// 9. [최종 통합] 초기화 및 이벤트 리스너
-// ===============================================
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- (A) 초기 변수 및 UI 설정 ---
-    const today = new Date();
-    currentYear = today.getFullYear();
-    currentMonth = today.getMonth() + 1;
-    
-    // 안전장치: 혹시 HTML에 해당 ID가 없을 때 에러 방지
-    const dateEl = document.getElementById('current-date');
-    if(dateEl) dateEl.textContent = formatDate(today);
-    
-    const statusEl = document.getElementById('app-status');
-    if(statusEl) statusEl.textContent = '상태: 준비 완료.';
+    // ============================================================
+    // 2. [초기화] 페이지 로드 시 실행
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("🚀 앱 시작");
 
-    // 2. 앱 시작 로그
-    console.log("🚀 앱 시작");
+        // 날짜 및 상태 표시
+        const today = new Date();
+        const dateEl = document.getElementById('current-date');
+        if(dateEl) dateEl.textContent = formatDate(today);
+        
+        const statusEl = document.getElementById('app-status');
+        if(statusEl) statusEl.textContent = '상태: 준비 완료.';
 
-    // 3. 레이아웃 초기화
-    if (typeof changeView === 'function') changeView('write');
+        // 레이아웃 초기화
+        if (typeof changeView === 'function') changeView('write');
 
-    // 4. 데이터 로드 (보고서 & 공장현황)
-    // fetchReportsForMonth가 있다면 실행
-    if (typeof fetchReportsForMonth === 'function') {
-        fetchReportsForMonth(currentYear, currentMonth, true); 
-    }
-    if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
+        // ★ 데이터 로드 (보고서 & 띠지 설정)
+        if (typeof fetchReportsForMonth === 'function') {
+            fetchReportsForMonth(currentYear, currentMonth, true);
+        }
+        if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
+        
+        // 띠지 설정 로드
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run.withSuccessHandler(function(data) {
+                try { 
+                    holidayConfig = JSON.parse(data); 
+                    renderCalendar(); // 설정 로드 후 다시 그리기
+                } catch(e) { holidayConfig = {}; }
+            }).loadCalendarConfig();
+        }
 
-    // 5. [추가됨] ★★★ 달력 설정(띠지 정보) 불러오기 ★★★
-    // 서버에 저장된 띠지 정보를 가져와야 달력에 표시됩니다.
-    if (typeof google !== 'undefined' && google.script) {
-        google.script.run.withSuccessHandler(function(data) {
-            try { 
-                holidayConfig = JSON.parse(data); 
-                renderCalendar(); // 설정 로드 후 달력 다시 그리기
-            } catch(e) { 
-                holidayConfig = {}; 
-            }
-        }).loadCalendarConfig(); // calendar.js에 있는 함수 호출
-    }
+        // ★ 편집 모드 토글 이벤트 연결
+        const toggleBtn = document.getElementById('edit-mode-toggle');
+        if(toggleBtn) {
+            toggleBtn.addEventListener('change', function(e) {
+                isEditMode = e.target.checked;
+                selectedDates = []; // 모드 변경 시 선택 초기화
+                renderCalendar();   // 화면 갱신
+            });
+        }
+
+        // 기타 이벤트 (검색창, 유가 정보 등)
+        const searchInput = document.getElementById('map-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('focus', () => {
+                document.getElementById('client-list-panel')?.classList.add('hidden');
+                document.getElementById('btn-restore-sidebar')?.classList.remove('hidden');
+            });
+        }
+        if (typeof loadOilPrice === 'function') loadOilPrice();
+    });
 
     // 6. [추가됨] ★★★ 편집 모드 토글 스위치 이벤트 ★★★
     // 이게 있어야 버튼을 눌렀을 때 초록색 테두리 모드로 바뀝니다.
