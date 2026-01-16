@@ -2160,11 +2160,12 @@ function renderCalendar() {
             </div>`;
         }
 
-        // [5] 편집모드 선택 효과 (겉 테두리)
-        let wrapperClass = "p-2 flex justify-center relative cursor-pointer"; 
-        if (isEditMode && selectedDates.includes(dateKey)) {
-            wrapperClass += " ring-2 ring-green-500 rounded-lg bg-green-50"; 
-        }
+// [5] 편집모드 선택 효과 (수정됨: 주황색 위글위글 적용)
+let wrapperClass = "p-2 flex justify-center relative cursor-pointer"; 
+if (isEditMode && selectedDates.includes(dateKey)) {
+    // 여기서 아까 CSS에 만든 'selected-wiggle' 클래스를 붙입니다!
+    wrapperClass += " selected-wiggle"; 
+}
 
         // [6] 최종 HTML 조립
         // ★ 중요: 클릭 이벤트(onclick)를 '겉 박스'로 옮겨서 통합 관리함 (충돌 방지)
