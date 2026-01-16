@@ -443,7 +443,7 @@
                           </button>
                       </div>
 
-                      <div class="calendar-grid text-center text-sm font-medium">
+                      <div id="calendar-grid" class="calendar-grid text-center text-sm font-medium transition-all duration-300">
                           <div class="grid grid-cols-7 border-b border-gray-200 mb-2">
                             <div class="p-2 sunday">일</div> <div class="p-2">월</div> <div class="p-2">화</div>
                             <div class="p-2">수</div> <div class="p-2">목</div> <div class="p-2">금</div>
@@ -989,34 +989,69 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("데이터 로드 실패:", err);
     });
 
-    // 5. ★ [업그레이드] 슈퍼 편집 모드 토글 (이걸 복사해서 넣으세요!)
+// 5. ★ [최종 완성] 슈퍼 편집 모드 토글 (사이드바 숨김 + 스포트라이트)
     const toggleBtn = document.getElementById('edit-mode-toggle');
     const floatingBar = document.getElementById('edit-floating-bar');
-    const calendarContainer = document.getElementById('calendar-grid'); 
+    const calendarContainer = document.getElementById('calendar-grid'); // 위에서 ID 추가했으니 찾을 수 있음
     const body = document.body;
-
+    
+    // 사이드바 요소 찾기
+    const sidebar = document.getElementById('sidebar'); 
+    
     if(toggleBtn) {
         toggleBtn.addEventListener('change', function(e) {
             isEditMode = e.target.checked;
             selectedDates = []; 
             
             if (isEditMode) {
-                // [ON] 켜졌을 때: 흔들흔들 + 어둡게 + 바 올리기
+                // [ON] 편집 모드 시작!
+                
+                // 1. 달력 효과 (흔들림 + 스포트라이트)
                 if(calendarContainer) calendarContainer.classList.add('editing-mode');
                 body.classList.add('editing-mode-active');
+                
+                // 2. 하단 바 올리기
                 if(floatingBar) floatingBar.classList.remove('translate-y-full');
                 
-                if(typeof showToast === 'function') showToast("🛠️ 편집 모드 시작!");
+                // 3. ★ 사이드바 강제 숨기기 (PC/모바일 공통)
+                if(sidebar) {
+                    // PC용: 닫힘 클래스 추가
+                    sidebar.classList.add('closed');
+                    body.classList.add('sidebar-collapsed');
+                    // 모바일용: 열림 클래스 제거
+                    sidebar.classList.remove('open');
+                }
+
+                // 4. 뉴스 티커 숨기기 (집중!)
+                const ticker = document.getElementById('news-ticker');
+                if(ticker) ticker.style.display = 'none';
+
+                if(typeof showToast === 'function') showToast("🛠️ 집중 편집 모드 실행!");
+
             } else {
-                // [OFF] 꺼졌을 때: 원상복구
+                // [OFF] 편집 모드 종료 (원상복구)
+                
+                // 1. 달력 효과 제거
                 if(calendarContainer) calendarContainer.classList.remove('editing-mode');
                 body.classList.remove('editing-mode-active');
+                
+                // 2. 하단 바 내리기
                 if(floatingBar) floatingBar.classList.add('translate-y-full');
+                
+                // 3. ★ 사이드바 다시 보여주기 (PC인 경우에만)
+                if(window.innerWidth >= 768 && sidebar) {
+                    sidebar.classList.remove('closed');
+                    body.classList.remove('sidebar-collapsed');
+                }
+
+                // 4. 뉴스 티커 복구
+                const ticker = document.getElementById('news-ticker');
+                if(ticker) ticker.style.display = 'flex';
+                
                 renderCalendar(); 
             }
         });
     }
-
     // 6. 검색창 이벤트
     const searchInput = document.getElementById('map-search-input');
     if (searchInput) {
