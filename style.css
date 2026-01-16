@@ -1088,27 +1088,27 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* ========================================================
-   🛡️ [최종_진짜_해결] 흰색 철벽 방어 + 선택 박스 축소 🛡️
+   🛡️ [최종_결전] 흰색 절대 방어 + 선택 박스 초소형 🛡️
    ======================================================== */
 
 /* 1. 빛이 숨 쉬듯 일렁이는 애니메이션 (배경용) */
 @keyframes real-glow-pulse {
-    0%, 100% { opacity: 0.6; filter: blur(20px); transform: scale(1); }
-    50% { opacity: 1; filter: blur(30px); transform: scale(1.02); }
+    0%, 100% { opacity: 0.6; filter: blur(15px); }
+    50% { opacity: 1; filter: blur(25px); }
 }
 
-/* 2. 위글위글 (선택된 박스 흔들기) */
-@keyframes soft-wiggle-tight {
-    0% { transform: scale(0.9) rotate(0deg); } /* 0.9배로 축소! */
-    25% { transform: scale(0.9) rotate(0.5deg); } 
-    75% { transform: scale(0.9) rotate(-0.5deg); }
-    100% { transform: scale(0.9) rotate(0deg); }
+/* 2. ★ [박스 축소] 0.85배로 확 줄임 (아주 작고 귀엽게!) */
+@keyframes soft-wiggle-tiny {
+    0% { transform: scale(0.85) rotate(0deg); } /* 0.85배! */
+    25% { transform: scale(0.85) rotate(0.5deg); } 
+    75% { transform: scale(0.85) rotate(-0.5deg); }
+    100% { transform: scale(0.85) rotate(0deg); }
 }
 
 /* 3. 어두운 배경 (딤드) */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.9); /* 더 어둡게 */
+    background: rgba(0, 0, 0, 0.92); /* 거의 암흑 */
     z-index: 50;
     pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
@@ -1119,49 +1119,54 @@ body.editing-mode-active div#calendar-grid {
     position: relative !important;
     z-index: 100 !important; 
     
-    /* [Tailwind 무력화] 강제 흰색 적용 */
+    /* [1차 방어] Tailwind 투명도 변수 무력화 */
     --tw-bg-opacity: 1 !important;
-    background-color: rgb(255, 255, 255) !important;
+    
+    /* [2차 방어] 헥사코드 흰색 강제 적용 */
+    background-color: #ffffff !important;
     background: #ffffff !important;
     
-    /* ★ 중요: 배경이 테두리 밖으로 안 새어나가게 */
-    background-clip: border-box !important;
+    /* [3차 방어] 배경 이미지 제거 (그라데이션 차단) */
+    background-image: none !important;
     
     border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important; /* 검은 그림자만 남김 */
+    /* 박스 자체 그림자는 제거 (깔끔하게) */
+    box-shadow: 0 0 0 0 transparent !important; 
 }
 
 /* 5. ★ [후광] 달력 뒤에서만 빛나게 (Before) */
 body.editing-mode-active div#calendar-grid::before {
     content: "";
     position: absolute;
-    top: 5px; left: 5px; right: 5px; bottom: 5px; /* 박스보다 작게 시작 */
-    z-index: -1; /* 달력 뒤로 */
+    /* 박스보다 조금 더 크게 잡아서 뒤로 뺌 */
+    top: -10px; left: -10px; right: -10px; bottom: -10px; 
+    z-index: -1; /* ★ 무조건 달력 뒤로! */
     
-    border-radius: 20px;
-    background: linear-gradient(45deg, #ff8c00, #ff4500); /* 진한 주황 */
+    border-radius: 24px;
+    background: linear-gradient(135deg, #ff8c00, #ff4500); /* 진한 주황 */
     
     /* 뒤에서 퍼지는 효과 */
     animation: real-glow-pulse 3s ease-in-out infinite;
 }
 
-/* 6. ★ [핵심] 선택된 박스 크기 축소 (Size Down) */
+/* 6. ★ [핵심] 선택된 박스 크기 (Tiny Size) */
 .selected-wiggle { 
     border: 2px dashed #f97316 !important; 
     background-color: #fff7ed !important;   
     color: #ea580c !important; 
     font-weight: 900 !important;
     
-    /* ★ scale(0.9)가 포함된 애니메이션 적용 -> 박스가 작아짐 */
-    animation: soft-wiggle-tight 0.3s ease-in-out infinite !important; 
+    /* ★ scale(0.85) 애니메이션 적용 -> 클릭하면 쪼그라듦 */
+    animation: soft-wiggle-tiny 0.3s ease-in-out infinite !important; 
     
     z-index: 110 !important; 
     position: relative;
     
-    /* 패딩을 줄여서 박스 자체를 물리적으로 줄임 */
-    padding: 0px !important; 
-    width: 90% !important; /* 부모 너비의 90%만 차지 */
+    /* 박스 크기 물리적 제한 */
+    width: 80% !important; /* 너비를 80%로 줄임 */
+    height: 80% !important; /* 높이도 줄일 수 있으면 줄임 */
     margin: 0 auto !important; /* 가운데 정렬 */
+    border-radius: 8px !important;
     
-    box-shadow: 0 2px 5px rgba(249, 115, 22, 0.3) !important; 
+    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3) !important; 
 }
