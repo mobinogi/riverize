@@ -1087,7 +1087,9 @@ body.sidebar-collapsed #main-content-wrapper {
     transition-delay: 0.1s;
 }
 
-/* [슈퍼 편집 모드 스타일 - 스포트라이트 수정판] */
+/* 🎨 [슈퍼 편집 모드 스타일 - 강제 적용판] */
+
+/* 1. 흔들흔들 애니메이션 */
 @keyframes soft-wiggle {
     0% { transform: rotate(0deg); }
     25% { transform: rotate(0.5deg); }
@@ -1095,34 +1097,34 @@ body.sidebar-collapsed #main-content-wrapper {
     100% { transform: rotate(0deg); }
 }
 
-/* 1. 날짜 칸 흔들흔들 & 점선 */
-.editing-mode .grid > div:not(.text-gray-400) { 
-    border: 2px dashed #f97316 !important;
-    background-color: #fff7ed;
-    animation: soft-wiggle 0.3s ease-in-out infinite;
-    z-index: 60; /* 오버레이보다 높게 */
+/* 2. 편집 모드일 때 날짜 박스 디자인 (점선 + 흔들림) */
+.editing-mode .cursor-pointer { 
+    border: 2px dashed #f97316 !important; /* 주황색 점선 */
+    background-color: #fff7ed !important;   /* 연한 주황 배경 */
+    animation: soft-wiggle 0.3s ease-in-out infinite; /* 춤추는 효과 */
+    z-index: 60; 
     position: relative;
     box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.3);
+    border-radius: 8px;
 }
 
-/* 2. 어두운 배경 (딤드) */
+/* 3. 어두운 배경 (딤드) - body에 클래스 붙으면 나타남 */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7); /* 진한 검정 반투명 */
-    z-index: 50; /* 사이드바보다 위, 달력보다 아래 */
+    background: rgba(0, 0, 0, 0.75); /* 더 진한 검정 */
+    z-index: 50; 
     pointer-events: none; opacity: 0; transition: opacity 0.3s;
 }
-.editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
+body.editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
-/* 3. ★ 핵심: 달력 컨테이너 스포트라이트 효과 */
-.editing-mode-active #calendar-grid { 
-    position: relative; 
-    z-index: 60; /* 어둠(50)보다 위로! */
-    background-color: white; /* 배경 흰색 필수 (안 그러면 뒤가 비침) */
+/* 4. ★ 핵심: 달력 ID(#calendar-grid) 스포트라이트 효과 */
+body.editing-mode-active #calendar-grid { 
+    position: relative !important; 
+    z-index: 100 !important; /* 오버레이(50)보다 무조건 위로! */
+    background-color: #ffffff !important; /* 배경 흰색 강제 (투명하면 어두워짐) */
     border-radius: 16px; 
-    padding: 10px; /* 여백 살짝 */
-    box-shadow: 0 0 40px rgba(0,0,0,0.8); /* 강렬한 그림자 */
-    transform: scale(1.02); /* 살짝 확대 */
+    padding: 15px; 
+    box-shadow: 0 0 50px rgba(255, 255, 255, 0.2) !important; /* 빛나는 효과 */
+    transform: scale(1.02); /* 살짝 튀어나옴 */
+    transition: all 0.3s ease-in-out;
 }
-.editing-mode-active .editing-mode-overlay { opacity: 1; }
-.editing-mode-active #calendar-grid { position: relative; z-index: 50; }
