@@ -1,8 +1,7 @@
 /**
- * calendar.js
- * - 디자인: 사장님 원본 (date-box, report-exists 클래스 사용) 100% 유지
- * - 로딩: calendar-loader 복구
- * - 기능: 다중선택, 롱프레스, 띠지 중앙 정렬
+ * calendar.js (최종 수정본)
+ * - 버튼 위치: HTML에서 이동함
+ * - 디자인: h-20 복구, 띠지를 숫자 바로 밑(top-6)으로 이동
  */
 
 // 1. [설정] API 주소
@@ -59,14 +58,12 @@ function initCalendar() {
     currentYear = today.getFullYear();
     currentMonth = today.getMonth() + 1;
 
-    // 설정 로드
     google.script.run.withSuccessHandler(function(data) {
         try { holidayConfig = JSON.parse(data); } catch(e) { holidayConfig = {}; }
-        // 설정 로드 후 리포트 로드
         fetchReportsForMonth(currentYear, currentMonth, true);
     }).loadCalendarConfig();
 
-    // 편집 모드 토글
+    // 편집 모드 토글 (HTML 위치는 바뀌었지만 ID는 같아서 그대로 동작함)
     const toggleBtn = document.getElementById('edit-mode-toggle');
     if(toggleBtn) {
         toggleBtn.addEventListener('change', function(e) {
@@ -75,7 +72,7 @@ function initCalendar() {
             const container = document.getElementById('calendar-days');
             if(isEditMode) {
                 container.classList.add('editing-mode');
-                showToast("🛠️ 편집 모드: 날짜를 선택하고, 마지막 날짜를 꾹 누르세요.");
+                showToast("🛠️ 편집 모드 ON");
             } else {
                 container.classList.remove('editing-mode');
             }
@@ -92,11 +89,7 @@ function changeMonth(offset) {
     fetchReportsForMonth(currentYear, currentMonth);
 }
 
-// [복구] 사장님 원래 함수명 & 로딩 로직 그대로 복원
 function fetchReportsForMonth(year, month, isInitial = false) {
-    const key = year + '-' + month;
-    
-    // 로컬 로딩바 켜기 (사장님 코드 복구)
     const localLoader = document.getElementById('calendar-loader');
     if (localLoader) localLoader.classList.remove('hidden');
 
@@ -106,19 +99,13 @@ function fetchReportsForMonth(year, month, isInitial = false) {
         } else {
             reportsMap = Object.assign(reportsMap, data || {});
         }
-        
-        // 로딩바 끄기
         if (localLoader) localLoader.classList.add('hidden');
         renderCalendar();
-        
-        const statusEl = document.getElementById('review-status');
-        if(statusEl) statusEl.textContent = '상태: 월별 보고서 정보 로딩 완료.';
-        
     }).getReportFilesByMonth(year, month);
 }
 
 // ==========================================
-// 6. 렌더링 (★디자인 100% 원복 + 띠지 추가)
+// 6. 렌더링 (★ 여기가 핵심 수정!)
 // ==========================================
 function renderCalendar() {
     const container = document.getElementById('calendar-days');
@@ -145,16 +132,12 @@ function renderCalendar() {
         const label = config.label || "";
         const colorType = config.color || (isSunday ? 'red' : 'black');
 
-        // ★ [핵심] 사장님 원래 디자인 클래스 복구 (date-box, report-exists 등)
-        // 초록 동그라미가 나오려면 'report-exists' 클래스가 있어야 함
-        let cls = 'date-box ' + (isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report'));
-
-        // 숫자 색상 오버라이드 (휴일 등)
-        let numStyle = "";
-        if (colorType === 'red') numStyle = "color: #ef4444 !important;";
-        else if (colorType === 'blue') numStyle = "color: #3b82f6 !important;";
+        // 숫자 스타일
+        let numStyle = "z-index: 2;";
+        if (colorType === 'red') numStyle += " color: #ef4444 !important;";
+        else if (colorType === 'blue') numStyle += " color: #3b82f6 !important;";
         
-        // --- [띠지 & 텍스트 중앙 정렬] ---
+        // --- [띠지 로직] ---
         let barHtml = "";
         if (label) {
             let prevCount = 0, nextCount = 0;
@@ -177,106 +160,90 @@ function renderCalendar() {
             const isNextSame = (nextCount > 0);
 
             let bgClass = colorType === 'red' ? 'bg-red-100 text-red-600' : (colorType === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-700');
+            
+            // 띠지 모양
             let barStyleClass = "";
             if (!isPrevSame && isNextSame) barStyleClass = "rounded-l-md ml-1"; 
             else if (isPrevSame && isNextSame) barStyleClass = ""; 
             else if (isPrevSame && !isNextSame) barStyleClass = "rounded-r-md mr-1"; 
             else barStyleClass = "rounded-md mx-1"; 
 
-            // 띠지를 아주 얇고 작게 넣어서 원래 레이아웃을 해치지 않게 함
-            barHtml = `<div class="absolute -bottom-1 left-0 right-0 h-3 flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}" style="z-index: 0;">
+            // ★ [수정] top-6으로 설정해서 숫자 바로 밑에 붙임 (원래는 bottom이었음)
+            barHtml = `<div class="absolute top-6 left-0 right-0 h-3 flex items-center justify-center overflow-visible whitespace-nowrap ${bgClass} ${barStyleClass}" style="z-index: 0;">
                 <span class="${isCenter ? 'opacity-100' : 'opacity-0'} text-[9px] font-bold" style="z-index: 10;">${label}</span>
             </div>`;
         }
 
-        // 편집 모드 선택 효과 (테두리만)
+        // 선택 효과
         let selectionClass = "";
         if (isEditMode && selectedDates.includes(dateKey)) {
             selectionClass = "ring-2 ring-green-500 rounded-lg";
         }
         
-        // ★ [HTML 조립] 사장님 원본 구조(p-2 flex justify-center) 유지!
-        // 그 안에 date-box(동그라미)를 넣고, 띠지만 살짝 끼워넣음.
+        // 일보 마커 (초록점)
+        let markerHtml = hasReport ? `<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500"></div>` : "";
+
+        // ★ [디자인 복구] h-20으로 키우고, p-2 제거하여 간격 확보 (grid gap 활용)
+        // date-box 클래스 등 사장님 원본 스타일 유지
+        let baseCls = isSunday ? 'sunday-date' : (hasReport ? 'report-exists' : 'no-report');
+
         container.innerHTML += `
-            <div class="p-2 flex flex-col items-center justify-start relative h-16 cursor-pointer ${selectionClass}"
+            <div class="h-20 relative cursor-pointer rounded-lg transition-all ${selectionClass}"
                  ontouchstart="handleTouchStart('${dateKey}', ${day}, ${isSunday})"
                  ontouchend="handleTouchEnd()"
                  onmousedown="handleMouseDown('${dateKey}', ${day}, ${isSunday})"
                  onmouseup="handleMouseUp()"
                  onclick="handleClick('${dateKey}', ${day}, ${isSunday})">
                  
-                <div class="${cls}" style="${numStyle} z-index: 2;">
+                <div class="absolute top-1 left-1 text-sm font-bold date-box ${baseCls}" style="${numStyle}">
                     ${day}
                 </div>
                 
+                ${markerHtml}
                 ${barHtml}
             </div>
         `;
     }
 }
 
-// ==========================================
-// 7. 이벤트 핸들러 (편집 vs 일반 분기)
-// ==========================================
+// ... (이벤트 핸들러들은 그대로 둡니다) ...
 function handleTouchStart(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
 function handleMouseDown(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
-
 function startPress(dateKey, day, isSunday) {
     isLongPress = false;
-    longPressTimer = setTimeout(() => {
-        isLongPress = true;
-        onLongPress(dateKey, day, isSunday);
-    }, 600);
+    longPressTimer = setTimeout(() => { isLongPress = true; onLongPress(dateKey, day, isSunday); }, 600);
 }
-
 function handleTouchEnd() { clearTimeout(longPressTimer); }
 function handleMouseUp() { clearTimeout(longPressTimer); }
-
 function handleClick(dateKey, day, isSunday) {
     if (isLongPress) return;
-
     if (isEditMode) {
-        // [편집모드] 선택/해제
         if (selectedDates.includes(dateKey)) selectedDates = selectedDates.filter(d => d !== dateKey);
         else selectedDates.push(dateKey);
         renderCalendar();
     } else {
-        // [일반모드] 원래 기능 (일보 열기 or 모달)
         const hasReport = reportsMap[dateKey];
         if (hasReport) {
-            // 보고서 열기
              if(typeof openSheetApp === 'function') openSheetApp(hasReport.url);
              else window.open(hasReport.url, '_blank');
         } else {
-            // 없는 날짜 -> 작성 모달 (tests.html에 있는 onDateClick 호출)
             if(typeof onDateClick === 'function') onDateClick(day, isSunday);
         }
     }
 }
-
 function onLongPress(dateKey, day, isSunday) {
     if (navigator.vibrate) navigator.vibrate(50);
-
     if (isEditMode) {
-        // [편집모드] 
-        if (!selectedDates.includes(dateKey)) {
-            selectedDates.push(dateKey);
-            renderCalendar();
-        }
-        if (!checkConsecutive(selectedDates)) {
-            showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error");
-            return;
-        }
+        if (!selectedDates.includes(dateKey)) { selectedDates.push(dateKey); renderCalendar(); }
+        if (!checkConsecutive(selectedDates)) { showToast("❌ 떨어진 날짜는 같이 설정할 수 없습니다!", "error"); return; }
         openHolidayModalMulti();
     } else {
-        // [일반모드] 삭제/옵션 팝업 (tests.html 함수 호출)
         const hasReport = reportsMap[dateKey];
         if (hasReport && typeof openReportOptionModal === 'function') {
              openReportOptionModal(hasReport.fileId, hasReport.url, `${currentYear}년 ${currentMonth}월 ${day}일`);
         }
     }
 }
-
 function checkConsecutive(dates) {
     if (dates.length <= 1) return true;
     const sorted = dates.slice().sort();
@@ -289,43 +256,28 @@ function checkConsecutive(dates) {
     }
     return true;
 }
-
-// ==========================================
-// 8. 설정 모달 로직
-// ==========================================
 function openHolidayModalMulti() {
     selectedDates.sort();
     let title = "";
     if (selectedDates.length === 1) title = selectedDates[0];
     else title = `${selectedDates[0]} ~ ${selectedDates[selectedDates.length-1]} (${selectedDates.length}일)`;
-    
     document.getElementById('modal-date-display').textContent = title;
-    
     const firstKey = selectedDates[0];
     const config = holidayConfig[firstKey] || {};
     document.getElementById('holiday-label').value = config.label || "";
-    // tests.html에 있는 selectColor 함수 활용
     if(typeof selectColor === 'function') selectColor(config.color || 'red');
-
     document.getElementById('holiday-modal').classList.remove('hidden');
 }
-
 function saveHolidaySetting() {
     const label = document.getElementById('holiday-label').value;
     const color = document.getElementById('selected-color').value || 'red';
-
     selectedDates.forEach(key => {
         if (!label) delete holidayConfig[key];
         else holidayConfig[key] = { label, color };
     });
-
     renderCalendar();
-    
     document.getElementById('holiday-modal').classList.add('hidden');
     selectedDates = []; 
-
     showToast("저장 중...");
-    google.script.run.withSuccessHandler(function() {
-        showToast("저장되었습니다.", "success");
-    }).saveCalendarConfig(JSON.stringify(holidayConfig));
+    google.script.run.withSuccessHandler(function() { showToast("저장되었습니다.", "success"); }).saveCalendarConfig(JSON.stringify(holidayConfig));
 }
