@@ -3020,6 +3020,58 @@ function onLongPressMulti(dateKey) {
     </svg>
     <span class="font-bold text-gray-100">클릭 시 해당 기사로 이동합니다.🔗</span>
 </div>
+      <div id="holiday-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
+        
+        <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                📅 날짜 꾸미기
+            </h3>
+            <button onclick="document.getElementById('holiday-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div class="p-5 space-y-5">
+            <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">선택된 날짜</p>
+                <p id="modal-date-display" class="text-lg font-bold text-orange-600 font-mono tracking-tight">
+                    </p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-2">띠지 내용 (예: 설날,추석 휴무)</label>
+                <input type="text" id="holiday-label" placeholder="내용을 입력하세요" 
+                       class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all outline-none text-center font-bold text-gray-800">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-2">글자 & 띠지 색상</label>
+                <div class="flex gap-2">
+                    <button onclick="selectColor('red')" id="btn-red" class="flex-1 py-3 rounded-xl border bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-all opacity-70">
+                        빨강
+                    </button>
+                    <button onclick="selectColor('blue')" id="btn-blue" class="flex-1 py-3 rounded-xl border bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-all opacity-70">
+                        파랑
+                    </button>
+                    <button onclick="selectColor('black')" id="btn-black" class="flex-1 py-3 rounded-xl border bg-gray-50 text-gray-800 font-bold hover:bg-gray-100 transition-all opacity-70">
+                        검정
+                    </button>
+                </div>
+                <input type="hidden" id="selected-color" value="red">
+            </div>
+        </div>
+
+        <div class="p-4 border-t bg-gray-50 flex gap-3">
+            <button onclick="document.getElementById('holiday-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold hover:bg-white transition-colors">
+                취소
+            </button>
+            <button onclick="saveHolidaySetting()" class="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-transform active:scale-95">
+                저장하기
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 
