@@ -914,6 +914,8 @@ let holidayConfig = {};        // [신규] 띠지/휴일 설정
 let selectedDates = [];        // [신규] 다중 선택된 날짜들
 let isEditMode = false;        // [신규] 편집 모드 여부
 
+let longPressTimer;            // 롱프레스 타이머
+let isLongPress = false;       // 롱프레스 감지 플래그
 let selectedDateForGeneration = null; // 생성할 날짜 임시 저장
 let isDataLoading = false;            // 로딩 상태 체크
 
@@ -2614,10 +2616,7 @@ function setupSmoothSwipe(modalId, closeAction, targetId = null) {
 // [통합 이벤트 핸들러] 편집모드 & 순정기능(작성/삭제) 완벽 연결
 // ============================================================
 
-// 1. 전역 변수 설정
-let selectedDates = []; // 다중 선택된 날짜들
-let longPressTimer;     // 롱프레스 타이머
-let isLongPress = false; // 롱프레스 감지 플래그
+
 
 // 2. 터치/마우스 시작 (롱프레스 타이머 가동)
 function handleTouchStart(dateKey, day, isSunday) { startPress(dateKey, day, isSunday); }
