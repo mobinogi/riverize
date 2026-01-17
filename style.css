@@ -1163,6 +1163,7 @@ body.editing-mode-active div#calendar-grid::before {
 
 /* 6. 선택된 박스 (미니 위글 유지) */
 .selected-wiggle { 
+    padding: calc(0.5rem - 2px) !important;
     border: 2px dashed #f97316 !important; 
     background-color: #fff7ed !important;   
     color: #ea580c !important; 
