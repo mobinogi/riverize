@@ -1182,7 +1182,8 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   📉 [방향 수정] 위는 꽉 채우고, 아래만 50px 띄우기
+   🎨 [프로 방식] 박스 쉐도우 대신 '그라데이션' 사용
+   설명: 그림자가 사방으로 안 퍼지고, 오직 오른쪽으로만 부드럽게 사라짐
    ======================================================== */
 
 #sidebar {
@@ -1193,22 +1194,21 @@ body.editing-mode-active div#calendar-grid::before {
 #sidebar::after {
     content: "";
     position: absolute;
-    z-index: 10;
-    pointer-events: none;
+    z-index: 10; 
+    pointer-events: none; /* 클릭 통과 */
+
+    /* 1. [위치] 사이드바 오른쪽 바깥에 딱 붙임 */
+    left: 100%; 
+    top: -10px;
     
-    /* 1. ★ [시작] 맨 위에서부터 시작 */
-    top: -10px; 
+    /* 2. [높이] 바닥에서 정확히 40px(뉴스티커 높이) 띄움 */
+    /* 그라데이션은 박스 안에만 그려지므로, 아래로 절대 안 번짐! */
+    bottom: 36px; 
     
-    /* 2. ★ [끝] 바닥에서 50px 떨어진 곳에서 멈춤! */
-    /* (뉴스티커가 하단에 있으니까 여기가 비워져야 합니다) */
-    bottom: 38px; 
+    /* 3. [길이] 그림자가 뻗어나갈 길이 (20px 정도가 적당) */
+    width: 10px; 
     
-    right: 0;
-    
-    /* 3. 너비 및 그림자 (진하고 선명하게) */
-    width: 30px; 
-    background: transparent;
-    
-    /* x축(6px) y축(0) blur(10px) spread(0) 진하기(0.7) */
-    box-shadow: 15px 0 10px 0 rgba(0, 0, 0, 0.7);
+    /* 4. ★ [핵심] 그림자 색상 그리기 (검정 15% -> 투명) */
+    /* 왼쪽 시작점은 진하고, 오른쪽 끝은 투명하게 사라짐 */
+    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
 }
