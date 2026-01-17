@@ -1088,53 +1088,8 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* ========================================================
-   ☀️ [FINAL] 불규칙 썬레이(Sun Ray) + 흰색 철벽 + 미니 박스 ☀️
+   ☁️ [최종] 흰색 완벽 사수 + 공중부양 + 외부 광원 ☁️
    ======================================================== */
-
-/* 1. 불규칙한 빛줄기가 천천히 회전하는 애니메이션 */
-@keyframes irregular-ray-spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* 2. 미니 위글 (0.8배 축소 + 촐싹거림) */
-@keyframes soft-wiggle-mini {
-    0% { transform: scale(0.8) rotate(0deg); } 
-    25% { transform: scale(0.8) rotate(3deg); } 
-    75% { transform: scale(0.8) rotate(-3deg); }
-    100% { transform: scale(0.8) rotate(0deg); }
-}
-
-/* 3. 어두운 배경 (딤드) */
-.editing-mode-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.92); /* 거의 암흑 */
-    z-index: 50;
-    pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
-}
-.editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
-
-/* 4. ★ 달력 컨테이너 (흰색 철벽 방어) */
-/* body 클래스와 ID를 조합해 우선순위 최상위로 올림 */
-body.editing-mode-active div#calendar-grid {
-    position: relative !important;
-    z-index: 100 !important; 
-    
-    /* [1] 배경 흰색 강제 적용 (안쪽 빛 침투 원천 봉쇄) */
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    --tw-bg-opacity: 1 !important;
-    
-    /* [2] 테두리 밖으로 배경이 새지 않게 */
-    background-clip: padding-box !important;
-    
-    border-radius: 16px;
-    /* 박스 자체 그림자 제거 (깔끔하게) */
-    box-shadow: none !important; 
-    
-    /* overflow: visible 필수 (빛이 밖으로 뻗어나가야 함) */
-    overflow: visible !important;
-}
 
 /* 1. 애니메이션 수정 (광원과 바닥 그림자를 철저히 분리함) */
 @keyframes real-glow-pulse {
@@ -1178,12 +1133,12 @@ body.editing-mode-active div#calendar-grid {
     /* 수정된 애니메이션(바닥그림자+외부광원) 실행 */
     animation: real-glow-pulse 4s ease-in-out infinite;
 }
-/* 2. ★ [수정됨] 원조 위글위글 (각도 0.5도로 원상복구) */
-@keyframes soft-wiggle-scale {
-    0% { transform: scale(1.0) rotate(0deg); }
-    25% { transform: scale(1.0) rotate(0.5deg); } /* 얌전하게 0.5도 */
-    75% { transform: scale(1.0) rotate(-0.5deg); } /* 얌전하게 -0.5도 */
-    100% { transform: scale(1.0) rotate(0deg); }
+/* 2. 미니 위글 (0.8배 축소 + 촐싹거림) */
+@keyframes soft-wiggle-mini {
+    0% { transform: scale(0.8) rotate(0deg); } 
+    25% { transform: scale(0.8) rotate(3deg); } 
+    75% { transform: scale(0.8) rotate(-3deg); }
+    100% { transform: scale(0.8) rotate(0deg); }
 }
 
 /* 3. 어두운 배경 (딤드) */
