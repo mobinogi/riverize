@@ -1182,8 +1182,7 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🎨 [프로 방식] 박스 쉐도우 대신 '그라데이션' 사용
-   설명: 그림자가 사방으로 안 퍼지고, 오직 오른쪽으로만 부드럽게 사라짐
+   🛡️ [최종 병기] 마스크 & 클립패스 (절벽 X, 1px 오차 X)
    ======================================================== */
 
 #sidebar {
@@ -1195,20 +1194,27 @@ body.editing-mode-active div#calendar-grid::before {
     content: "";
     position: absolute;
     z-index: 10; 
-    pointer-events: none; /* 클릭 통과 */
+    pointer-events: none;
 
-    /* 1. [위치] 사이드바 오른쪽 바깥에 딱 붙임 */
-    left: 100%; 
-    top: -10px;
+    /* 1. [위치] 위에서 바닥까지 꽉 채움 (빈틈 원천 봉쇄) */
+    top: -20px; 
+    bottom: 0;   
     
-    /* 2. [높이] 바닥에서 정확히 40px(뉴스티커 높이) 띄움 */
-    /* 그라데이션은 박스 안에만 그려지므로, 아래로 절대 안 번짐! */
-    bottom: 2.5rem; 
+    left: 100%; /* 오른쪽 바깥 */
+    width: 40px; /* 도화지는 넓게(40px) 잡아서 부드러움 확보 */
     
-    /* 3. [길이] 그림자가 뻗어나갈 길이 (20px 정도가 적당) */
-    width: 30px; 
-    
-    /* 4. ★ [핵심] 그림자 색상 그리기 (검정 15% -> 투명) */
-    /* 왼쪽 시작점은 진하고, 오른쪽 끝은 투명하게 사라짐 */
-    background: linear-gradient(to right, rgba(0,0,0,0.36), transparent 90%);
+    /* 2. [색상] 그냥 진한 검정 (그라데이션 X) */
+    /* 어차피 마스크로 지울 거라 단색으로 칠해도 됩니다. */
+    background: rgba(0, 0, 0, 0.4); 
+
+    /* 3. ★ [기술 1: 디지털 절벽 제거] 마스크 이미지 */
+    /* 설명: 왼쪽(보임) -> 오른쪽(투명)으로 부드럽게 지워버림 */
+    /* 그라데이션과 달리, 이건 진짜 '투명도'를 건드려서 경계선이 아예 안 보임 */
+    -webkit-mask-image: linear-gradient(to right, black, transparent);
+    mask-image: linear-gradient(to right, black, transparent);
+
+    /* 4. ★ [기술 2: 1px 유령 제거] 클립 패스 */
+    /* 설명: 박스는 바닥까지 와있지만, 밑부분 2.5rem(40px)을 가위로 오려냄 */
+    /* bottom 속성으로 밀고 당기는 것보다 100배 정확함 (Tailwind h-10 = 2.5rem) */
+    clip-path: inset(0 0 2.5rem 0);
 }
