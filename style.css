@@ -1197,7 +1197,7 @@ body.editing-mode-active div#calendar-grid::before {
     pointer-events: none;
     
     /* 1. ★ [시작] 맨 위에서부터 시작 */
-    top: -1; 
+    top: 0; 
     
     /* 2. ★ [끝] 바닥에서 50px 떨어진 곳에서 멈춤! */
     /* (뉴스티커가 하단에 있으니까 여기가 비워져야 합니다) */
