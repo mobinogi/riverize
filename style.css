@@ -1182,31 +1182,32 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   ✂️ [그림자 수술_진한맛] 뉴스티커 피해서 아래만 진하게!
+   ✂️ [그림자 복원] shadow-2xl의 웅장함을 그대로!
    ======================================================== */
 
 #sidebar {
-    /* 1. 기존 그림자(shadow-2xl) 제거 */
+    /* 1. 기존 그림자 끄기 (뉴스티커 보호) */
     box-shadow: none !important;
-    overflow: visible !important; /* 그림자가 밖으로 나가게 허용 */
+    overflow: visible !important; 
 }
 
-/* 2. '가짜 그림자' (머리 잘린 그림자) */
+/* 2. 가짜 그림자 셔틀 (오른쪽에 붙음) */
 #sidebar::after {
     content: "";
     position: absolute;
-    z-index: -1; /* 사이드바 뒤 */
+    z-index: -1; 
     
-    /* ★ [높이 조절] 뉴스티커 높이(50px)만큼 띄우고 시작 */
+    /* ★ [높이] 뉴스티커(50px)만큼 띄우고 시작 */
     top: 50px; 
     
     bottom: 0;
-    right: 0;
+    right: 0; /* 오른쪽에 딱 붙음 */
     
-    /* 그림자를 뿜어낼 얇은 막대기 */
+    /* 그림자 발사대 (얇은 막대) */
     width: 1px; 
     
-    /* ★ [수정됨] 훨씬 진하고 강력한 그림자 */
-    /* x축(10px) blur(30px) spread(-5px) 진하기(0.4) */
-    box-shadow: 10px 0 30px -5px rgba(0, 0, 0, 0.4);
+    /* ★ [핵심] Tailwind 'shadow-2xl' 값 그대로 적용 (방향만 오른쪽) */
+    /* 원본: 0 25px 50px -12px rgb(0 0 0 / 0.25) */
+    /* 적용: 25px 0 50px -12px rgba(0, 0, 0, 0.25) */
+    box-shadow: 25px 0 50px -12px rgba(0, 0, 0, 0.25);
 }
