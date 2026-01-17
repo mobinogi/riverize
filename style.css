@@ -1088,52 +1088,24 @@ body.sidebar-collapsed #main-content-wrapper {
 }
 
 /* ========================================================
-   ☁️ [최종] 흰색 완벽 사수 + 공중부양 + 외부 광원 ☁️
+   🍩 [도넛형 광원] 안쪽 빛 완벽 제거 + 테두리 발산 🍩
    ======================================================== */
 
-/* 1. 애니메이션 수정 (광원과 바닥 그림자를 철저히 분리함) */
-@keyframes real-glow-pulse {
+/* 1. 광원 애니메이션 (밖으로 퍼지는 움직임) */
+@keyframes edge-glow-pulse {
     0%, 100% {
-        box-shadow: 
-            /* [검정] 바닥 그림자 (박스 안으로 절대 못 들어옴, 바닥에만 깔림) */
-            0 25px 30px -5px rgba(0, 0, 0, 0.5),
-            
-            /* [주황] 외부 광원 (테두리 밖으로만 퍼짐) */
-            0 0 20px rgba(255, 160, 50, 0.3),
-            0 0 40px rgba(255, 140, 0, 0.2);
+        opacity: 0.5;
+        transform: scale(1);
+        box-shadow: 0 0 15px 2px rgba(255, 140, 0, 0.4); /* 퍼짐 정도 약함 */
     }
     50% {
-        box-shadow: 
-            /* [검정] 바닥 그림자 유지 */
-            0 25px 30px -5px rgba(0, 0, 0, 0.5),
-            
-            /* [주황] 외부 광원만 강해짐 */
-            0 0 25px rgba(255, 160, 50, 0.6),
-            0 0 50px rgba(255, 140, 0, 0.4),
-            0 0 100px rgba(255, 100, 0, 0.2);
+        opacity: 1;
+        transform: scale(1.02); /* 살짝 커짐 */
+        box-shadow: 0 0 30px 5px rgba(255, 140, 0, 0.7); /* 퍼짐 정도 강함 */
     }
 }
 
-/* 2. 달력 컨테이너 (사장님 기존 흰색 코드 100% 유지 + 위치만 이동) */
-body.editing-mode-active div#calendar-grid {
-    position: relative !important;
-    z-index: 100 !important; 
-    
-    /* ▼▼▼ 사장님 기존 흰색 철벽 방어 코드 (손 안 댔습니다!) ▼▼▼ */
-    --tw-bg-opacity: 1 !important;
-    background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
-    background: #ffffff !important;
-    border-radius: 16px;
-    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
-    
-    /* ★ [추가됨] 위로 10px 부드럽게 올라감 (공중부양) */
-    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform: translateY(-10px);
-    
-    /* 수정된 애니메이션(바닥그림자+외부광원) 실행 */
-    animation: real-glow-pulse 4s ease-in-out infinite;
-}
-/* 2. 미니 위글 (0.8배 축소 + 촐싹거림) */
+/* 2. 미니 위글 (유지) */
 @keyframes soft-wiggle-mini {
     0% { transform: scale(0.8) rotate(0deg); } 
     25% { transform: scale(0.8) rotate(3deg); } 
@@ -1141,39 +1113,69 @@ body.editing-mode-active div#calendar-grid {
     100% { transform: scale(0.8) rotate(0deg); }
 }
 
-/* 3. 어두운 배경 (딤드) */
+/* 3. 어두운 배경 (유지) */
 .editing-mode-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); 
+    background: rgba(0, 0, 0, 0.92); 
     z-index: 50;
     pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
 }
 .editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
 
+/* 4. ★ 달력 컨테이너 (순수 흰색 + 공중부양 그림자) */
+body.editing-mode-active div#calendar-grid {
+    position: relative !important;
+    z-index: 100 !important; 
+    
+    /* [흰색 절대 사수] */
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    --tw-bg-opacity: 1 !important;
+    background-clip: padding-box !important; /* 배경이 테두리 안쪽에만 */
+    
+    border-radius: 16px;
+    
+    /* [공중부양] 위로 10px */
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateY(-10px);
+    
+    /* [바닥 그림자] 이건 빛이 아님. 그냥 검은 그림자. */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
 
-/* 6. ★ [핵심] 선택된 박스 (초소형 미니 사이즈 + 위글) */
+/* 5. ★ [핵심] 테두리 광원 (도넛처럼 가운데가 뚫려 있음) */
+body.editing-mode-active div#calendar-grid::before {
+    content: "";
+    position: absolute;
+    z-index: -1; /* 달력 뒤 */
+    
+    /* 달력 크기와 똑같이 맞춤 */
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 16px;
+    
+    /* [광원 색상] 오렌지색 테두리 */
+    border: 2px solid rgba(255, 140, 0, 0.8);
+    background: transparent; /* 내부는 투명 */
+    
+    /* 애니메이션 실행 */
+    animation: edge-glow-pulse 3s ease-in-out infinite;
+}
+
+/* 6. 선택된 박스 (미니 위글 유지) */
 .selected-wiggle { 
     border: 2px dashed #f97316 !important; 
     background-color: #fff7ed !important;   
     color: #ea580c !important; 
     font-weight: 900 !important;
-    
-    /* ★ scale(0.8) 적용 -> 클릭하면 숫자보다 작아짐 */
     animation: soft-wiggle-mini 0.3s ease-in-out infinite !important; 
-    
     z-index: 110 !important; 
     position: relative;
-    
-    /* 박스 크기 강제 축소 및 정렬 */
     width: 80% !important; 
     height: 80% !important; 
-    margin: 0 auto !important; /* 가운데 정렬 */
+    margin: 0 auto !important; 
     border-radius: 8px !important;
-    
-    /* Flex로 내부 숫자 중앙 정렬 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    
     box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3) !important; 
 }
