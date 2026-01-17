@@ -1182,15 +1182,14 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   ✂️ [최종_진짜_해결] 그림자 앞으로 꺼내기 (가림막 해결)
+   ✂️ [진짜_최종] 그림자 소멸 문제 해결 (너비 확장)
    ======================================================== */
 
 #sidebar {
-    /* 1. 기존 그림자 제거 */
+    /* 1. 기존 그림자 끄기 */
     box-shadow: none !important;
     
-    /* 2. ★ [범인 검거] 스크롤 기능 강제 해제 (그림자 잘림 방지) */
-    /* index.html에 있는 overflow-y-auto 클래스를 무력화합니다. */
+    /* 2. 그림자가 밖으로 나갈 수 있게 '감옥 문' 개방 */
     overflow: visible !important; 
 }
 
@@ -1198,24 +1197,22 @@ body.editing-mode-active div#calendar-grid::before {
     content: "";
     position: absolute;
     
-    /* 3. ★ [핵심] 뒤로 숨지 말고 앞으로 나오세요! */
-    /* 배경 뒤에 숨어서 안 보였던 문제를 해결합니다. */
-    z-index: 10; 
-    
-    /* 4. 대신 클릭은 통과시킴 (투명 인간 취급) */
+    /* 3. 사이드바 맨 앞으로 꺼냄 (가려짐 방지) */
+    z-index: 10;
+    /* 클릭은 통과시킴 (투명인간) */
     pointer-events: none;
     
-    /* 높이 설정 (빨간 박스 50px 피해서 시작) */
+    /* 4. ★ [높이] 빨간 박스(50px) 피해서 시작 */
     top: 50px; 
     bottom: 0;
+    right: 0;
     
-    /* 위치 (오른쪽 끝) */
-    right: 0; 
-    
-    /* 얇은 막대기 */
-    width: 1px; 
+    /* 5. ★ [핵심 수정] 너비를 30px로 키움! */
+    /* 아까는 1px이라서 그림자가 소멸됐던 겁니다. */
+    width: 30px; 
     background: transparent;
     
-    /* 5. 그림자 발사! (shadow-2xl 원본 느낌) */
-    box-shadow: 25px 0 50px -12px rgba(0, 0, 0, 0.25);
+    /* 6. 그림자 발사 (이제 잘 보일 겁니다) */
+    /* x축(25px) y축(0) blur(40px) spread(-10px) */
+    box-shadow: 25px 0 40px -10px rgba(0, 0, 0, 0.3);
 }
