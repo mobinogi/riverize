@@ -1182,36 +1182,33 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   ✂️ [최종_확정] 그림자 밀도 높임 (흐리멍덩 X -> 쫀쫀 O)
+   📉 [방향 수정] 위는 꽉 채우고, 아래만 50px 띄우기
    ======================================================== */
 
 #sidebar {
-    /* 1. 기존 그림자 끄기 */
     box-shadow: none !important;
-    
-    /* 2. 감옥 문 개방 (그림자 탈출 허용) */
     overflow: visible !important; 
 }
 
 #sidebar::after {
     content: "";
     position: absolute;
-    
-    /* 3. 사이드바 맨 앞으로 (가려짐 방지) */
     z-index: 10;
-    pointer-events: none; /* 클릭 투명인간 */
+    pointer-events: none;
     
-    /* 4. [높이] 빨간 박스(50px) 피해서 시작 */
-    top: 50px; 
-    bottom: 0;
+    /* 1. ★ [시작] 맨 위에서부터 시작 */
+    top: 0; 
+    
+    /* 2. ★ [끝] 바닥에서 50px 떨어진 곳에서 멈춤! */
+    /* (뉴스티커가 하단에 있으니까 여기가 비워져야 합니다) */
+    bottom: 50px; 
+    
     right: 0;
     
-    /* 5. [너비] 그림자 그릇 확보 (이거 줄이면 또 사라짐 ㅋㅋ) */
-    width: 20px; 
+    /* 3. 너비 및 그림자 (진하고 선명하게) */
+    width: 10px; 
     background: transparent;
     
-    /* 6. ★ [튜닝 완료] 안개 말고 '진짜 그림자' 느낌 */
-    /* x축(15px) y축(0) blur(25px) spread(-5px) */
-    /* 설명: 사이드바 옆에 착! 달라붙어서 은은하게 뻗어나갑니다. */
-    box-shadow: 15px 0 25px -5px rgba(0, 0, 0, 0.4);
+    /* x축(6px) y축(0) blur(10px) spread(0) 진하기(0.7) */
+    box-shadow: 6px 0 10px 0 rgba(0, 0, 0, 0.7);
 }
