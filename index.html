@@ -990,68 +990,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 // 5. ★ [최종 완성] 슈퍼 편집 모드 토글 (사이드바 숨김 + 스포트라이트)
-    const toggleBtn = document.getElementById('edit-mode-toggle');
-    const floatingBar = document.getElementById('edit-floating-bar');
-    const calendarContainer = document.getElementById('calendar-grid'); // 위에서 ID 추가했으니 찾을 수 있음
-    const body = document.body;
-    
-    // 사이드바 요소 찾기
-    const sidebar = document.getElementById('sidebar'); 
-    
-    if(toggleBtn) {
-        toggleBtn.addEventListener('change', function(e) {
-            isEditMode = e.target.checked;
-            selectedDates = []; 
-            
-            if (isEditMode) {
-                // [ON] 편집 모드 시작!
-                
-                // 1. 달력 효과 (흔들림 + 스포트라이트)
-                if(calendarContainer) calendarContainer.classList.add('editing-mode');
-                body.classList.add('editing-mode-active');
-                
-                // 2. 하단 바 올리기
-                if(floatingBar) floatingBar.classList.remove('translate-y-full');
-                
-                // 3. ★ 사이드바 강제 숨기기 (PC/모바일 공통)
-                if(sidebar) {
-                    // PC용: 닫힘 클래스 추가
-                    sidebar.classList.add('closed');
-                    body.classList.add('sidebar-collapsed');
-                    // 모바일용: 열림 클래스 제거
-                    sidebar.classList.remove('open');
-                }
+  const toggleBtn = document.getElementById('edit-mode-toggle');
+  const floatingBar = document.getElementById('edit-floating-bar');
+  const calendarContainer = document.getElementById('calendar-grid');
+  const body = document.body;
+  
+  // 사이드바 요소 찾기
+  const sidebar = document.getElementById('sidebar'); 
+  
+  if(toggleBtn) {
+      toggleBtn.addEventListener('change', function(e) {
+          isEditMode = e.target.checked;
+          selectedDates = []; 
+          
+          if (isEditMode) {
+              // [ON] 편집 모드 시작! (기존 코드 동일)
+              if(calendarContainer) calendarContainer.classList.add('editing-mode');
+              body.classList.add('editing-mode-active');
+              if(floatingBar) floatingBar.classList.remove('translate-y-full');
+              
+              if(sidebar) {
+                  sidebar.classList.add('closed');
+                  body.classList.add('sidebar-collapsed');
+                  sidebar.classList.remove('open');
+              }
 
-                // 4. 뉴스 티커 숨기기 (집중!)
-                const ticker = document.getElementById('news-ticker');
-                if(ticker) ticker.style.display = 'none';
+              const ticker = document.getElementById('news-ticker');
+              if(ticker) ticker.style.display = 'none';
 
-                if(typeof showToast === 'function') showToast("🛠️ 집중 편집 모드 실행!");
+              if(typeof showToast === 'function') showToast("🛠️ 집중 편집 모드 실행!");
 
-            } else {
-                // [OFF] 편집 모드 종료 (원상복구)
-                
-                // 1. 달력 효과 제거
-                if(calendarContainer) calendarContainer.classList.remove('editing-mode');
-                body.classList.remove('editing-mode-active');
-                
-                // 2. 하단 바 내리기
-                if(floatingBar) floatingBar.classList.add('translate-y-full');
-                
-                // 3. ★ 사이드바 다시 보여주기 (PC인 경우에만)
-                if(window.innerWidth >= 768 && sidebar) {
-                    sidebar.classList.remove('closed');
-                    body.classList.remove('sidebar-collapsed');
-                }
+          } else {
+              // [OFF] 편집 모드 종료 (원상복구)
+              
+              // 1. 달력 효과 제거
+              if(calendarContainer) calendarContainer.classList.remove('editing-mode');
+              body.classList.remove('editing-mode-active');
+              
+              // 2. 하단 바 내리기
+              if(floatingBar) floatingBar.classList.add('translate-y-full');
+              
+              // 3. ★ 사이드바 및 본문(뉴스티커) 복구 (PC인 경우에만)
+              if(window.innerWidth >= 768 && sidebar) {
+                  sidebar.classList.remove('closed');
+                  body.classList.remove('sidebar-collapsed');
 
-                // 4. 뉴스 티커 복구
-                const ticker = document.getElementById('news-ticker');
-                if(ticker) ticker.style.display = 'flex';
-                
-                renderCalendar(); 
+                  // 🔥🔥🔥 [이 부분이 핵심 추가됨] 🔥🔥🔥
+                  // 사이드바가 돌아왔으니, 본문(뉴스티커 포함)을 오른쪽으로 64만큼 밉니다.
+                  const mainWrapper = document.getElementById('main-content-wrapper'); // ID 확인 완료
+                  if(mainWrapper) {
+                      mainWrapper.classList.remove('ml-0');   // 꽉 찬 화면 해제
+                      mainWrapper.classList.add('md:ml-64');  // 오른쪽 여백 추가
+                  }
+              }
+
+            // 4. 뉴스 티커 복구 (수정됨!)
+            const ticker = document.getElementById('news-ticker');
+            if(ticker) {
+                // 'flex'로 강제 설정하면 모바일에서도 튀어나옵니다.
+                // 빈칸 ''으로 설정해야 인라인 스타일이 사라지고, 원래 CSS(hidden md:flex)가 작동합니다.
+                ticker.style.display = ''; 
             }
-        });
-    }
+            
+            renderCalendar(); 
+        }
+    });
+}
     // 6. 검색창 이벤트
     const searchInput = document.getElementById('map-search-input');
     if (searchInput) {
