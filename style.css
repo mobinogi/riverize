@@ -1197,11 +1197,11 @@ body.editing-mode-active div#calendar-grid::before {
     pointer-events: none;
     
     /* 1. ★ [시작] 맨 위에서부터 시작 */
-    top: -3px; 
+    top: -10px; 
     
     /* 2. ★ [끝] 바닥에서 50px 떨어진 곳에서 멈춤! */
     /* (뉴스티커가 하단에 있으니까 여기가 비워져야 합니다) */
-    bottom: 40px; 
+    bottom: 38px; 
     
     right: 0;
     
@@ -1210,5 +1210,5 @@ body.editing-mode-active div#calendar-grid::before {
     background: transparent;
     
     /* x축(6px) y축(0) blur(10px) spread(0) 진하기(0.7) */
-    box-shadow: 8px 0 10px 0 rgba(0, 0, 0, 0.7);
+    box-shadow: 15px 0 10px 0 rgba(0, 0, 0, 0.7);
 }
