@@ -1182,7 +1182,7 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🛡️ [최종 병기] 마스크 & 클립패스 (절벽 X, 1px 오차 X)
+   🏁 [종결] 40px 정수 고정 + 안개 페이드 아웃
    ======================================================== */
 
 #sidebar {
@@ -1196,25 +1196,23 @@ body.editing-mode-active div#calendar-grid::before {
     z-index: 10; 
     pointer-events: none;
 
-    /* 1. [위치] 위에서 바닥까지 꽉 채움 (빈틈 원천 봉쇄) */
+    /* 1. [위치] 위에서 바닥까지 꽉 채움 */
     top: -20px; 
     bottom: 0;   
     
     left: 100%; /* 오른쪽 바깥 */
-    width: 40px; /* 도화지는 넓게(40px) 잡아서 부드러움 확보 */
+    width: 30px; /* 그림자 길이 (30px 추천) */
     
-    /* 2. [색상] 그냥 진한 검정 (그라데이션 X) */
-    /* 어차피 마스크로 지울 거라 단색으로 칠해도 됩니다. */
-    background: rgba(0, 0, 0, 0.4); 
+    /* 2. [색상] 그라데이션 그림자 (기존 유지) */
+    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
 
-    /* 3. ★ [기술 1: 디지털 절벽 제거] 마스크 이미지 */
-    /* 설명: 왼쪽(보임) -> 오른쪽(투명)으로 부드럽게 지워버림 */
-    /* 그라데이션과 달리, 이건 진짜 '투명도'를 건드려서 경계선이 아예 안 보임 */
-    -webkit-mask-image: linear-gradient(to right, black, transparent);
-    mask-image: linear-gradient(to right, black, transparent);
+    /* 3. ★ [기술 1: 하단 커팅] 가위로 정확히 40px 잘라냄 */
+    /* bottom: 40px 보다 이게 훨씬 정확합니다. (픽셀 오차 없음) */
+    clip-path: inset(0 0 40px 0);
 
-    /* 4. ★ [기술 2: 1px 유령 제거] 클립 패스 */
-    /* 설명: 박스는 바닥까지 와있지만, 밑부분 2.5rem(40px)을 가위로 오려냄 */
-    /* bottom 속성으로 밀고 당기는 것보다 100배 정확함 (Tailwind h-10 = 2.5rem) */
-    clip-path: inset(0 0 2.5rem 0);
+    /* 4. ★ [기술 2: 오른쪽 절벽 제거] 마스크로 부드럽게 지움 */
+    /* 왼쪽(검정=보임) -> 오른쪽(투명=안보임) */
+    /* 이렇게 하면 30px 끝부분이 뚝 끊기지 않고 자연스럽게 사라집니다. */
+    -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
+    mask-image: linear-gradient(to right, black 0%, transparent 100%);
 }
