@@ -1155,3 +1155,32 @@ body.editing-mode-active div#calendar-grid {
     position: relative;
     box-shadow: 0 4px 20px rgba(249, 115, 22, 0.6) !important; 
 }
+
+/* 4. ★ 달력 컨테이너 (흰색 철벽 + 공중부양 효과) */
+body.editing-mode-active div#calendar-grid {
+    position: relative !important;
+    z-index: 100 !important; 
+    
+    /* [1] 배경 흰색 강제 적용 */
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    --tw-bg-opacity: 1 !important;
+    background-clip: padding-box !important;
+    
+    border-radius: 16px;
+    
+    /* overflow: visible 필수 */
+    overflow: visible !important;
+
+    /* ★ [핵심] 공중부양 애니메이션 (Transition) */
+    /* cubic-bezier를 써서 기계적이지 않고 '스으윽' 하고 관성 있게 올라갑니다 */
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
+    
+    /* ★ [핵심] 위치 이동 & 그림자 깊이감 */
+    /* 1. scale(1.02): 살짝 커짐 (강조) */
+    /* 2. translateY(-12px): 위로 12픽셀 떠오름 (공중부양) */
+    transform: scale(1.02) translateY(-12px);
+    
+    /* 바닥과 멀어진 느낌을 주는 깊은 그림자 추가 (조명 빛과 별개로 물리적 그림자) */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
