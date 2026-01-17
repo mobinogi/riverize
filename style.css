@@ -1136,44 +1136,65 @@ body.editing-mode-active div#calendar-grid {
     overflow: visible !important;
 }
 
-/* 5. ★ [핵심] 불규칙한 썬레이 (Sun Ray) - 테두리 밖으로 뻗음 */
-body.editing-mode-active div#calendar-grid::before {
-    content: "";
-    position: absolute;
-    z-index: -1; /* 달력 뒤로 숨김 -> 흰색 박스 뒤에 위치 */
-    
-    /* 중심점을 잡고 빛을 쏘기 위해 크게 잡음 */
-    top: 50%; left: 50%;
-    width: 140%; height: 140%; 
-    
-    /* ☀️ 불규칙한 빛줄기 패턴 (투명-빛-투명 반복) */
-    /* 사진처럼 불규칙하게 뻗어나가는 리얼한 광원 효과 */
-    background: conic-gradient(
-        from 0deg,
-        transparent 0%, 
-        rgba(255, 140, 0, 0.1) 5%, 
-        transparent 10%, 
-        rgba(255, 69, 0, 0.8) 15%, /* 강한 빛 */
-        transparent 18%, 
-        rgba(255, 200, 0, 0.3) 25%, 
-        transparent 35%, 
-        rgba(255, 100, 0, 0.6) 45%, /* 중간 빛 */
-        transparent 50%,
-        rgba(255, 160, 0, 0.2) 60%,
-        transparent 70%,
-        rgba(255, 50, 0, 0.7) 80%, /* 강한 빛 */
-        transparent 90%,
-        rgba(255, 180, 0, 0.1) 95%
-    );
-    
-    /* 가장자리 부드럽게 지우기 (네모나게 안 잘리고 빛처럼 사라짐) */
-    -webkit-mask-image: radial-gradient(circle, black 30%, transparent 70%);
-    mask-image: radial-gradient(circle, black 30%, transparent 70%);
-    
-    /* 천천히 회전 */
-    animation: irregular-ray-spin 60s linear infinite;
-    pointer-events: none;
+/* 1. 애니메이션 수정 (광원과 바닥 그림자를 철저히 분리함) */
+@keyframes real-glow-pulse {
+    0%, 100% {
+        box-shadow: 
+            /* [검정] 바닥 그림자 (박스 안으로 절대 못 들어옴, 바닥에만 깔림) */
+            0 25px 30px -5px rgba(0, 0, 0, 0.5),
+            
+            /* [주황] 외부 광원 (테두리 밖으로만 퍼짐) */
+            0 0 20px rgba(255, 160, 50, 0.3),
+            0 0 40px rgba(255, 140, 0, 0.2);
+    }
+    50% {
+        box-shadow: 
+            /* [검정] 바닥 그림자 유지 */
+            0 25px 30px -5px rgba(0, 0, 0, 0.5),
+            
+            /* [주황] 외부 광원만 강해짐 */
+            0 0 25px rgba(255, 160, 50, 0.6),
+            0 0 50px rgba(255, 140, 0, 0.4),
+            0 0 100px rgba(255, 100, 0, 0.2);
+    }
 }
+
+/* 2. 달력 컨테이너 (사장님 기존 흰색 코드 100% 유지 + 위치만 이동) */
+body.editing-mode-active div#calendar-grid {
+    position: relative !important;
+    z-index: 100 !important; 
+    
+    /* ▼▼▼ 사장님 기존 흰색 철벽 방어 코드 (손 안 댔습니다!) ▼▼▼ */
+    --tw-bg-opacity: 1 !important;
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
+    background: #ffffff !important;
+    border-radius: 16px;
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */
+    
+    /* ★ [추가됨] 위로 10px 부드럽게 올라감 (공중부양) */
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateY(-10px);
+    
+    /* 수정된 애니메이션(바닥그림자+외부광원) 실행 */
+    animation: real-glow-pulse 4s ease-in-out infinite;
+}
+/* 2. ★ [수정됨] 원조 위글위글 (각도 0.5도로 원상복구) */
+@keyframes soft-wiggle-scale {
+    0% { transform: scale(1.0) rotate(0deg); }
+    25% { transform: scale(1.0) rotate(0.5deg); } /* 얌전하게 0.5도 */
+    75% { transform: scale(1.0) rotate(-0.5deg); } /* 얌전하게 -0.5도 */
+    100% { transform: scale(1.0) rotate(0deg); }
+}
+
+/* 3. 어두운 배경 (딤드) */
+.editing-mode-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85); 
+    z-index: 50;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
+}
+.editing-mode-active .editing-mode-overlay { opacity: 1; pointer-events: auto; }
+
 
 /* 6. ★ [핵심] 선택된 박스 (초소형 미니 사이즈 + 위글) */
 .selected-wiggle { 
