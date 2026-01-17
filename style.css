@@ -1182,14 +1182,14 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   ✂️ [진짜_최종] 그림자 소멸 문제 해결 (너비 확장)
+   ✂️ [최종_확정] 그림자 밀도 높임 (흐리멍덩 X -> 쫀쫀 O)
    ======================================================== */
 
 #sidebar {
     /* 1. 기존 그림자 끄기 */
     box-shadow: none !important;
     
-    /* 2. 그림자가 밖으로 나갈 수 있게 '감옥 문' 개방 */
+    /* 2. 감옥 문 개방 (그림자 탈출 허용) */
     overflow: visible !important; 
 }
 
@@ -1197,22 +1197,21 @@ body.editing-mode-active div#calendar-grid::before {
     content: "";
     position: absolute;
     
-    /* 3. 사이드바 맨 앞으로 꺼냄 (가려짐 방지) */
+    /* 3. 사이드바 맨 앞으로 (가려짐 방지) */
     z-index: 10;
-    /* 클릭은 통과시킴 (투명인간) */
-    pointer-events: none;
+    pointer-events: none; /* 클릭 투명인간 */
     
-    /* 4. ★ [높이] 빨간 박스(50px) 피해서 시작 */
+    /* 4. [높이] 빨간 박스(50px) 피해서 시작 */
     top: 50px; 
     bottom: 0;
     right: 0;
     
-    /* 5. ★ [핵심 수정] 너비를 30px로 키움! */
-    /* 아까는 1px이라서 그림자가 소멸됐던 겁니다. */
-    width: 30px; 
+    /* 5. [너비] 그림자 그릇 확보 (이거 줄이면 또 사라짐 ㅋㅋ) */
+    width: 20px; 
     background: transparent;
     
-    /* 6. 그림자 발사 (이제 잘 보일 겁니다) */
-    /* x축(25px) y축(0) blur(40px) spread(-10px) */
-    box-shadow: 25px 0 40px -10px rgba(0, 0, 0, 0.3);
+    /* 6. ★ [튜닝 완료] 안개 말고 '진짜 그림자' 느낌 */
+    /* x축(15px) y축(0) blur(25px) spread(-5px) */
+    /* 설명: 사이드바 옆에 착! 달라붙어서 은은하게 뻗어나갑니다. */
+    box-shadow: 15px 0 25px -5px rgba(0, 0, 0, 0.4);
 }
