@@ -1202,7 +1202,7 @@ body.editing-mode-active div#calendar-grid::before {
     left: 100%; 
     width: 30px; 
     
-    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
+    background: linear-gradient(to right, rgba(0,0,0,0.35), transparent);
     
     -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
     mask-image: linear-gradient(to right, black 0%, transparent 100%);
