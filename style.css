@@ -1182,11 +1182,11 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🛡️ [Ghost Shadow Buster] 유령 그림자 퇴치 코드
+   🛡️ [Ghost Shadow Buster V2] 좀비 그림자 완전 박멸
    ======================================================== */
 
 #sidebar {
-    box-shadow: none !important;
+    box-shadow: none !important; /* 혹시 모를 잔재 제거 */
     overflow: visible !important; 
 }
 
@@ -1202,36 +1202,38 @@ body.editing-mode-active div#calendar-grid::before {
     left: 100%; 
     width: 30px; 
     
-    background: linear-gradient(to right, rgba(0,0,0,0.35), transparent);
+    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
     
     -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
     mask-image: linear-gradient(to right, black 0%, transparent 100%);
     
-    /* 부드러운 퇴근을 위한 트랜지션 */
     transition: opacity 0.2s ease-in-out;
+    opacity: 1; /* 기본은 보임 */
+    visibility: visible;
 }
 
-/* 2. ★ [모바일 전용] "열림 명찰(translate-x-0)" 검사 */
+/* 2. ★ [퇴근 명령] 닫혔다는 신호가 오면 즉시 사라져라! */
+/* (1) 모바일에서 닫혔을 때 (translate-x-0 없음) */
 @media (max-width: 767px) {
-    /* 사이드바에 'translate-x-0' 클래스가 없으면 (=닫혀있으면) */
-    /* 그림자를 강제로 투명하게 만들어서 없애버림 */
     #sidebar:not(.translate-x-0)::after {
         opacity: 0 !important;
         visibility: hidden;
     }
-    
-    /* 열렸을 때만 보이게 */
-    #sidebar.translate-x-0::after {
-        opacity: 1 !important;
-        visibility: visible;
-    }
 }
 
-/* 3. [PC 전용] 뉴스티커 덮기 전략 */
+/* (2) PC/모바일 공통: 스크립트가 'closed' 클래스를 붙였을 때 (편집모드 등) */
+#sidebar.closed::after,
+#sidebar.hidden::after,
+#sidebar.-translate-x-full::after {
+    opacity: 0 !important;
+    visibility: hidden;
+}
+
+/* 3. [PC 전용] 뉴스티커 덮기 전략 (서열 정리) */
 @media (min-width: 768px) {
     .news-ticker-wrap {
         position: relative;
-        z-index: 60 !important; /* 그림자보다 높게 */
+        z-index: 60 !important; 
         background-color: white; 
     }
 }
