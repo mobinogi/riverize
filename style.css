@@ -1182,9 +1182,10 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🏁 [최종_완결] 40px 물리적 도킹 (1px 오차 없음)
+   🏆 [최종_승진] 뉴스티커 계급장 수여식 (Z-Index 60)
    ======================================================== */
 
+/* 1. 사이드바 그림자 설정 (가위질 없이 편안하게~) */
 #sidebar {
     box-shadow: none !important;
     overflow: visible !important; 
@@ -1196,21 +1197,29 @@ body.editing-mode-active div#calendar-grid::before {
     z-index: 10; 
     pointer-events: none;
 
-    /* 1. [위치] 위에서 바닥까지 꽉 채움 */
+    /* 위치: 위에서 바닥까지 꽉 채움 (이제 자를 필요 없음!) */
     top: -20px; 
     bottom: 0;   
     
     left: 100%; 
-    width: 30px; /* 그림자 길이 */
+    width: 30px; 
     
-    /* 2. [색상] 그라데이션 */
+    /* 그림자 색상 */
     background: linear-gradient(to right, rgba(0,0,0,0.40), transparent);
 
-    /* 3. ★ [핵심] 인덱스 파일과 정확히 맞춘 '40px' */
-    /* 이제 둘 다 정수 40px이라서 틈새가 생길 수 없습니다. */
-    clip-path: inset(0 0 40px 0);
-
-    /* 4. [마감] 오른쪽 끝 자연스럽게 지우기 */
+    /* 오른쪽 끝 자연스럽게 사라지기 */
     -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
     mask-image: linear-gradient(to right, black 0%, transparent 100%);
+    
+    /* ✂️ clip-path 삭제! 이제 그림자가 바닥까지 내려와도 됩니다. */
+    /* 왜냐? 뉴스티커가 덮어버릴 거니까요. */
+}
+
+/* 2. ★ [핵심] 뉴스티커를 사이드바(50)보다 높은 60으로 승진! */
+/* PC 화면에서만 적용 (모바일은 사이드바가 덮어야 하니까 제외) */
+@media (min-width: 768px) {
+    .news-ticker-wrap {
+        /* 사이드바(50)보다 높게 설정 -> 그림자가 티커 '뒤'로 숨음 */
+        z-index: 60 !important; 
+    }
 }
