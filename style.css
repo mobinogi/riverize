@@ -1182,7 +1182,7 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🏁 [종결] 40px 정수 고정 + 안개 페이드 아웃
+   🏁 [최종_완결] 40px 물리적 도킹 (1px 오차 없음)
    ======================================================== */
 
 #sidebar {
@@ -1200,19 +1200,17 @@ body.editing-mode-active div#calendar-grid::before {
     top: -20px; 
     bottom: 0;   
     
-    left: 100%; /* 오른쪽 바깥 */
-    width: 30px; /* 그림자 길이 (30px 추천) */
+    left: 100%; 
+    width: 30px; /* 그림자 길이 */
     
-    /* 2. [색상] 그라데이션 그림자 (기존 유지) */
-    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
+    /* 2. [색상] 그라데이션 */
+    background: linear-gradient(to right, rgba(0,0,0,0.40), transparent);
 
-    /* 3. ★ [기술 1: 하단 커팅] 가위로 정확히 40px 잘라냄 */
-    /* bottom: 40px 보다 이게 훨씬 정확합니다. (픽셀 오차 없음) */
+    /* 3. ★ [핵심] 인덱스 파일과 정확히 맞춘 '40px' */
+    /* 이제 둘 다 정수 40px이라서 틈새가 생길 수 없습니다. */
     clip-path: inset(0 0 40px 0);
 
-    /* 4. ★ [기술 2: 오른쪽 절벽 제거] 마스크로 부드럽게 지움 */
-    /* 왼쪽(검정=보임) -> 오른쪽(투명=안보임) */
-    /* 이렇게 하면 30px 끝부분이 뚝 끊기지 않고 자연스럽게 사라집니다. */
+    /* 4. [마감] 오른쪽 끝 자연스럽게 지우기 */
     -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
     mask-image: linear-gradient(to right, black 0%, transparent 100%);
 }
