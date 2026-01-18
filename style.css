@@ -1182,7 +1182,7 @@ body.editing-mode-active div#calendar-grid::before {
 }
 
 /* ========================================================
-   🏅 [졸업 작품] 그림자 완벽 제어 (서열 정리 + 자동 퇴근)
+   🛡️ [Ghost Shadow Buster] 유령 그림자 퇴치 코드
    ======================================================== */
 
 #sidebar {
@@ -1190,51 +1190,48 @@ body.editing-mode-active div#calendar-grid::before {
     overflow: visible !important; 
 }
 
-/* 1. 사이드바가 숨겨졌을 때 (화면 밖 or 숨김 클래스) 그림자 삭제 */
-/* Tailwind의 -translate-x-full (왼쪽 이동)이나 hidden 상태를 감지합니다. */
-#sidebar.-translate-x-full::after,
-#sidebar.hidden::after {
-    opacity: 0 !important;
-    visibility: hidden;
-}
-
-/* 2. 메인 그림자 설정 */
+/* 1. [기본 설정] 그림자 디자인 (PC/모바일 공통) */
 #sidebar::after {
     content: "";
     position: absolute;
-    /* 사이드바 내용물보다는 뒤, 배경보다는 앞 */
     z-index: 10; 
     pointer-events: none;
 
-    /* 위치: 위에서 바닥까지 꽉 채움 */
     top: -20px; 
     bottom: 0;   
-    
     left: 100%; 
     width: 30px; 
     
-    /* 색상: 은은한 그라데이션 */
     background: linear-gradient(to right, rgba(0,0,0,0.35), transparent);
-
-    /* 마감: 오른쪽 끝 부드럽게 */
+    
     -webkit-mask-image: linear-gradient(to right, black 0%, transparent 100%);
     mask-image: linear-gradient(to right, black 0%, transparent 100%);
     
-    /* ★ [추가] 부드러운 퇴근을 위한 트랜지션 */
-    /* 사이드바가 열릴 때 스르륵 켜지고, 닫힐 때 스르륵 꺼집니다. */
-    transition: opacity 0.3s ease-in-out, visibility 0.3s;
-    opacity: 1; /* 기본은 보임 */
-    visibility: visible;
+    /* 부드러운 퇴근을 위한 트랜지션 */
+    transition: opacity 0.2s ease-in-out;
 }
 
-/* ========================================================
-   👑 [서열 정리] 뉴스티커(빨간박스) 절대 존엄 유지
-   ======================================================== */
+/* 2. ★ [모바일 전용] "열림 명찰(translate-x-0)" 검사 */
+@media (max-width: 767px) {
+    /* 사이드바에 'translate-x-0' 클래스가 없으면 (=닫혀있으면) */
+    /* 그림자를 강제로 투명하게 만들어서 없애버림 */
+    #sidebar:not(.translate-x-0)::after {
+        opacity: 0 !important;
+        visibility: hidden;
+    }
+    
+    /* 열렸을 때만 보이게 */
+    #sidebar.translate-x-0::after {
+        opacity: 1 !important;
+        visibility: visible;
+    }
+}
+
+/* 3. [PC 전용] 뉴스티커 덮기 전략 */
 @media (min-width: 768px) {
     .news-ticker-wrap {
         position: relative;
-        /* 그림자(z-10)보다 훨씬 높은 60으로 설정하여 덮어버림 */
-        z-index: 60 !important; 
-        background-color: white; /* 투명하면 뒤가 비치니까 배경색 필수 */
+        z-index: 60 !important; /* 그림자보다 높게 */
+        background-color: white; 
     }
 }
