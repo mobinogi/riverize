@@ -2140,59 +2140,70 @@ function renderCalendar() {
         else if (config.color === 'blue') numStyle = "color: #3b82f6 !important;";
         else if (config.color === 'black') numStyle = "color: #374151 !important;";
 
-        // [4] 띠지 HTML 생성 (위치는 absolute로 잡아서 기존 레이아웃 안 건드림)
-        let barHtml = "";
-        if (label) {
-            let prevCount=0, nextCount=0;
-            // 앞뒤 연결성 체크
-            for(let p=day-1; p>=1; p--) {
-                const pKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(p).padStart(2,'0')}`;
-                if(holidayConfig[pKey]?.label === label) prevCount++; else break;
-            }
-            for(let n=day+1; n<=daysInMonth; n++) {
-                const nKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-                if(holidayConfig[nKey]?.label === label) nextCount++; else break;
-            }
-            const totalLen = prevCount + 1 + nextCount;
+// ============================================================
+            // 🚀 [New] 그룹화 렌더링 방식 (시작점에서 한 번에 그리기)
+            // ============================================================
+            let barHtml = "";
             
-            // 중앙 칸인지 판별
-            const isCenter = (prevCount === Math.floor((totalLen - 1) / 2));
-            
-            // ★ [핵심] 짝수(2,4,6일)일 때는 시각적 중앙이 '셀과 셀 사이 선'입니다.
-            const isEven = (totalLen % 2 === 0);
+            // 현재 날짜의 설정 가져오기
+            const dateKey = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const config = holidayConfig[dateKey];
 
-            // 텍스트 스타일 설정
-            let spanStyle = "white-space:nowrap; pointer-events: none;"; // 클릭 방지 추가
-            let spanClass = "text-[9px] font-bold truncate px-1 leading-tight";
+            if (config && config.label) {
+                // 1. 어제 날짜 키 계산 (비교용)
+                const prevDate = new Date(currentYear, currentMonth - 1, day - 1);
+                const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2,'0')}-${String(prevDate.getDate()).padStart(2,'0')}`;
+                const prevConfig = holidayConfig[prevKey];
 
-            if (isCenter) {
-                // 이 칸이 센터라면?
-            if (isEven) {
-                    // z-index를 10 -> 50으로 상향 조정! (옆집 배경보다 무조건 위에 뜨게)
-                    spanStyle += " position: absolute; left: 100%; transform: translateX(-50%); z-index: 50; overflow: visible; width: max-content;";
-                } else {
-                    // 홀수 개수일 때: 그냥 박스 꽉 채워서 가운데 정렬
-                    spanClass += " w-full block text-center";
+                // 2. 오늘이 무슨 요일인지 (0: 일요일)
+                const currDateObj = new Date(currentYear, currentMonth - 1, day);
+                const dayOfWeek = currDateObj.getDay();
+
+                // 3. "내가 시작점인가?" 판단
+                // 조건: (어제랑 라벨이 다르거나) OR (오늘이 일요일이라 줄이 바뀌어야 함)
+                const isStart = (!prevConfig || prevConfig.label !== config.label) || (dayOfWeek === 0);
+
+                if (isStart) {
+                    // 4. 여기서부터 몇 칸이나 이어지는지 길이(ColSpan) 측정
+                    let colSpan = 1;
+                    // 이번 주 토요일까지만 검사 (토요일 넘어가면 잘라야 하니까)
+                    const maxLen = 7 - dayOfWeek; 
+
+                    for (let k = 1; k < maxLen; k++) {
+                        // k일 뒤의 날짜 키 생성
+                        const nextDate = new Date(currentYear, currentMonth - 1, day + k);
+                        // 달이 넘어가면 중단
+                        if (nextDate.getMonth() + 1 !== currentMonth) break;
+
+                        const nextKey = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2,'0')}-${String(nextDate.getDate()).padStart(2,'0')}`;
+                        const nextConfig = holidayConfig[nextKey];
+
+                        // 같은 라벨이면 길이 연장
+                        if (nextConfig && nextConfig.label === config.label) {
+                            colSpan++;
+                        } else {
+                            break; // 다른 내용이면 여기서 끝
+                        }
+                    }
+
+                    // 5. 색상 및 스타일 결정
+                    let bgClass = config.color === 'red' ? 'bg-red-100 text-red-600' : 
+                                 (config.color === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600');
+
+                    // 6. [핵심] 너비 계산 (100% * 칸수) + (보정값: 테두리 겹침 방지)
+                    // 칸 사이의 border(1px)까지 덮기 위해 colSpan에 비례해서 약간 더 길게 잡습니다.
+                    const widthStyle = `width: calc(${colSpan * 100}% + ${(colSpan - 1)}px);`;
+
+                    // 7. HTML 생성 (z-index를 높여서 덮어쓰기)
+                    // pointer-events: none을 줘서 띠지를 클릭해도 뒤에 있는 날짜(모달 열기)가 클릭되게 함
+                    barHtml = `<div class="absolute bottom-0 left-0 h-4 flex items-center justify-center rounded overflow-hidden ${bgClass}" 
+                                    style="${widthStyle} z-index: 20; pointer-events: none;">
+                        <span class="text-[10px] font-bold px-1 leading-tight truncate w-full text-center block">
+                            ${config.label}
+                        </span>
+                    </div>`;
                 }
-            } else {
-                // 센터가 아니면 숨김
-                spanClass += " opacity-0";
             }
-
-            const isPrevSame = prevCount > 0;
-            const isNextSame = nextCount > 0;
-
-            let bgClass = config.color === 'red' ? 'bg-red-100 text-red-600' : (config.color === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600');
-            let radiusClass = "";
-            if (!isPrevSame && isNextSame) radiusClass = "rounded-l";
-            else if (isPrevSame && !isNextSame) radiusClass = "rounded-r";
-            else if (!isPrevSame && !isNextSame) radiusClass = "rounded";
-
-            // 띠지 HTML 생성
-            barHtml = `<div class="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center overflow-visible ${bgClass} ${radiusClass}" style="z-index: 1;">
-                <span class="${spanClass}" style="${spanStyle}">${label}</span>
-            </div>`;
-        }
 
 // [5] 편집모드 선택 효과 (수정됨: 주황색 위글위글 적용)
 let wrapperClass = "p-2 flex justify-center relative cursor-pointer"; 
