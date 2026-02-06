@@ -1161,61 +1161,61 @@ body.editing-mode-active div#calendar-grid::before {
     animation: edge-glow-breath 3s ease-in-out infinite;
 }
 
-/* style.css 맨 아래 수정 */
+/* [기술적 해결] 회전(각도)을 버리고 진동(이동)을 채택 */
+/* 결과: 절대 찢어지지 않는 완벽한 '한 몸' 위글 구현 */
 
-/* style.css 수정 (원본 수치 80% 복구 + 연결 로직) */
+@keyframes wiggle-parallel {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(1px, 1px); }   /* 오른쪽 아래로 살짝 */
+    50% { transform: translate(-1px, 0); }    /* 왼쪽으로 살짝 */
+    75% { transform: translate(1px, -1px); }  /* 오른쪽 위로 살짝 */
+    100% { transform: translate(0, 0); }
+}
 
 .selected-wiggle {
-    /* 1. 크기 강제 설정: 100%로 꽉 채움 (80% 삭제) */
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    /* 1. 크기: 원본 유지 (커지지 않음!) */
+    width: 100% !important; 
     
-    /* 2. 디자인 (주황색 점선) */
-    border: 2px dashed #ea580c !important; 
-    background-color: #fff7ed !important;   
-    color: #ea580c !important; 
+    /* 2. 디자인: 주황색 점선 */
+    border: 2px dashed #ea580c !important;
+    background-color: #fff7ed !important;
+    color: #ea580c !important;
     font-weight: 900 !important;
     
-    /* 3. 배치 및 애니메이션 */
+    /* 3. ★ 핵심: 회전(Rotate) 대신 진동(Parallel) 적용 */
+    /* 0.25초의 빠른 속도로 덜덜 떨리게 함 -> 위글 느낌 100% */
+    animation: wiggle-parallel 0.25s linear infinite !important;
+    
+    /* 배치 설정 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    z-index: 20 !important;
-    border-radius: 0.5rem; /* 기본 둥글기 */
-    
-    /* 4. 애니메이션 수정 (크기 줄이는 scale(0.8) 제거!) */
-    animation: wiggle-fixed 0.4s ease-in-out infinite;
+    border-radius: 0.75rem; 
+    box-sizing: border-box;
+    z-index: 20;
 }
 
-/* 박스 크기를 줄이지 않는 고정 위글 애니메이션 */
-@keyframes wiggle-fixed {
-    0%, 100% { transform: rotate(-1deg); }
-    50% { transform: rotate(1deg); }
-}
+/* [연결부위 접착] 테두리 두께만큼 겹치기 (Negative Margin) */
 
-/* [연결 로직 1] 왼쪽이랑 붙을 때 (왼쪽 선 삭제 + 겹치기) */
+/* 왼쪽 친구랑 붙음 */
 .selected-wiggle.connect-left {
     border-left: none !important;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
-    /* 왼쪽으로 2px 당겨서 빈틈 메꾸기 */
-    margin-left: -2px !important;
-    width: calc(100% + 2px) !important;
+    margin-left: -2px !important;       /* ★ 2px 당겨서 겹침 */
+    width: calc(100% + 2px) !important; 
 }
 
-/* [연결 로직 2] 오른쪽이랑 붙을 때 (오른쪽 선 삭제 + 겹치기) */
+/* 오른쪽 친구랑 붙음 */
 .selected-wiggle.connect-right {
     border-right: none !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-    /* 오른쪽으로 2px 당겨서 빈틈 메꾸기 */
     margin-right: -2px !important;
     width: calc(100% + 2px) !important;
 }
 
-/* [연결 로직 3] 양쪽 다 붙을 때 (몸통) */
+/* 가운데 몸통 */
 .selected-wiggle.connect-left.connect-right {
     border-left: none !important;
     border-right: none !important;
