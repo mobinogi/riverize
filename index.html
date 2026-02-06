@@ -33,19 +33,23 @@
   }
 </script>
 <script type="module">
-  // 1. 필요한 도구들 가져오기 (이 부분이 없어서 안 됐던 겁니다!)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // 2. 사장님 앱 출입증 (Config)
-  const firebaseConfig = {
-    apiKey: "AIzaSyB4f4rLPaanGV-72YZhn5sy_fRkTZk_sA0",
-    authDomain: "gangseo-app.firebaseapp.com",
-    projectId: "gangseo-app",
-    storageBucket: "gangseo-app.firebasestorage.app",
-    messagingSenderId: "166683314292",
-    appId: "1:166683314292:web:3e5e96ca88fece97086921"
-  };
+  async function initFirebase() {
+    // 서버(Apps Script)로부터 설정 정보를 가져옴
+    const response = await fetch(`${API_URL}?action=getFirebaseConfig`);
+    const res = await response.json();
+    
+    if (res.status === 'success') {
+      const app = initializeApp(res.config);
+      window.db = getFirestore(app);
+      console.log("🔥 Firebase 보안 로드 완료");
+    }
+  }
+
+  initFirebase();
+</script>
 
   // 3. 엔진 시동
   const app = initializeApp(firebaseConfig);
