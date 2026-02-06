@@ -1161,68 +1161,69 @@ body.editing-mode-active div#calendar-grid::before {
     animation: edge-glow-breath 3s ease-in-out infinite;
 }
 
-/* [기술적 해결] 회전(각도)을 버리고 진동(이동)을 채택 */
-/* 결과: 절대 찢어지지 않는 완벽한 '한 몸' 위글 구현 */
+/* [최종 완성] 스마트 스트레치: 평소엔 작게, 붙을 때만 늘어나기 */
 
 @keyframes wiggle-parallel {
     0% { transform: translate(0, 0); }
-    25% { transform: translate(1px, 1px); }   /* 오른쪽 아래로 살짝 */
-    50% { transform: translate(-1px, 0); }    /* 왼쪽으로 살짝 */
-    75% { transform: translate(1px, -1px); }  /* 오른쪽 위로 살짝 */
+    25% { transform: translate(1px, 1px); }
+    50% { transform: translate(-1px, 0); }
+    75% { transform: translate(1px, -1px); }
     100% { transform: translate(0, 0); }
 }
 
 .selected-wiggle {
-    /* 1. 크기: 원본 유지 (커지지 않음!) */
-    width: 100% !important; 
+    /* 1. [평소 상태] 사장님 원본 디자인 (작고 귀여운 80%) */
+    width: 80% !important;
+    height: 80% !important;
+    margin: 0 auto !important; /* 가운데 정렬 */
     
-    /* 2. 디자인: 주황색 점선 */
+    /* 2. 디자인 */
     border: 2px dashed #ea580c !important;
     background-color: #fff7ed !important;
     color: #ea580c !important;
     font-weight: 900 !important;
     
-    /* 3. ★ 핵심: 회전(Rotate) 대신 진동(Parallel) 적용 */
-    /* 0.25초의 빠른 속도로 덜덜 떨리게 함 -> 위글 느낌 100% */
+    /* 3. 진동 애니메이션 (찢어짐 방지) */
     animation: wiggle-parallel 0.25s linear infinite !important;
     
-    /* 배치 설정 */
+    /* 배치 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     border-radius: 0.75rem; 
     box-sizing: border-box;
     z-index: 20;
+    position: relative; /* 늘어날 때 기준점 */
 }
 
-/* [연결부위 접착] 테두리 두께만큼 겹치기 (Negative Margin) */
+/* [스마트 연결] 옆에 친구가 있다? -> 그쪽 팔을 뻗어라! */
 
-/* 왼쪽 친구랑 붙음 */
+/* 1. 왼쪽 친구랑 붙을 때 */
 .selected-wiggle.connect-left {
+    margin-left: -2px !important;      /* 왼쪽 여백 삭제 + 겹치기 */
+    width: calc(90% + 2px) !important; /* 왼쪽 10% 빈공간을 채움 */
     border-left: none !important;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
-    margin-left: -2px !important;       /* ★ 2px 당겨서 겹침 */
-    width: calc(100% + 2px) !important; 
 }
 
-/* 오른쪽 친구랑 붙음 */
+/* 2. 오른쪽 친구랑 붙을 때 */
 .selected-wiggle.connect-right {
+    margin-right: -2px !important;     /* 오른쪽 여백 삭제 + 겹치기 */
+    width: calc(90% + 2px) !important; /* 오른쪽 10% 빈공간을 채움 */
     border-right: none !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-    margin-right: -2px !important;
-    width: calc(100% + 2px) !important;
 }
 
-/* 가운데 몸통 */
+/* 3. 양쪽 다 붙을 때 (가운데 몸통) */
 .selected-wiggle.connect-left.connect-right {
+    margin-left: -2px !important;
+    margin-right: -2px !important;
+    width: calc(100% + 4px) !important; /* 양쪽 다 채워서 100%가 됨 */
     border-left: none !important;
     border-right: none !important;
     border-radius: 0 !important;
-    margin-left: -2px !important;
-    margin-right: -2px !important;
-    width: calc(100% + 4px) !important;
 }
 /* ========================================================
    🛡️ [Ghost Shadow Buster V2] 좀비 그림자 완전 박멸
