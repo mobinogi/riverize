@@ -1161,13 +1161,35 @@ body.editing-mode-active div#calendar-grid::before {
     animation: edge-glow-breath 3s ease-in-out infinite;
 }
 
+/* [편집 모드] 선택된 박스 기본 스타일 */
 .selected-wiggle {
-    /* 🚨 크기, 패딩, 마진, 테두리 설정 전부 삭제! */
-    /* 오직 "움직임"과 "글자색"만 담당합니다. */
-    animation: soft-wiggle-mini 0.3s ease-in-out infinite !important;
-    background-color: #fff7ed !important; /* 배경색: 연한 주황 */
-    color: #ea580c !important; /* 글자색: 주황 */
-    z-index: 20 !important; /* 선이 겹칠 때 위로 오게 */
+    /* 1. 디자인 정의 (JS에서 넣던 걸 이리로 가져옴) */
+    border: 2px dashed #ea580c !important; /* 주황색 점선 */
+    background-color: #fff7ed !important;   /* 연한 주황 배경 */
+    color: #ea580c !important;              /* 글자색 */
+    font-weight: 900 !important;
+    
+    /* 2. 애니메이션 및 배치 */
+    animation: soft-wiggle-mini 0.3s ease-in-out infinite;
+    z-index: 20; /* 겹칠 때 위로 */
+    
+    /* 3. 둥글기 기본값 */
+    border-radius: 0.75rem; /* rounded-xl */
+}
+
+/* [연결 로직 1] 왼쪽 친구랑 붙을 때 (왼쪽 벽 제거 + 겹치기) */
+.selected-wiggle.connect-left {
+    border-left: none !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-left: -2px; /* 왼쪽으로 살짝 당겨서 선을 겹쳐버림 */
+}
+
+/* [연결 로직 2] 오른쪽 친구랑 붙을 때 (오른쪽 벽 제거) */
+.selected-wiggle.connect-right {
+    border-right: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
 }
 /* ========================================================
    🛡️ [Ghost Shadow Buster V2] 좀비 그림자 완전 박멸
