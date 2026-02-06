@@ -2248,15 +2248,14 @@ function renderCalendar() {
                 }
             }
 
-// [5] 편집모드 선택 효과 (디자인 복구 + 배경색 연결 방식) 🚀
-        // 원래 클래스 유지: p-2 flex justify-center relative cursor-pointer
-        let wrapperClass = "p-2 flex justify-center relative cursor-pointer"; 
+// [5] 편집모드 선택 효과 (디자인 100% 원복 + 그룹 테두리 연결) 🚀
+        // ★ 중요: 원래 디자인 클래스(h-24, border-gray-200 등)를 절대 건드리지 않습니다!
+        let wrapperClass = "relative h-24 border-b border-r border-gray-200 cursor-pointer"; 
         
         // 이 날짜가 선택된 상태라면?
         if (isEditMode && selectedDates.includes(dateKey)) {
-            // 위글 애니메이션 클래스 추가
-            wrapperClass += " selected-wiggle"; 
-            
+            wrapperClass += " selected-wiggle"; // 애니메이션 효과
+
             // 💡 내 "어제" / "내일" 선택 여부 확인
             const yesterday = new Date(currentYear, currentMonth - 1, day - 1);
             const prevKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
@@ -2266,24 +2265,30 @@ function renderCalendar() {
             const nextKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
             const isNextSelected = selectedDates.includes(nextKey);
 
-            // [핵심 수정] 테두리(Border) 대신 마진(Margin) 조절로 붙이기
-            // 1. 왼쪽 친구가 있으면? -> 왼쪽 마진 없애고 딱 붙임 + 왼쪽 둥글기 제거
+            // [그룹화 로직] 원래 칸 크기는 유지하되, '테두리'만 조작해서 이어 붙입니다.
+            // 1. 위/아래 테두리는 무조건 주황색 점선
+            let borderClass = " border-t-2 border-b-2 border-orange-500 border-dashed";
+
+            // 2. 왼쪽 벽 처리
             if (isPrevSelected) {
-                wrapperClass = wrapperClass.replace("p-2", "p-2 pl-0"); // 왼쪽 패딩 제거
-                wrapperClass += " rounded-l-none -ml-1"; // 마진 당겨서 겹치기
+                // 왼쪽 친구가 선택됨 -> 왼쪽 벽을 없애고(-ml-px) 딱 붙임
+                borderClass += " border-l-0 -ml-[1px]"; 
             } else {
-                wrapperClass += " rounded-l-xl"; // 시작점은 둥글게
+                // 왼쪽 친구 없음 -> 왼쪽 벽 세우고 둥글게
+                borderClass += " border-l-2 rounded-l-xl border-orange-500 border-dashed"; 
             }
 
-            // 2. 오른쪽 친구가 있으면? -> 오른쪽 마진 없애고 딱 붙임 + 오른쪽 둥글기 제거
+            // 3. 오른쪽 벽 처리
             if (isNextSelected) {
-                wrapperClass = wrapperClass.replace("p-2", "p-2 pr-0"); // 오른쪽 패딩 제거
-                wrapperClass += " rounded-r-none -mr-1"; // 마진 당겨서 겹치기
+                // 오른쪽 친구가 선택됨 -> 오른쪽 벽을 없앰 (기존 회색 벽 덮어쓰기 위해 border-none 추가할 수도 있으나, width 0으로 처리)
+                borderClass += " border-r-0";
             } else {
-                wrapperClass += " rounded-r-xl"; // 끝점은 둥글게
+                // 오른쪽 친구 없음 -> 오른쪽 벽 세우고 둥글게
+                borderClass += " border-r-2 rounded-r-xl border-orange-500 border-dashed"; 
             }
+            
+            wrapperClass += borderClass;
         }
-
         // [6] 최종 HTML 조립
         // ★ 중요: 클릭 이벤트(onclick)를 '겉 박스'로 옮겨서 통합 관리함 (충돌 방지)
         container.innerHTML += `
