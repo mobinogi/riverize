@@ -2167,9 +2167,9 @@ function renderCalendar() {
 
             if (isCenter) {
                 // 이 칸이 센터라면?
-                if (isEven) {
-                    // 짝수 개수일 때: 오른쪽 끝(100%)으로 보내고, 중심축을 -50% 당겨서 '선 위'에 안착시킴
-                    spanStyle += " position: absolute; left: 100%; transform: translateX(-50%); z-index: 10; overflow: visible;";
+            if (isEven) {
+                    // z-index를 10 -> 50으로 상향 조정! (옆집 배경보다 무조건 위에 뜨게)
+                    spanStyle += " position: absolute; left: 100%; transform: translateX(-50%); z-index: 50; overflow: visible; width: max-content;";
                 } else {
                     // 홀수 개수일 때: 그냥 박스 꽉 채워서 가운데 정렬
                     spanClass += " w-full block text-center";
