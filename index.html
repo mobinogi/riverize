@@ -2248,49 +2248,41 @@ function renderCalendar() {
                 }
             }
 
-// [5] 편집모드 선택 효과 (h-24 원본 디자인 복구 + 그룹화) 🚀
+// [5] 편집모드 선택 효과 (디자인 복구 + 배경색 연결 방식) 🚀
+        // 원래 클래스 유지: p-2 flex justify-center relative cursor-pointer
+        let wrapperClass = "p-2 flex justify-center relative cursor-pointer"; 
+        
+        // 이 날짜가 선택된 상태라면?
+        if (isEditMode && selectedDates.includes(dateKey)) {
+            // 위글 애니메이션 클래스 추가
+            wrapperClass += " selected-wiggle"; 
             
-            // 1. 기본 베이스: h-24 높이와 커서 설정 (테두리는 조건부 추가)
-            let wrapperClass = "relative h-24 cursor-pointer"; 
+            // 💡 내 "어제" / "내일" 선택 여부 확인
+            const yesterday = new Date(currentYear, currentMonth - 1, day - 1);
+            const prevKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+            const isPrevSelected = selectedDates.includes(prevKey);
 
-            // 이 날짜가 선택된 상태라면?
-            if (isEditMode && selectedDates.includes(dateKey)) {
-                // [선택됨] -> 주황색 점선 박스 & 위글 효과
-                wrapperClass += " selected-wiggle bg-orange-50 z-10"; 
+            const tomorrow = new Date(currentYear, currentMonth - 1, day + 1);
+            const nextKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+            const isNextSelected = selectedDates.includes(nextKey);
 
-                // 💡 내 "어제" / "내일" 선택 여부 확인
-                const yesterday = new Date(currentYear, currentMonth - 1, day - 1);
-                const prevKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
-                const isPrevSelected = selectedDates.includes(prevKey);
-
-                const tomorrow = new Date(currentYear, currentMonth - 1, day + 1);
-                const nextKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
-                const isNextSelected = selectedDates.includes(nextKey);
-
-                // [테두리 조립]
-                // 위/아래: 무조건 주황 점선
-                let borderClass = " border-t-2 border-b-2 border-orange-500 border-dashed";
-
-                // 왼쪽 벽: 어제도 선택됐으면 뚫고(-ml), 아니면 막고 둥글게
-                if (isPrevSelected) {
-                    borderClass += " border-l-0 -ml-[1px]"; 
-                } else {
-                    borderClass += " border-l-2 rounded-l-xl"; 
-                }
-
-                // 오른쪽 벽: 내일도 선택됐으면 뚫고, 아니면 막고 둥글게
-                if (isNextSelected) {
-                    borderClass += " border-r-0";
-                } else {
-                    borderClass += " border-r-2 rounded-r-xl"; 
-                }
-                
-                wrapperClass += borderClass;
-
+            // [핵심 수정] 테두리(Border) 대신 마진(Margin) 조절로 붙이기
+            // 1. 왼쪽 친구가 있으면? -> 왼쪽 마진 없애고 딱 붙임 + 왼쪽 둥글기 제거
+            if (isPrevSelected) {
+                wrapperClass = wrapperClass.replace("p-2", "p-2 pl-0"); // 왼쪽 패딩 제거
+                wrapperClass += " rounded-l-none -ml-1"; // 마진 당겨서 겹치기
             } else {
-                // [평상시] -> 사장님 원본 디자인 (회색 실선)
-                wrapperClass += " border-b border-r border-gray-200";
+                wrapperClass += " rounded-l-xl"; // 시작점은 둥글게
             }
+
+            // 2. 오른쪽 친구가 있으면? -> 오른쪽 마진 없애고 딱 붙임 + 오른쪽 둥글기 제거
+            if (isNextSelected) {
+                wrapperClass = wrapperClass.replace("p-2", "p-2 pr-0"); // 오른쪽 패딩 제거
+                wrapperClass += " rounded-r-none -mr-1"; // 마진 당겨서 겹치기
+            } else {
+                wrapperClass += " rounded-r-xl"; // 끝점은 둥글게
+            }
+        }
         // [6] 최종 HTML 조립
         // ★ 중요: 클릭 이벤트(onclick)를 '겉 박스'로 옮겨서 통합 관리함 (충돌 방지)
         container.innerHTML += `
