@@ -33,23 +33,43 @@
   }
 </script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // 1. 파이어베이스 라이브러리 불러오기
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  async function initFirebase() {
-    // 서버(Apps Script)로부터 설정 정보를 가져옴
-    const response = await fetch(`${API_URL}?action=getFirebaseConfig`);
-    const res = await response.json();
-    
-    if (res.status === 'success') {
-      const app = initializeApp(res.config);
-      window.db = getFirestore(app);
-      console.log("🔥 Firebase 보안 로드 완료");
+    // 2. 서버(Apps Script)에서 비밀 키를 가져와서 연결하는 함수
+    async function initFirebase() {
+        try {
+            console.log("🚀 Firebase 설정 가져오는 중...");
+            
+            // API_URL은 위쪽 스크립트에 정의되어 있다고 가정합니다. 
+            // 만약 정의되지 않았다면 직접 주소를 입력해야 합니다.
+            const response = await fetch(`${API_URL}?action=getFirebaseConfig`);
+            const res = await response.json();
+
+            if (res.status === 'success') {
+                // 3. 받아온 키로 Firebase 시작!
+                const app = initializeApp(res.config);
+                window.db = getFirestore(app); // 전역 변수 db에 저장
+                
+                console.log("🔥 Firebase 보안 연결 성공!");
+
+                // 4. (중요) DB 연결이 끝난 후 공장 현황을 불러옵니다.
+                // 기존 코드가 db가 연결되기 전에 실행되어 에러나는 것을 방지합니다.
+                if (typeof window.updateFactoryStatus === 'function') {
+                    window.updateFactoryStatus();
+                }
+            } else {
+                console.error("❌ Firebase 설정 실패:", res.message);
+                alert("서버 연결 실패: 관리자에게 문의하세요.");
+            }
+        } catch (error) {
+            console.error("❌ Firebase 초기화 치명적 오류:", error);
+        }
     }
-  }
 
-  initFirebase();
-</script>
+    // 함수 실행
+    initFirebase();
 
   // 3. 엔진 시동
   const app = initializeApp(firebaseConfig);
