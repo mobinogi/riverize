@@ -2211,6 +2211,7 @@ function renderCalendar() {
                 const isStart = (!prevConfig || prevConfig.label !== config.label) || (dayOfWeek === 0);
 
                 if (isStart) {
+                    outerStyle = "z-index: 30 !important;";
                     // 4. 길이(ColSpan) 측정
                     let colSpan = 1;
                     const maxLen = 7 - dayOfWeek; // 토요일까지만
@@ -2935,7 +2936,7 @@ function selectColor(color) {
 let unifiedPressTimer;
 let isUnifiedLongPress = false;
 
-// [수정] 롱프레스 시작 (이름 불일치 해결!)
+// [수정] 롱프레스 시 '그룹 전체'를 자동으로 잡아주는 기능 🚀
 function handleUnifiedPressStart(dateKey, day, isSunday) {
     isUnifiedLongPress = false;
     
@@ -2945,16 +2946,29 @@ function handleUnifiedPressStart(dateKey, day, isSunday) {
     unifiedPressTimer = setTimeout(() => {
         isUnifiedLongPress = true;
         
-        // 🛑 롱프레스 발생!
         if (isEditMode) {
-            // [핵심 수정] 없는 함수(onLongPressMulti) 부르지 말고, 있는 함수 부르기!
-            if (typeof openHolidayModalMulti === 'function') {
-                openHolidayModalMulti(); 
-            } else {
-                alert("모달 여는 함수(openHolidayModalMulti)를 찾을 수 없습니다!");
+            // ★ 핵심: 17, 18일을 꾹 눌러도 연결된 16일(띠지 주인)까지 싹 다 찾아서 선택함!
+            if (!selectedDates.includes(dateKey)) {
+                // 1. 연결된 그룹(띠지 형제들) 찾기
+                // (getConnectedGroup 함수가 이미 구현되어 있어서 바로 쓰면 됩니다)
+                const group = getConnectedGroup(dateKey); 
+                
+                // 2. 그룹 전체 강제 선택
+                selectedDates = group; 
+                
+                // 3. 화면 갱신 (다 같이 위글거리게 만듦)
+                renderCalendar();
             }
+
+            // 잠시 후 메뉴 열기 (이제 '그룹'이 선택된 상태라 삭제가 잘 됨)
+            setTimeout(() => {
+                if (typeof openHolidayModalMulti === 'function') {
+                    openHolidayModalMulti(); 
+                }
+            }, 50);
+            
         } else {
-            // [순정모드]
+            // [순정모드] 보고서 옵션
             const hasReport = reportsMap[dateKey];
             if (hasReport) {
                 if(typeof openReportOptionModal === 'function') {
@@ -2964,7 +2978,7 @@ function handleUnifiedPressStart(dateKey, day, isSunday) {
                 }
             }
         }
-    }, 600); // 0.6초 꾹 누르면 실행
+    }, 600); // 0.6초 꾹 누름
 }
 
 // 2. 롱프레스 끝 (손 뗌)
