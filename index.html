@@ -73,7 +73,7 @@
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<span>🔄 처리 중...</span>`;
+      submitBtn.innerHTML = `<span>처리 중...</span>`;
       submitBtn.disabled = true;
 
       try {
@@ -188,6 +188,110 @@
           submitBtn.disabled = false;
       }
   }
+
+  // 🚀 [스마트 삭제] 연결된 형제 띠지까지 모두 삭제하는 함수
+function deleteHoliday() {
+    const selectedDate = document.getElementById('modal-date').value;
+    
+    // 날짜 포맷 맞추기 (YYYY-MM-DD)
+    const dateObj = new Date(selectedDate);
+    const dateKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    
+    const targetConfig = holidayConfig[dateKey];
+
+    if (!targetConfig) {
+        closeModal();
+        return;
+    }
+
+    if (confirm("연결된 일정을 모두 삭제하시겠습니까?")) {
+        const targetLabel = targetConfig.label;
+        const currentMonth = dateObj.getMonth() + 1; // 현재 보고 있는 달
+
+        // 1. [과거 탐색]
+        let checkDate = new Date(dateKey);
+        while (true) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            if (checkDate.getMonth() + 1 !== currentMonth) break; // 달 바뀌면 중단
+
+            let dKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            // 라벨 같으면 삭제
+            if (holidayConfig[dKey] && holidayConfig[dKey].label === targetLabel) {
+                delete holidayConfig[dKey];
+            } else {
+                break;
+            }
+        }
+
+        // 2. [미래 탐색]
+        checkDate = new Date(dateKey);
+        while (true) {
+            checkDate.setDate(checkDate.getDate() + 1);
+            if (checkDate.getMonth() + 1 !== currentMonth) break;
+
+            let dKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            if (holidayConfig[dKey] && holidayConfig[dKey].label === targetLabel) {
+                delete holidayConfig[dKey];
+            } else {
+                break;
+            }
+        }
+
+        // 3. [나 자신 삭제]
+        delete holidayConfig[dateKey];
+
+        // 4. 저장 및 갱신
+        saveToFirebase(); // 또는 saveCalendarData(); (사장님 저장 함수명 사용)
+        renderCalendar();
+        closeModal();
+    }
+}
+
+  // ✅ [신규 추가] 선택된 날짜끼리 경계선 허물기 (벽 뚫기)
+function mergeSelectedBoxes() {
+    // 1. 모든 날짜 박스의 스타일 초기화 (일단 다 막아둠)
+    document.querySelectorAll('.date-box').forEach(el => {
+        // 선택된 녀석들만 점선 테두리가 있을 테니, 그 녀석들만 건드립니다.
+        if (el.classList.contains('ring-2')) { 
+            el.style.borderRight = ''; 
+            el.style.borderLeft = '';
+            el.classList.add('rounded-xl'); // 기본 둥글기 복구
+        }
+    });
+
+    // 2. 선택된 날짜들끼리 검사
+    // (selectedDates는 사장님 코드에 있는 Set 변수라고 가정)
+    selectedDates.forEach(dateStr => {
+        const el = document.querySelector(`.date-box[data-date="${dateStr}"]`);
+        if (!el) return;
+
+        const currDate = new Date(dateStr);
+        
+        // 내일 날짜 구하기
+        const nextDate = new Date(currDate);
+        nextDate.setDate(currDate.getDate() + 1);
+        const nextStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth()+1).padStart(2,'0')}-${String(nextDate.getDate()).padStart(2,'0')}`;
+
+        // 어제 날짜 구하기
+        const prevDate = new Date(currDate);
+        prevDate.setDate(currDate.getDate() - 1);
+        const prevStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}-${String(prevDate.getDate()).padStart(2,'0')}`;
+
+        // ▶ 내일도 선택됐나요? -> 나의 오른쪽 벽, 내일의 왼쪽 벽 제거
+        if (selectedDates.has(nextStr)) {
+            el.style.borderRight = 'none';
+            el.classList.remove('rounded-r-xl'); // 오른쪽 둥글기 제거
+            el.classList.add('rounded-r-none');
+        }
+
+        // ▶ 어제도 선택됐나요? -> 나의 왼쪽 벽 제거
+        if (selectedDates.has(prevStr)) {
+            el.style.borderLeft = 'none';
+            el.classList.remove('rounded-l-xl'); // 왼쪽 둥글기 제거
+            el.classList.add('rounded-l-none');
+        }
+    });
+}
 </script>
 </head>
 <body class="min-h-screen bg-gray-50 block md:flex font-sans">
@@ -2761,7 +2865,7 @@ function checkConsecutive(dates) {
 }
 
 
-// 7. [모달 로직] 설정창 열기
+// ✅ [수정] 모달 열 때 '삭제 버튼' 보여줄지 결정하는 로직 추가
 function openHolidayModalMulti() {
     selectedDates.sort();
 
@@ -2769,7 +2873,7 @@ function openHolidayModalMulti() {
     if (selectedDates.length === 1) title = selectedDates[0];
     else title = `${selectedDates[0]} ~ ${selectedDates[selectedDates.length-1]} (${selectedDates.length}일)`;
     
-    // 모달에 날짜 띄우기
+    // 모달에 날짜 띄우기 (사장님 코드 ID: modal-date-display)
     const displayEl = document.getElementById('modal-date-display');
     if(displayEl) displayEl.textContent = title;
     
@@ -2781,6 +2885,15 @@ function openHolidayModalMulti() {
     if(labelInput) labelInput.value = config.label || "";
     
     if(typeof selectColor === 'function') selectColor(config.color || 'red');
+
+    // 👇 [여기 추가됨] 삭제 버튼 제어 로직
+    const deleteBtn = document.getElementById('btn-delete-holiday');
+    // 이미 라벨이 저장된 날짜라면? -> 삭제 버튼 보여줌!
+    if (config.label) {
+        deleteBtn.classList.remove('hidden');
+    } else {
+        deleteBtn.classList.add('hidden');
+    }
 
     // 모달 보여주기
     document.getElementById('holiday-modal').classList.remove('hidden');
@@ -2942,7 +3055,92 @@ function onLongPressMulti(dateKey) {
         openHolidayModalMulti();
     }
 }
-  
+
+
+  // 🚀 [스마트 삭제] 연결된 띠지(형제들)까지 한 방에 삭제하는 함수
+function deleteHolidaySetting() {
+    // 선택된 날짜가 없으면 중단
+    if (!selectedDates || selectedDates.length === 0) return;
+
+    // 1. 기준이 되는 라벨 확인 (첫 번째 선택 날짜 기준)
+    const firstKey = selectedDates[0];
+    const targetConfig = holidayConfig[firstKey];
+    
+    if (!targetConfig || !targetConfig.label) {
+        // 지울 내용이 없으면 그냥 모달 닫기
+        document.getElementById('holiday-modal').classList.add('hidden');
+        return;
+    }
+
+    if (!confirm("연결된 일정을 모두 삭제하시겠습니까?")) return;
+
+    const targetLabel = targetConfig.label; // 예: "휴가"
+    const targetsToDelete = new Set(selectedDates); // 일단 선택된 애들은 삭제 목록에 넣음
+
+    // 2. [그룹 탐색] 선택된 날짜들의 '앞/뒤'를 뒤져서 같은 라벨이면 삭제 목록에 추가
+    selectedDates.forEach(dateStr => {
+        const currentMonth = new Date(dateStr).getMonth() + 1;
+        
+        // (1) 과거(어제, 그제...) 탐색
+        let checkDate = new Date(dateStr);
+        while (true) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            // 달력이 보여주는 달(Month)을 벗어나면 중단
+            if (checkDate.getMonth() + 1 !== currentMonth) break;
+            
+            const dKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            if (holidayConfig[dKey] && holidayConfig[dKey].label === targetLabel) {
+                targetsToDelete.add(dKey); // 너도 삭제 명단에 추가!
+            } else {
+                break; // 라벨 다르면 여기서 끊김
+            }
+        }
+
+        // (2) 미래(내일, 모레...) 탐색
+        checkDate = new Date(dateStr);
+        while (true) {
+            checkDate.setDate(checkDate.getDate() + 1);
+            if (checkDate.getMonth() + 1 !== currentMonth) break;
+
+            const dKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            if (holidayConfig[dKey] && holidayConfig[dKey].label === targetLabel) {
+                targetsToDelete.add(dKey); // 너도 삭제!
+            } else {
+                break;
+            }
+        }
+    });
+
+    // 3. 실제 데이터(holidayConfig)에서 삭제 수행
+    targetsToDelete.forEach(key => {
+        delete holidayConfig[key];
+    });
+
+    // 4. 서버 저장 및 화면 갱신
+    if(typeof showToast === 'function') showToast("🗑️ 삭제 중...");
+
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            action: "saveCalendarConfig",
+            data: JSON.stringify(holidayConfig)
+        })
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.status === 'success') {
+            if(typeof showToast === 'function') showToast("✅ 삭제 완료!", "success");
+            renderCalendar(); // 달력 다시 그리기
+            document.getElementById('holiday-modal').classList.add('hidden'); // 모달 닫기
+            selectedDates = []; // 선택 초기화
+        } else {
+            alert("삭제 실패: " + response.message);
+        }
+    })
+    .catch(error => {
+        alert("통신 오류: " + error);
+    });
+}
 </script>
 <div id="quick-entry-modal" class="fixed inset-0 z-[999] hidden flex items-center justify-center">
     
@@ -3186,16 +3384,21 @@ function onLongPressMulti(dateKey) {
             </div>
         </div>
 
-        <div class="p-4 border-t bg-gray-50 flex gap-3">
-            <button onclick="document.getElementById('holiday-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold hover:bg-white transition-colors">
-                취소
-            </button>
-            <button onclick="saveHolidaySetting()" class="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-transform active:scale-95">
-                저장하기
-            </button>
-        </div>
-    </div>
-</div>
+<div class="p-4 border-t bg-gray-50 flex gap-3">
+    <button onclick="document.getElementById('holiday-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold hover:bg-white transition-colors">
+        취소
+    </button>
+    
+    <button id="btn-delete-holiday" onclick="deleteHoliday()" class="hidden flex-1 py-3 rounded-xl bg-red-100 text-red-500 font-bold border border-red-200 hover:bg-red-200 transition-colors">
+        삭제
+    </button>
+
+    <button onclick="saveHolidaySetting()" class="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-600 transition-transform active:scale-95">
+        저장하기
+    </button>
+           </div>
+         </div>
+       </div>
       <div id="edit-dimmed-layer" class="editing-mode-overlay"></div>
 
 <div id="edit-floating-bar" class="fixed bottom-0 left-0 w-full bg-gray-900 text-white p-4 transform translate-y-full transition-transform duration-300 z-[60] flex justify-between items-center shadow-2xl safe-area-bottom">
