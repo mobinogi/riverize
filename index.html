@@ -2280,6 +2280,7 @@ function renderCalendar() {
         // ★ 중요: 클릭 이벤트(onclick)를 '겉 박스'로 옮겨서 통합 관리함 (충돌 방지)
         container.innerHTML += `
             <div class="${wrapperClass}"
+                 style="${outerStyle}"
                  onclick="handleUnifiedClick('${dateKey}', ${day}, ${isSunday})"
                  onmousedown="handleUnifiedPressStart('${dateKey}', ${day}, ${isSunday})"
                  onmouseup="handleUnifiedPressEnd()"
