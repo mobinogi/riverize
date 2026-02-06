@@ -1163,56 +1163,56 @@ body.editing-mode-active div#calendar-grid::before {
 
 /* style.css 맨 아래 수정 */
 
-/* [기본 상태] 약간 작고 귀여운 원본 사이즈 */
-.selected-wiggle {
-    /* 1. 크기 줄이기 (여백을 줘서 안쪽으로 모음) */
-    margin: 4px !important;       /* 상하좌우 여백 -> 박스가 작아짐 */
-    height: calc(100% - 8px) !important; /* 높이도 여백만큼 줄임 */
-    width: auto !important;       /* 너비 자연스럽게 */
+/* style.css 수정 (원본 수치 80% 복구 + 연결 로직) */
 
-    /* 2. 디자인 (주황색 점선) */
+/* [기본 상태] 사장님 원본 디자인 수치 유지 */
+.selected-wiggle {
+    /* 1. 원본 수치 복구 */
+    width: 80% !important;
+    height: 80% !important;
+    margin: 0 auto !important; /* 가운데 정렬 */
+    
+    /* 2. 디자인 및 애니메이션 */
     border: 2px dashed #ea580c !important;
     background-color: #fff7ed !important;
     color: #ea580c !important;
     font-weight: 900 !important;
-    border-radius: 0.75rem;       /* 둥글게 */
-
-    /* 3. 배치 및 애니메이션 */
+    border-radius: 0.75rem;
+    animation: soft-wiggle-mini 0.3s ease-in-out infinite;
+    z-index: 20;
+    
+    /* 배치용 */
     display: flex !important;
     justify-content: center;
     align-items: center;
-    animation: soft-wiggle-mini 0.3s ease-in-out infinite;
-    z-index: 20;
-    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.4); /* 그림자 살짝 */
+    position: relative; /* 연결 로직 위해 필요 */
 }
 
-/* [연결 1] 왼쪽 친구랑 붙을 때 -> 왼쪽 여백 삭제! */
+/* [연결 1] 왼쪽이랑 붙을 때 (왼쪽 10% 여백 삭제) */
 .selected-wiggle.connect-left {
-    margin-left: -2px !important; /* 왼쪽 여백 없애고 살짝 겹침 */
-    border-left: none !important; /* 왼쪽 선 삭제 */
+    margin-left: -2px !important;     /* 왼쪽으로 당겨서 붙임 */
+    width: calc(90% + 2px) !important; /* 왼쪽 10% 채움 */
+    border-left: none !important;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
-    /* 너비 보정 (여백이 줄었으니 늘려줌) */
-    width: calc(100% + 2px) !important; 
 }
 
-/* [연결 2] 오른쪽 친구랑 붙을 때 -> 오른쪽 여백 삭제! */
+/* [연결 2] 오른쪽이랑 붙을 때 (오른쪽 10% 여백 삭제) */
 .selected-wiggle.connect-right {
-    margin-right: -2px !important; /* 오른쪽 여백 없애고 살짝 겹침 */
-    border-right: none !important; /* 오른쪽 선 삭제 */
+    margin-right: -2px !important;    /* 오른쪽 당김 */
+    width: calc(90% + 2px) !important; /* 오른쪽 10% 채움 */
+    border-right: none !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-    width: calc(100% + 2px) !important;
 }
 
 /* [연결 3] 양쪽 다 붙을 때 (가운데 토막) */
 .selected-wiggle.connect-left.connect-right {
-    margin-left: -2px !important;
-    margin-right: -2px !important;
-    width: calc(100% + 4px) !important;
-    border-radius: 0 !important;
+    width: calc(100% + 4px) !important; /* 양쪽 다 채움 */
+    margin: 0 -2px !important;
     border-left: none !important;
     border-right: none !important;
+    border-radius: 0 !important;
 }
 /* ========================================================
    🛡️ [Ghost Shadow Buster V2] 좀비 그림자 완전 박멸
