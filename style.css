@@ -1161,35 +1161,58 @@ body.editing-mode-active div#calendar-grid::before {
     animation: edge-glow-breath 3s ease-in-out infinite;
 }
 
-/* [편집 모드] 선택된 박스 기본 스타일 */
+/* style.css 맨 아래 수정 */
+
+/* [기본 상태] 약간 작고 귀여운 원본 사이즈 */
 .selected-wiggle {
-    /* 1. 디자인 정의 (JS에서 넣던 걸 이리로 가져옴) */
-    border: 2px dashed #ea580c !important; /* 주황색 점선 */
-    background-color: #fff7ed !important;   /* 연한 주황 배경 */
-    color: #ea580c !important;              /* 글자색 */
+    /* 1. 크기 줄이기 (여백을 줘서 안쪽으로 모음) */
+    margin: 4px !important;       /* 상하좌우 여백 -> 박스가 작아짐 */
+    height: calc(100% - 8px) !important; /* 높이도 여백만큼 줄임 */
+    width: auto !important;       /* 너비 자연스럽게 */
+
+    /* 2. 디자인 (주황색 점선) */
+    border: 2px dashed #ea580c !important;
+    background-color: #fff7ed !important;
+    color: #ea580c !important;
     font-weight: 900 !important;
-    
-    /* 2. 애니메이션 및 배치 */
+    border-radius: 0.75rem;       /* 둥글게 */
+
+    /* 3. 배치 및 애니메이션 */
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
     animation: soft-wiggle-mini 0.3s ease-in-out infinite;
-    z-index: 20; /* 겹칠 때 위로 */
-    
-    /* 3. 둥글기 기본값 */
-    border-radius: 0.75rem; /* rounded-xl */
+    z-index: 20;
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.4); /* 그림자 살짝 */
 }
 
-/* [연결 로직 1] 왼쪽 친구랑 붙을 때 (왼쪽 벽 제거 + 겹치기) */
+/* [연결 1] 왼쪽 친구랑 붙을 때 -> 왼쪽 여백 삭제! */
 .selected-wiggle.connect-left {
-    border-left: none !important;
+    margin-left: -2px !important; /* 왼쪽 여백 없애고 살짝 겹침 */
+    border-left: none !important; /* 왼쪽 선 삭제 */
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
-    margin-left: -2px; /* 왼쪽으로 살짝 당겨서 선을 겹쳐버림 */
+    /* 너비 보정 (여백이 줄었으니 늘려줌) */
+    width: calc(100% + 2px) !important; 
 }
 
-/* [연결 로직 2] 오른쪽 친구랑 붙을 때 (오른쪽 벽 제거) */
+/* [연결 2] 오른쪽 친구랑 붙을 때 -> 오른쪽 여백 삭제! */
 .selected-wiggle.connect-right {
-    border-right: none !important;
+    margin-right: -2px !important; /* 오른쪽 여백 없애고 살짝 겹침 */
+    border-right: none !important; /* 오른쪽 선 삭제 */
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+    width: calc(100% + 2px) !important;
+}
+
+/* [연결 3] 양쪽 다 붙을 때 (가운데 토막) */
+.selected-wiggle.connect-left.connect-right {
+    margin-left: -2px !important;
+    margin-right: -2px !important;
+    width: calc(100% + 4px) !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 /* ========================================================
    🛡️ [Ghost Shadow Buster V2] 좀비 그림자 완전 박멸
