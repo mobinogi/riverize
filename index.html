@@ -2931,21 +2931,28 @@ function selectColor(color) {
 let unifiedPressTimer;
 let isUnifiedLongPress = false;
 
-// 1. 롱프레스 시작 (터치/마우스 공용)
+// [수정] 롱프레스 시작 (이름 불일치 해결!)
 function handleUnifiedPressStart(dateKey, day, isSunday) {
     isUnifiedLongPress = false;
+    
+    // 기존 타이머 취소 (중복 실행 방지)
+    if (unifiedPressTimer) clearTimeout(unifiedPressTimer);
+
     unifiedPressTimer = setTimeout(() => {
         isUnifiedLongPress = true;
         
         // 🛑 롱프레스 발생!
         if (isEditMode) {
-            // [편집모드] -> 다중 선택 모달
-            onLongPressMulti(dateKey); 
+            // [핵심 수정] 없는 함수(onLongPressMulti) 부르지 말고, 있는 함수 부르기!
+            if (typeof openHolidayModalMulti === 'function') {
+                openHolidayModalMulti(); 
+            } else {
+                alert("모달 여는 함수(openHolidayModalMulti)를 찾을 수 없습니다!");
+            }
         } else {
-            // [순정모드] -> 보고서 있으면 꾹 눌러서 옵션(삭제 등)
+            // [순정모드]
             const hasReport = reportsMap[dateKey];
             if (hasReport) {
-                // 기존 startPressReport 로직 대용
                 if(typeof openReportOptionModal === 'function') {
                     const rId = hasReport.id || hasReport.fileId;
                     const dateStr = `${currentYear}년 ${currentMonth}월 ${day}일`;
@@ -2953,7 +2960,7 @@ function handleUnifiedPressStart(dateKey, day, isSunday) {
                 }
             }
         }
-    }, 600); // 0.6초
+    }, 600); // 0.6초 꾹 누르면 실행
 }
 
 // 2. 롱프레스 끝 (손 뗌)
