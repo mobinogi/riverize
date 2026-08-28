@@ -34,9 +34,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/truck.css">
-  <link rel="stylesheet" href="css/weather-animation.css">
+  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/truck.css?v=2">
+  <link rel="stylesheet" href="css/weather-animation.css?v=2">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/oilprice.js"></script>
@@ -450,12 +450,20 @@ function mergeSelectedBoxes() {
                                 bg-[#f7f9fc] text-gray-700 
                                 shadow-[0px_-8px_15px_rgba(255,255,255,0.8),0px_8px_15px_rgba(204,204,204,0.5)]">
                       
-                      <div id="status-box" class="wide-switch-card w-full py-3 mb-8">
+                      <!-- 위치 기준 틀.
+                           카드가 펼쳐질 때 이 틀의 높이는 그대로 두고 카드만 위로 떠오릅니다.
+                           그래야 아래 '거래처 현황 지도' 같은 내용이 밀려나지 않습니다.
+                           틀의 높이는 접힌 카드 높이에 맞춰 스크립트가 정해줍니다. -->
+                      <div id="status-wrap" class="relative w-full mb-8">
+                      <!-- z-index 는 style.css 의 #status-box 규칙에서 관리합니다.
+                           (여기에 z-40 을 같이 두면 어느 쪽이 이기는지 헷갈립니다) -->
+                      <div id="status-box" class="wide-switch-card w-full py-3 absolute inset-x-0 top-0 cursor-pointer select-none">
 
-    <div class="flex justify-between items-center px-6 mb-1"> 
+    <div class="relative flex justify-between items-center px-6 mb-1">
         <p class="font-bold text-lg text-gray-600 flex items-center gap-2">
             <span id="current-date">불러오는 중...</span>
         </p>
+
         
         <button onclick="updateFactoryStatus(); const svg=this.querySelector('svg'); svg.style.transition='transform 1s ease-in-out'; svg.dataset.rot=(Number(svg.dataset.rot)||0)+360; svg.style.transform='rotate('+svg.dataset.rot+'deg)';" 
                 class="p-1 text-gray-400 transition-colors duration-200 hover:text-gray-900 focus:outline-none">
@@ -468,8 +476,23 @@ function mergeSelectedBoxes() {
 
     <div class="gradient-divider-h"></div>
 
-    <div class="flex flex-row h-10 items-center mt-1 w-full"> 
-        
+    <!-- 펼쳐지는 부분. 접혀 있을 땐 높이 0 이라 아예 안 보입니다. -->
+    <div id="status-detail" class="overflow-hidden transition-all duration-300 ease-out" style="max-height:0; opacity:0;">
+
+        <!-- 머리글. 아래 합계 줄과 같은 3등분이라 세로줄이 딱 맞습니다. -->
+        <div class="flex flex-row items-center w-full pt-2 pb-1">
+            <div class="flex-1 text-center text-[11px] font-bold text-gray-400 tracking-wide">출고</div>
+            <div class="flex-1 text-center text-[11px] font-bold text-gray-400 tracking-wide">반납</div>
+            <div class="flex-1 text-center text-[11px] font-bold text-gray-400 tracking-wide">잔량</div>
+        </div>
+
+        <div id="status-rows"></div>
+
+        <div class="gradient-divider-h"></div>
+    </div>
+
+    <div class="flex flex-row h-10 items-center mt-1 w-full">
+
         <div class="flex-1 flex flex-col items-center justify-center">
             <span class="text-2xl font-bold text-gray-800 tracking-tight" id="val-f19">-</span>
         </div>
@@ -488,6 +511,22 @@ function mergeSelectedBoxes() {
 
     </div>
 
+    <!-- 펼침 화살표. 카드 하단에 '얹어' 둡니다.
+         absolute 라서 자리를 차지하지 않습니다 → 카드 높이가 늘어나지 않습니다.
+         (여기에 padding 으로 자리를 만들면 카드가 커지고,
+          카드 장식이 높이의 %로 잡혀 있어 하단 모양까지 틀어집니다)
+         바깥이 좌우 중앙을 잡고, 가운데가 위아래로 살랑이고, 안쪽 화살표가 회전합니다.
+         (한 요소에 transform 을 여럿 걸면 서로 덮어씁니다) -->
+    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
+        <div id="status-chevron-bob" class="status-bob">
+            <svg id="status-chevron" class="w-6 h-3 text-gray-400 transition-transform duration-300 ease-out"
+                 viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3.5 L12 9 L21 3.5"/>
+            </svg>
+        </div>
+    </div>
+
+</div>
 </div>
 
                       <div class="flex w-full mt-4 rounded-xl overflow-hidden border-2 border-[#f7f9fc] shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
@@ -518,7 +557,8 @@ function mergeSelectedBoxes() {
                rounded-xl border-2 border-[#f7f9fc] 
                hover:bg-blue-700 transition-colors 
                active:bg-blue-800 
-               shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]">
+               shadow-[0_10px_10px_-5px_rgba(0,0,0,0.1)]
+               indent-[2px]">
     거래처 현황 지도 보기
 </button>
 
@@ -2584,6 +2624,18 @@ window.updateFactoryStatus = async function() {
             factoryBalance = data.factory.balance;
         }
 
+        // [간편보기] 방금 받아온 값을 그대로 보관해 둡니다.
+        //  현황판을 누르면 이 값으로 바로 그립니다. 서버에 다시 묻지 않습니다.
+        window.__reportStatus = {
+            date: docDate,
+            isToday: isToday,
+            kim: kim,
+            jung: jung,
+            totalOut: totalOut,
+            totalEmpty: totalEmpty,
+            factory: factoryBalance
+        };
+
         // 화면 표시
         if (isToday) {
             // 오늘 기록이 있으면 -> 오늘 집계 현황 표시
@@ -3581,6 +3633,155 @@ function deleteHolidaySetting() {
         완료
     </button>
 </div>
+<!-- ── 일보 현황판 펼치기 ──────────────────────────────────────────
+     현황판을 누르면 카드가 아래로 늘어나면서 작성자별 값이 나옵니다.
+     카드는 '떠 있는' 상태라 아래 내용(거래처 지도 등)을 밀어내지 않고 덮습니다.
+     데이터는 updateFactoryStatus 가 파베에서 이미 받아둔 것을 그대로 씁니다.
+     (서버에 다시 묻지 않으므로 즉시 펼쳐집니다)
+──────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  var PEOPLE = [
+    { key: 'kim',  name: '김원대' },
+    { key: 'jung', name: '정병준' }
+  ];
+
+  var wrap, box, detail, rows, chevron;
+  var expanded = false;
+
+  function n(v) { return Number(v || 0); }
+  function shortTime(t) { return String(t || '').replace(/:(\d{1,2})$/, ''); }
+
+  // 접힌 상태의 카드 높이를 틀에 물려둡니다.
+  // 이래야 카드가 길어져도 아래 내용이 밀려나지 않습니다.
+  function lockWrapHeight() {
+    if (!wrap || !box || expanded) return;
+    wrap.style.height = box.offsetHeight + 'px';
+  }
+
+  function personBlock(name, rec) {
+    var stamp = rec && rec.time ? String(rec.time) : '';
+    var wrote = stamp && stamp !== '자동이월';
+    var when  = wrote ? (stamp === '입력취소' ? '입력 취소' : shortTime(stamp)) : '미작성';
+
+    var nameCls = 'text-sm font-bold ' + (wrote ? 'text-gray-700' : 'text-gray-300');
+    var timeCls = 'text-[11px] text-gray-400';
+
+    // 좁은 화면(앱)에서는 이름과 시각을 윗줄에 따로 둡니다. 한 줄에 다 안 들어갑니다.
+    var head = '<div class="flex items-baseline justify-between px-6 pt-2 md:hidden">' +
+                 '<span class="' + nameCls + '">' + name + '</span>' +
+                 '<span class="' + timeCls + '">' + when + '</span>' +
+               '</div>';
+
+    var cell = function (v) {
+      return '<div class="flex-1 text-center text-lg font-bold ' +
+             (wrote ? 'text-gray-800' : 'text-gray-300') + ' tabular-nums">' + v + '</div>';
+    };
+
+    var out = wrote ? (n(rec.st) + n(rec.rice)) : '-';
+    var ret = wrote ? n(rec.empty) : '-';
+    var bal = wrote ? n(rec.total)  : '-';
+
+    // 넓은 화면(웹)에서는 같은 줄 양 끝에 얹습니다.
+    //  숫자 세 칸은 그대로 3등분이라 아래 합계 줄과 세로줄이 계속 맞습니다.
+    //  (이름을 칸으로 끼워 넣으면 폭이 밀려서 어긋납니다)
+    return head +
+           '<div class="relative flex flex-row items-center w-full pb-1 md:py-1.5">' +
+             '<span class="hidden md:block absolute left-6 ' + nameCls + '">' + name + '</span>' +
+             cell(out) + cell(ret) + cell(bal) +
+             '<span class="hidden md:block absolute right-6 ' + timeCls + '">' + when + '</span>' +
+           '</div>';
+  }
+
+  function render() {
+    if (!rows) return;
+    var s = window.__reportStatus;
+    if (!s) {
+      rows.innerHTML = '<div class="py-4 text-center text-xs text-gray-400">' +
+                       '현황을 아직 못 받았습니다. 새로고침을 눌러 주세요.</div>';
+      return;
+    }
+    rows.innerHTML = PEOPLE.map(function (P) { return personBlock(P.name, s[P.key]); }).join('');
+  }
+
+  function open() {
+    if (expanded || !detail) return;
+
+    // 사이드바가 열려 있으면 먼저 접습니다.
+    //  현황판은 사이드바(z-50)보다 아래(z-30)라 펼쳐도 가려서 안 보입니다.
+    //  PC 는 사이드바가 항상 떠 있는 구조라 이 함수가 아무 일도 하지 않습니다.
+    if (typeof window.closeSidebarNow === 'function') {
+      try { window.closeSidebarNow(); } catch (e) {}
+    }
+
+    // 펼친 것만 기록합니다. 접는 것까지 남기면 로그가 두 배가 됩니다.
+    if (typeof logClientActionAsync === 'function') {
+      try { logClientActionAsync('일보 현황판 펼치기'); } catch (e) {}
+    }
+
+    render();
+    expanded = true;
+    detail.style.maxHeight = detail.scrollHeight + 'px';
+    detail.style.opacity = '1';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+    if (box) box.classList.add('shadow-2xl', 'status-open');
+  }
+
+  function close() {
+    if (!expanded || !detail) return;
+    expanded = false;
+    detail.style.maxHeight = '0px';
+    detail.style.opacity = '0';
+    if (chevron) chevron.style.transform = '';
+    if (box) box.classList.remove('shadow-2xl', 'status-open');
+  }
+
+  window.openStatusPanel  = open;
+  window.closeStatusPanel = close;
+  window.isStatusPanelOpen = function () { return expanded; };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    wrap    = document.getElementById('status-wrap');
+    box     = document.getElementById('status-box');
+    detail  = document.getElementById('status-detail');
+    rows    = document.getElementById('status-rows');
+    chevron = document.getElementById('status-chevron');
+    if (!wrap || !box || !detail) return;
+
+    lockWrapHeight();
+    window.addEventListener('resize', function () { if (!expanded) lockWrapHeight(); });
+
+    // 카드 아무 데나 누르면 열고 닫힙니다. 새로고침 버튼은 원래 동작 그대로.
+    box.addEventListener('click', function (ev) {
+      if (ev.target.closest('button')) return;
+      expanded ? close() : open();
+    });
+
+    // 바깥을 누르면 접힙니다.
+    document.addEventListener('click', function (ev) {
+      if (!expanded) return;
+      if (box.contains(ev.target)) return;
+      close();
+    });
+
+    // 새로고침으로 값이 바뀌면 펼쳐진 내용도 다시 그립니다.
+    var origUpdate = window.updateFactoryStatus;
+    if (typeof origUpdate === 'function') {
+      window.updateFactoryStatus = async function () {
+        var r = await origUpdate.apply(this, arguments);
+        try {
+          if (expanded) { render(); detail.style.maxHeight = detail.scrollHeight + 'px'; }
+          else lockWrapHeight();
+        } catch (e) {}
+        return r;
+      };
+    }
+  });
+})();
+</script>
+
 <!-- ── 뒤로가기 처리 ────────────────────────────────────────────────
      지도·모달·탭은 별도 페이지가 아니라서 방문 기록을 안 남깁니다.
      그래서 뒤로가기 제스처가 곧장 앱 종료로 이어졌습니다.

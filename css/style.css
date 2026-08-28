@@ -1267,3 +1267,44 @@ body.editing-mode-active div#calendar-grid::before {
         background-color: white; 
     }
 }
+
+/* =========================================
+   📋 일보 현황판 - 펼침 화살표
+   ========================================= */
+/* 접혀 있을 때 위아래로 살짝 움직여 '누를 수 있다'를 알립니다. */
+@keyframes statusBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(4px); }
+}
+.status-bob {
+    animation: statusBob 1.8s ease-in-out infinite;
+}
+/* 펼쳐진 뒤에는 움직임을 멈춥니다. 이미 열려 있으니 안내가 필요 없습니다. */
+.status-open .status-bob {
+    animation: none;
+}
+/* 움직임을 불편해하는 사용자 설정을 존중합니다. */
+@media (prefers-reduced-motion: reduce) {
+    .status-bob { animation: none; }
+}
+
+/* 📋 현황판은 펼쳐지면 아래 내용 위로 떠서 덮습니다.
+   그런데 .wide-switch-card 는 배경이 투명이고, 흰 몸통은 ::before 가
+   아래쪽 45%(top:55%)만 칠합니다. 카드가 길어지면 윗부분이 뚫려서
+   뒤에 있는 버튼이 그대로 비칩니다.
+   그래서 이 카드만 배경을 채웁니다.
+   색은 페이지 배경(#f7f9fc)과 같아서 접혀 있을 땐 티가 나지 않습니다. */
+#status-box.wide-switch-card {
+    /* 클래스 하나(.wide-switch-card)보다 확실히 이기도록 ID와 함께 씁니다. */
+    background-color: #f7f9fc;
+
+    /* 아래 버튼들 위로는 오되, 사이드바(z-50)보다는 아래여야 합니다.
+       50 으로 두면 모바일에서 사이드바를 열었을 때 카드가 그 위로 올라탑니다. */
+    z-index: 30;
+}
+
+/* 이 카드는 펼쳐지면 높이가 두 배 넘게 변합니다.
+   원래 장식은 카드 높이의 %(55%, 30%)로 잡혀 있어서 길어지면 엉뚱한 데 그려집니다.
+   그래서 이 카드만 아래에서부터 고정 높이로 바꿔, 접히든 펼치든 하단 모양을 같게 만듭니다. */
+#status-box.wide-switch-card::before { top: auto; height: 56px; }
+#status-box.wide-switch-card::after  { top: auto; height: 88px; }
