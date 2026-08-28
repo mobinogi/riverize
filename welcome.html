@@ -287,8 +287,17 @@ h1{
     hello.textContent = name + '님, 반갑습니다';
     form.classList.add('off');
     done.classList.add('on');
-    setTimeout(function () { location.href = NEXT; }, 1200);
+    // replace 를 써야 방문 기록에 이 화면이 안 남습니다.
+    //  href 를 쓰면 앱에서 뒤로가기 했을 때 이 화면이 다시 튀어나옵니다.
+    setTimeout(function () { location.replace(NEXT); }, 1200);
   }
+
+  // 뒤로가기로 이 화면이 되살아나는 경우 대비.
+  //  브라우저는 뒤로가기 시 스크립트를 다시 돌리지 않고 화면을 그대로 복원합니다(bfcache).
+  //  그래서 여기서 한 번 더 확인해 성함이 있으면 앱으로 돌려보냅니다.
+  window.addEventListener('pageshow', function (ev) {
+    if (ev.persisted && load()) location.replace(NEXT);
+  });
 
   // 한글 이름만 받습니다. 숫자·영문·한자·특수기호·공백은 전부 막습니다.
   // (타이핑 중인 자모 ㄱ~ㅎ, ㅏ~ㅣ 는 살려둬야 글자가 안 깨집니다)
