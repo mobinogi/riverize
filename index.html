@@ -2114,6 +2114,14 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         for (const key in params) url.searchParams.set(key, params[key]);
         url.searchParams.set('dev', getDeviceLabel());   // 기기 정보 동봉
 
+        // welcome.html 에서 입력받아 이 기기에 남겨둔 성함을 같이 보냅니다.
+        //  'who' 라는 새 이름을 쓰는 이유: user/name/manager 는 이미 다른 뜻으로
+        //  쓰이고 있어서, 그 이름을 재사용하면 거래처 조회 같은 기능이 망가집니다.
+        try {
+            const me = localStorage.getItem('gangseo.user');
+            if (me) url.searchParams.set('who', me);
+        } catch (e) { /* 저장소가 막혀 있으면 그냥 안 보냅니다 */ }
+
         const response = await fetch(url.toString());
         const text = await response.text();
 
