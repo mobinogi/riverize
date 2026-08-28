@@ -3581,6 +3581,123 @@ function deleteHolidaySetting() {
         완료
     </button>
 </div>
+<!-- ── 뒤로가기 처리 ────────────────────────────────────────────────
+     지도·모달·탭은 별도 페이지가 아니라서 방문 기록을 안 남깁니다.
+     그래서 뒤로가기 제스처가 곧장 앱 종료로 이어졌습니다.
+     화면을 열면 기록을 하나 쌓고, 뒤로가기가 오면 그 화면을 닫습니다.
+     기존 함수는 손대지 않고 겉을 감싸기만 합니다.
+──────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  var byId = function (id) { return document.getElementById(id); };
+  var visible = function (id) {
+    var el = byId(id);
+    return !!el && !el.classList.contains('hidden');
+  };
+  var slidUp = function (id) {   // 아래에서 올라오는 시트류
+    var el = byId(id);
+    return !!el && !el.classList.contains('translate-y-full');
+  };
+
+  // 위에 있는 것부터 닫습니다. (모달이 겹쳐 있으면 맨 위 것만)
+  var LAYERS = [
+    { name: 'nav',     open: function () { return slidUp('nav-confirm-modal'); },    close: 'closeNavPrompt' },
+    { name: 'del',     open: function () { return slidUp('delete-confirm-modal'); }, close: 'closeDeletePrompt' },
+    { name: 'report',  open: function () { return visible('report-option-modal'); }, close: 'closeReportOptionModal' },
+    { name: 'confirm', open: function () { return visible('confirm-modal'); },       close: 'closeModal' },
+    { name: 'client',  open: function () { return visible('add-client-modal'); },    close: 'closeAddClientModal' },
+    { name: 'quick',   open: function () { return visible('quick-entry-modal'); },   close: 'closeQuickEntryModal' },
+    { name: 'map',     open: function () { return visible('map-overlay'); },         close: 'closeMapOverlay' }
+  ];
+
+  var closingByBack = false;   // 지금 닫는 게 뒤로가기 때문인지
+
+  function topOpenLayer() {
+    for (var i = 0; i < LAYERS.length; i++) {
+      try { if (LAYERS[i].open()) return LAYERS[i]; } catch (e) {}
+    }
+    return null;
+  }
+
+  function pushMark(name) {
+    try { history.pushState({ riverBack: name }, ''); } catch (e) {}
+  }
+  function popMark() {
+    try { if (history.state && history.state.riverBack) history.back(); } catch (e) {}
+  }
+
+  // 여는 함수를 감싸서, 실제로 열렸을 때만 기록을 쌓습니다.
+  function wrapOpen(fnName, layerName, isOpenNow) {
+    var orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function () {
+      var r = orig.apply(this, arguments);
+      try { if (isOpenNow()) pushMark(layerName); } catch (e) {}
+      return r;
+    };
+  }
+
+  // 닫는 함수(X 버튼 등)를 감싸서, 쌓아둔 기록도 같이 걷어냅니다.
+  function wrapClose(fnName) {
+    var orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function () {
+      var r = orig.apply(this, arguments);
+      if (!closingByBack) popMark();
+      return r;
+    };
+  }
+
+  LAYERS.forEach(function (L) { wrapClose(L.close); });
+
+  wrapOpen('openMapOverlay',        'map',     function () { return visible('map-overlay'); });
+  wrapOpen('openQuickEntryModal',   'quick',   function () { return visible('quick-entry-modal'); });
+  wrapOpen('openModal',             'confirm', function () { return visible('confirm-modal'); });
+  wrapOpen('openManualAddModal',    'client',  function () { return visible('add-client-modal'); });
+  wrapOpen('openRegistrationModal', 'client',  function () { return visible('add-client-modal'); });
+  wrapOpen('openReportOptionModal', 'report',  function () { return visible('report-option-modal'); });
+  wrapOpen('openNavPrompt',         'nav',     function () { return slidUp('nav-confirm-modal'); });
+  wrapOpen('openDeletePrompt',      'del',     function () { return slidUp('delete-confirm-modal'); });
+
+  // 탭도 한 층으로 봅니다. 날짜 검색에서 뒤로가기 하면 일보 작성으로 돌아갑니다.
+  (function () {
+    var orig = window.changeTab;
+    if (typeof orig !== 'function') return;
+    window.changeTab = function (tabName) {
+      var r = orig.apply(this, arguments);
+      try {
+        if (tabName === 'review' && visible('content-review')) {
+          if (!(history.state && history.state.riverBack === 'tab')) pushMark('tab');
+        } else if (tabName === 'write' && !closingByBack) {
+          if (history.state && history.state.riverBack === 'tab') history.back();
+        }
+      } catch (e) {}
+      return r;
+    };
+  })();
+
+  window.addEventListener('popstate', function () {
+    closingByBack = true;
+    try {
+      var L = topOpenLayer();
+      if (L && typeof window[L.close] === 'function') { window[L.close](); return; }
+
+      // 열린 화면이 없고 날짜 검색 탭이면 일보 작성으로
+      if (visible('content-review') && typeof window.changeTab === 'function') {
+        window.changeTab('write');
+        return;
+      }
+
+      // 더 닫을 게 없으면 기록을 쌓지 않습니다.
+      // 그래서 다음 뒤로가기에 앱이 정상적으로 종료됩니다.
+    } finally {
+      closingByBack = false;
+    }
+  });
+})();
+</script>
 </body>
 </html>
 
