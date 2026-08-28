@@ -3670,7 +3670,9 @@ function deleteHolidaySetting() {
     var timeCls = 'text-[11px] text-gray-400';
 
     // 좁은 화면(앱)에서는 이름과 시각을 윗줄에 따로 둡니다. 한 줄에 다 안 들어갑니다.
-    var head = '<div class="flex items-baseline justify-between px-6 pt-2 md:hidden">' +
+    //  둘을 양 끝으로 벌리면 사이가 너무 떠서 한 쌍으로 안 읽힙니다.
+    //  '김원대 오전 7:15' 처럼 붙여 하나의 이름표로 보이게 합니다.
+    var head = '<div class="flex items-baseline gap-2 px-6 pt-2 md:hidden">' +
                  '<span class="' + nameCls + '">' + name + '</span>' +
                  '<span class="' + timeCls + '">' + when + '</span>' +
                '</div>';
