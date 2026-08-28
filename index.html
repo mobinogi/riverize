@@ -3624,8 +3624,21 @@ function deleteHolidaySetting() {
   function pushMark(name) {
     try { history.pushState({ riverBack: name }, ''); } catch (e) {}
   }
+  // 우리가 스스로 부르는 뒤로가기.
+  //  history.back() 은 신호(popstate)를 '나중에' 보내기 때문에,
+  //  그때는 closingByBack 이 이미 풀려 있어 사용자가 누른 것처럼 보입니다.
+  //  그래서 다음에 오는 신호 한 번만 무시하도록 따로 표시해 둡니다.
+  //  (이게 없으면 모달을 취소했을 뿐인데 그 아래 지도까지 같이 닫혔습니다)
+  var skipNextPop = false;
   function popMark() {
-    try { if (history.state && history.state.riverBack) history.back(); } catch (e) {}
+    try {
+      if (history.state && history.state.riverBack) {
+        skipNextPop = true;
+        history.back();
+        // 어떤 이유로 신호가 안 오면 표시가 남아 진짜 뒤로가기를 삼킬 수 있어 풀어줍니다.
+        setTimeout(function () { skipNextPop = false; }, 400);
+      }
+    } catch (e) { skipNextPop = false; }
   }
 
   // 여는 함수를 감싸서, 실제로 열렸을 때만 기록을 쌓습니다.
@@ -3671,7 +3684,7 @@ function deleteHolidaySetting() {
         if (tabName === 'review' && visible('content-review')) {
           if (!(history.state && history.state.riverBack === 'tab')) pushMark('tab');
         } else if (tabName === 'write' && !closingByBack) {
-          if (history.state && history.state.riverBack === 'tab') history.back();
+          if (history.state && history.state.riverBack === 'tab') popMark();
         }
       } catch (e) {}
       return r;
@@ -3722,6 +3735,9 @@ function deleteHolidaySetting() {
   })();
 
   window.addEventListener('popstate', function () {
+    // 우리가 스스로 부른 뒤로가기면 아무것도 하지 않습니다.
+    if (skipNextPop) { skipNextPop = false; return; }
+
     closingByBack = true;
     try {
       var L = topOpenLayer();
