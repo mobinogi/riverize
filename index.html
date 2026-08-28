@@ -3675,14 +3675,22 @@ function deleteHolidaySetting() {
                  '<span class="' + timeCls + '">' + when + '</span>' +
                '</div>';
 
-    var cell = function (v) {
+    var cell = function (v, cls) {
       return '<div class="flex-1 text-center text-lg font-bold ' +
-             (wrote ? 'text-gray-800' : 'text-gray-300') + ' tabular-nums">' + v + '</div>';
+             (cls || (wrote ? 'text-gray-800' : 'text-gray-300')) + ' tabular-nums">' + v + '</div>';
     };
 
     var out = wrote ? (n(rec.st) + n(rec.rice)) : '-';
     var ret = wrote ? n(rec.empty) : '-';
-    var bal = wrote ? n(rec.total)  : '-';
+
+    // 출고·반납은 안 썼으면 진짜로 없는 값이라 하이픈입니다.
+    //  잔량은 다릅니다. 안 썼어도 어제 잔량이 그대로 이월돼 파베에 남아 있습니다.
+    //  (time 이 '자동이월' 인 경우)
+    //  이걸 하이픈으로 지우면 맨 아래 합계가 위 두 줄과 안 맞아 보입니다.
+    //  써 넣은 값이 아니라는 뜻으로 흐리게만 둡니다. 155 + 111 = 266 이 눈에 보이도록.
+    var hasBal = rec && rec.total !== undefined && rec.total !== null && rec.total !== '';
+    var bal    = hasBal ? n(rec.total) : '-';
+    var balCls = (!wrote && hasBal) ? 'text-gray-400' : null;
 
     // 넓은 화면(웹)에서는 같은 줄 양 끝에 얹습니다.
     //  숫자 세 칸은 그대로 3등분이라 아래 합계 줄과 세로줄이 계속 맞습니다.
@@ -3690,7 +3698,7 @@ function deleteHolidaySetting() {
     return head +
            '<div class="relative flex flex-row items-center w-full pb-1 md:py-1.5">' +
              '<span class="hidden md:block absolute left-6 ' + nameCls + '">' + name + '</span>' +
-             cell(out) + cell(ret) + cell(bal) +
+             cell(out) + cell(ret) + cell(bal, balCls) +
              '<span class="hidden md:block absolute right-6 ' + timeCls + '">' + when + '</span>' +
            '</div>';
   }

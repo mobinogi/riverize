@@ -1,0 +1,122 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────
+//  강서 도매소 · 파이어스토어 접근 규칙
+//
+//  읽기는 열어 둡니다 (사장님 판단: 빈박스 수량이라 봐도 무해).
+//  대신 지우기를 완전히 막고, 쓰기는 '앱이 실제로 하는 모양'만 통과시킵니다.
+//
+//  ※ 콘솔에서 붙여넣고 [게시] 하면 즉시 적용됩니다.
+//    문법이 틀리면 게시가 거부되므로 잘못 붙여넣어도 사고는 안 납니다.
+//    문제가 생기면 규칙 화면의 '기록' 탭에서 이전 버전으로 되돌릴 수 있습니다.
+// ─────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 한국 날짜 계산 ──────────────────────────────────────
+    //  request.time 은 세계표준시(UTC)입니다. 한국은 9시간 빠릅니다.
+    //  이 보정을 빼먹으면 새벽 0시~오전 9시 사이 저장이 전부 거부됩니다.
+    function kst() {
+      return request.time + duration.value(9, 'h');
+    }
+    function pad(n) {
+      return n < 10 ? '0' + string(n) : string(n);
+    }
+    function ymd(t) {
+      return string(t.year()) + '-' + pad(t.month()) + '-' + pad(t.day());
+    }
+
+    function isNum(v) {
+      return v is int || v is float;
+    }
+
+    // 담당자 한 명의 값이 정상 모양인지 봅니다.
+    //  ★ 담당자가 늘면 아래 peopleOk() 에 한 줄만 추가하면 됩니다.
+    function personOk(k) {
+      return !(k in request.resource.data) || (
+        request.resource.data[k].keys().hasOnly(['st', 'rice', 'empty', 'total', 'time'])
+        && isNum(request.resource.data[k].st)
+        && isNum(request.resource.data[k].rice)
+        && isNum(request.resource.data[k].empty)
+        && isNum(request.resource.data[k].total)
+        && request.resource.data[k].time is string
+        && request.resource.data[k].time.size() <= 40
+        && request.resource.data[k].st    >= 0 && request.resource.data[k].st    <= 100000
+        && request.resource.data[k].rice  >= 0 && request.resource.data[k].rice  <= 100000
+        && request.resource.data[k].empty >= 0 && request.resource.data[k].empty <= 100000
+        && request.resource.data[k].total >= -1000000
+        && request.resource.data[k].total <=  1000000
+      );
+    }
+
+    function peopleOk() {
+      return personOk('kim')
+          && personOk('jung');
+      // 세 번째 담당자가 생기면 여기에  && personOk('새이름')  을 추가하세요.
+    }
+
+    function factoryOk() {
+      return !('factory' in request.resource.data) || (
+        request.resource.data.factory.keys().hasOnly(['balance', 'note'])
+        && isNum(request.resource.data.factory.balance)
+        && request.resource.data.factory.balance >= -1000000
+        && request.resource.data.factory.balance <=  1000000
+        && (!('note' in request.resource.data.factory) || (
+              request.resource.data.factory.note is string
+              && request.resource.data.factory.note.size() <= 100
+           ))
+      );
+    }
+
+    function stampOk() {
+      return !('last_updated' in request.resource.data)
+          || request.resource.data.last_updated is timestamp;
+    }
+
+
+    // ── 일보 문서 : daily_sales/2026-08-29 ──────────────────
+    match /daily_sales/{dateId} {
+
+      // 읽기는 그대로 열어 둡니다. (차트가 전체 기간을 읽어야 함)
+      allow read: if true;
+
+      // ★ 이 한 줄이 핵심입니다.
+      //   앱은 문서를 지우는 기능이 아예 없으므로, 막아도 잃는 게 없습니다.
+      //   210일치 기록이 통째로 날아가는 사고가 이걸로 사라집니다.
+      allow delete: if false;
+
+      allow create, update:
+           // ① 문서 이름이 반드시 날짜여야 합니다.
+           //    아무 이름으로 문서를 무한정 만들어 넣는 걸 막습니다.
+           dateId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+
+           // ② 오늘 앞뒤 하루만 쓸 수 있습니다.
+           //    문서 이름이 YYYY-MM-DD 라 글자 그대로 비교해도 날짜순이 맞습니다.
+           //    지난 기록을 뒤에서 조용히 고치는 걸 막습니다.
+           //    (기기 시계가 조금 틀어져도 되도록 ±1일 여유를 뒀습니다)
+           && dateId >= ymd(kst() - duration.value(1, 'd'))
+           && dateId <= ymd(kst() + duration.value(1, 'd'))
+
+           // ③ 아는 칸 말고는 만들 수 없습니다.
+           //    merge 저장이라 여기 걸리는 건 '합쳐진 최종 문서'입니다.
+           //    즉 몰래 끼워 넣은 칸이 쌓이지 않습니다.
+           && request.resource.data.keys().hasOnly(['kim', 'jung', 'factory', 'last_updated'])
+
+           // ④ 값이 숫자여야 하고, 범위와 길이가 상식적이어야 합니다.
+           //    거대한 글자를 밀어 넣어 요금을 불리는 걸 막습니다.
+           && peopleOk()
+           && factoryOk()
+           && stampOk();
+    }
+
+
+    // ── 그 밖의 모든 곳 ─────────────────────────────────────
+    //  규칙에 안 적힌 경로는 원래 자동으로 막힙니다.
+    //  (허용만 효력이 있고 거부는 효력이 없는 구조라 이 줄은 '의도 표시'입니다)
+    //  daily_sales 밑의 하위 컬렉션도 여기 해당돼 막힙니다.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
