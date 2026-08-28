@@ -2085,9 +2085,8 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // [로그용] 이 브라우저가 무슨 기기인지 한 줄로 만들어 둡니다.
     //  Apps Script의 doGet(e)에는 HTTP 헤더가 안 들어오기 때문에(e.headers 없음)
     //  서버는 기기를 알 수 없습니다. 그래서 브라우저가 직접 알려줍니다.
-    let _deviceLabel = null;
-    function getDeviceLabel() {
-        if (_deviceLabel) return _deviceLabel;
+    // UserAgent 글자만 읽는 방식. 아이폰·PC는 이걸로 충분합니다.
+    function deviceLabelFromUA() {
         const ua = navigator.userAgent || '';
         let kind = 'PC';
         let model = '';
@@ -2096,23 +2095,47 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         else if (/iPad/i.test(ua)) { kind = '모바일'; model = 'iPad'; }
         else if (/Android/i.test(ua)) {
             kind = '모바일';
-            // "Android 14; SM-S928N) AppleWebKit..." 에서 기종 코드만 뽑습니다.
             const m = ua.match(/Android[^;)]*;\s*([^;)]+?)\s*(?:Build\/|\)|;)/i);
             model = m ? m[1].trim().replace(/\s*wv$/i, '') : 'Android';
+            // 요즘 크롬은 개인정보 보호를 위해 기종 자리에 무조건 'K' 를 넣어 보냅니다.
+            // (Mozilla/5.0 (Linux; Android 10; K) ...) 그건 기종이 아니므로 버립니다.
+            if (model === 'K' || model === '') model = 'Android';
         }
         else if (/Windows/i.test(ua)) model = 'Windows';
         else if (/Macintosh|Mac OS X/i.test(ua)) model = 'Mac';
         else if (/Linux/i.test(ua)) model = 'Linux';
 
-        _deviceLabel = model ? kind + '(' + model + ')' : kind;
-        return _deviceLabel;
+        return model ? kind + '(' + model + ')' : kind;
+    }
+
+    // 진짜 기종을 물어보는 방식.
+    //  안드로이드 크롬은 UserAgent 에서 기종을 지우는 대신, 이 API 로만 알려줍니다.
+    //  (HTTPS 에서만 동작 — 깃헙 페이지는 해당됨. 아이폰 사파리엔 이 API 가 없어 UA 로 넘어갑니다)
+    async function resolveDeviceLabel() {
+        try {
+            const uad = navigator.userAgentData;
+            if (uad && uad.getHighEntropyValues) {
+                const hints = await uad.getHighEntropyValues(['model', 'platform']);
+                const kind = uad.mobile ? '모바일' : 'PC';
+                const model = (hints.model || hints.platform || '').trim();
+                if (model) return kind + '(' + model + ')';
+            }
+        } catch (e) { /* 못 물어보면 아래 방식으로 */ }
+        return deviceLabelFromUA();
+    }
+
+    // 한 번만 알아내고 계속 재사용합니다.
+    let _deviceLabelPromise = null;
+    function getDeviceLabel() {
+        if (!_deviceLabelPromise) _deviceLabelPromise = resolveDeviceLabel();
+        return _deviceLabelPromise;
     }
 
     async function callAppsScript(action, params = {}) {
         const url = new URL(API_URL);
         url.searchParams.set('action', action);
         for (const key in params) url.searchParams.set(key, params[key]);
-        url.searchParams.set('dev', getDeviceLabel());   // 기기 정보 동봉
+        url.searchParams.set('dev', await getDeviceLabel());   // 기기 정보 동봉
 
         // welcome.html 에서 입력받아 이 기기에 남겨둔 성함을 같이 보냅니다.
         //  'who' 라는 새 이름을 쓰는 이유: user/name/manager 는 이미 다른 뜻으로
