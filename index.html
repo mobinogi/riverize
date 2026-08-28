@@ -1,7 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
+  <meta charset="utf-8">
   <title>강서 도매소</title>
+
+  <!-- ── 성함 확인 ───────────────────────────────────────────────
+       성함이 없으면 welcome.html 로 보냅니다.
+       화면이 그려지기 전에 실행되므로 앱이 잠깐 비쳤다 사라지지 않습니다.
+       manifest 를 건드리지 않아도 PWA·북마크·직접입력 모두 여기서 걸립니다.
+       (localStorage 가 막힌 브라우저에서는 그냥 통과시킵니다 — 앱을 못 쓰게 만들지 않기 위해) -->
+  <script>
+    (function () {
+      try {
+        if (!localStorage.getItem('gangseo.user')) {
+          location.replace('welcome.html');
+        }
+      } catch (e) { /* 저장소가 막혀 있으면 검문 없이 진행 */ }
+    })();
+  </script>
+
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://apis.openapi.sk.com https://*.tmap.co.kr https://cdn.jsdelivr.net https://www.gstatic.com https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com;
@@ -17,16 +34,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="truck.css">
-  <link rel="stylesheet" href="weather-animation.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/truck.css">
+  <link rel="stylesheet" href="css/weather-animation.css">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
-  <script src="sidebar.js"></script>
-  <script src="oilprice.js"></script>
-  <script src="weather.js"></script>
-  <script src="newsTicker.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/oilprice.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="chart1.js"></script>
+  <script src="js/chart1.js"></script>
   <script>
   tailwind.config = {
     darkMode: 'class' 
@@ -198,7 +215,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
           document.getElementById('qe-result-content').classList.remove('hidden');
           
           if(typeof window.callAppsScript === 'function') {
-              window.callAppsScript('writeDailyLog', { manager, val1: num1, val2: num2, val3: num3 });
+              // [수정] 기다리지 않고 던지면 실패해도 아무도 모릅니다. 결과를 반드시 확인합니다.
+              try {
+                  const sheetRes = await window.callAppsScript('writeDailyLog', {
+                      manager,
+                      val1: num1,
+                      val2: num2,
+                      val3: num3   // 빈칸은 0 = '발주 없음' (파베와 동일 규칙)
+                  });
+                  if (!sheetRes || sheetRes.status !== 'success') {
+                      showToast("파베는 저장됨 / 스프레드시트 실패: " + ((sheetRes && sheetRes.message) || "응답 없음"), "error");
+                  }
+              } catch (sheetErr) {
+                  showToast("파베는 저장됨 / 스프레드시트 전송 실패: " + sheetErr.message, "error");
+              }
           }
           val1Input.value = ""; val2Input.value = ""; val3Input.value = "";
 
@@ -400,7 +430,7 @@ function mergeSelectedBoxes() {
             <div id="view-write" class="view-content space-y-6">
                 
                 <h1 class="text-3xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center">
-                  <img src="logo.png" alt="생탁 로고" class="h-14 w-auto mr-3 select-none pointer-events-none">
+                  <img src="img/logo.png" alt="생탁 로고" class="h-14 w-auto mr-3 select-none pointer-events-none">
                   강서 도매소
                 </h1>
                <div class="flex mb-0"> 
@@ -962,12 +992,12 @@ function mergeSelectedBoxes() {
         </div>
     </div>
 </div>
-<script src="quickEntry.js"></script>
+<script src="js/quickEntry.js"></script>
 <script>
     // ===============================================
     // 1. 전역 변수 및 초기 설정
     // ===============================================
-    const API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbzycbvWPOowIqHxIN2-EWqHb3kRXFHBzZhv7J5QRsVFVWSm3q4ho5e2_0vFFxKEIOAn/exec"; 
     const APP_KEY = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
   
 // ===============================================
@@ -1029,12 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchReportsForMonth(currentYear, currentMonth, true);
     }
     if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
-    
-// 3. ★ 데이터 로드 (보고서 & 공장현황) - 기존 코드 유지
-    if (typeof fetchReportsForMonth === 'function') {
-        fetchReportsForMonth(currentYear, currentMonth, true);
-    }
-    if (typeof updateFactoryStatus === 'function') updateFactoryStatus();
+    // [속도] 아래에 같은 호출이 한 벌 더 붙어 있어서 매번 요청이 2배로 나갔습니다. 제거했습니다.
 
     // ▼▼▼ [여기!] 아래 코드를 붙여넣으세요 ▼▼▼
     
@@ -1431,7 +1456,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         // 파란 핀 찍기
         tempMarker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(lat, lon),
-            icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", 
+            icon: "img/pin_b_m_a.png", 
             map: currentMapInstance
         });
         
@@ -1716,7 +1741,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             currentMapInstance.setZoom(16); 
             currentMapInstance.panBy(120, 0); 
             if (tempMarker) tempMarker.setMap(null);
-            tempMarker = new Tmapv2.Marker({ position: new Tmapv2.LatLng(lat, lon), icon: "https://mobinogi.github.io/riverize/pin_b_m_a.png", map: currentMapInstance });
+            tempMarker = new Tmapv2.Marker({ position: new Tmapv2.LatLng(lat, lon), icon: "img/pin_b_m_a.png", map: currentMapInstance });
             findAddressAndShowBubble(lat, lon, client.name, client.address, 'navigate');
         } catch (e) { showToast("위치 정보 로드 실패", "error"); }
     }
@@ -1991,7 +2016,7 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         }
 
         const appKey = "QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0";
-        const markerImageUrl = markerColors[user] === 'red' ? 'pin_r_m_s.png' : 'pin_b_m_s.png';
+        const markerImageUrl = markerColors[user] === 'red' ? 'img/pin_r_m_s.png' : 'img/pin_b_m_s.png';
         
         // TMAP API URL (Fetch용)
         const url = `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&coordType=WGS84GEO&fullAddr=${encodeURIComponent(address)}&appKey=${appKey}`;
@@ -2057,12 +2082,55 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
       fetchReportsForMonth(currentYear, currentMonth);
     }
   
+    // [로그용] 이 브라우저가 무슨 기기인지 한 줄로 만들어 둡니다.
+    //  Apps Script의 doGet(e)에는 HTTP 헤더가 안 들어오기 때문에(e.headers 없음)
+    //  서버는 기기를 알 수 없습니다. 그래서 브라우저가 직접 알려줍니다.
+    let _deviceLabel = null;
+    function getDeviceLabel() {
+        if (_deviceLabel) return _deviceLabel;
+        const ua = navigator.userAgent || '';
+        let kind = 'PC';
+        let model = '';
+
+        if (/iPhone/i.test(ua)) { kind = '모바일'; model = 'iPhone'; }
+        else if (/iPad/i.test(ua)) { kind = '모바일'; model = 'iPad'; }
+        else if (/Android/i.test(ua)) {
+            kind = '모바일';
+            // "Android 14; SM-S928N) AppleWebKit..." 에서 기종 코드만 뽑습니다.
+            const m = ua.match(/Android[^;)]*;\s*([^;)]+?)\s*(?:Build\/|\)|;)/i);
+            model = m ? m[1].trim().replace(/\s*wv$/i, '') : 'Android';
+        }
+        else if (/Windows/i.test(ua)) model = 'Windows';
+        else if (/Macintosh|Mac OS X/i.test(ua)) model = 'Mac';
+        else if (/Linux/i.test(ua)) model = 'Linux';
+
+        _deviceLabel = model ? kind + '(' + model + ')' : kind;
+        return _deviceLabel;
+    }
+
     async function callAppsScript(action, params = {}) {
         const url = new URL(API_URL);
         url.searchParams.set('action', action);
         for (const key in params) url.searchParams.set(key, params[key]);
+        url.searchParams.set('dev', getDeviceLabel());   // 기기 정보 동봉
+
         const response = await fetch(url.toString());
-        return await response.json();
+        const text = await response.text();
+
+        // [수정] 서버가 JSON 대신 HTML(오류·안내 페이지)을 줄 때가 있습니다.
+        //  일보 생성처럼 오래 걸리는 작업에서 종종 생기는데,
+        //  예전에는 여기서 "Unexpected token '<'" 라는 알 수 없는 오류가 떴습니다.
+        //  중요한 건 그 경우에도 서버 작업은 이미 끝나 있는 경우가 많다는 점입니다.
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('[서버가 JSON이 아닌 응답을 보냄]', action, text.slice(0, 300));
+            return {
+                status: 'error',
+                notJson: true,
+                message: '서버 응답을 받지 못했습니다.\n작업은 처리되었을 수 있으니 새로고침 후 확인해 주세요.'
+            };
+        }
     }
 
     async function generateTodayReport() {
@@ -3207,9 +3275,12 @@ function deleteHolidaySetting() {
 
         <div id="qe-form-content">
             
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
-                <span>🔥</span> 간편 일보 작성
+            <h2 class="text-2xl font-bold mb-2 flex items-center gap-2 text-white">
+                <span id="qe-title-icon">🔥</span> <span id="qe-title-text">간편 일보 작성</span>
             </h2>
+
+            <!-- 오늘 이미 기록이 있을 때 뜨는 안내 (수정 모드) -->
+            <div id="qe-edit-hint" class="hidden mb-4 px-3 py-2 rounded-xl text-xs leading-relaxed bg-amber-500/20 border border-amber-400/40 text-amber-100"></div>
 
             <div class="mb-6">
                 <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">
@@ -3235,24 +3306,45 @@ function deleteHolidaySetting() {
                     <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
                         1. 생탁 금일 출고
                     </label>
-                    <input type="number" id="qe-input-1" placeholder="0" 
-                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <div class="flex items-stretch gap-2">
+                        <!-- 이전 입력값 (수정 모드에서만 보임) — 박스 없이 텍스트만, 폭 3 -->
+                        <div id="qe-prev-1" class="hidden w-[30%] shrink-0 flex items-center justify-end gap-1.5 pr-1">
+                            <span class="text-[10px] font-bold text-gray-500">이전</span>
+                            <span id="qe-prev-1-val" class="text-gray-300 font-bold text-lg truncate">-</span>
+                        </div>
+                        <input type="number" id="qe-input-1" placeholder="0" 
+                               class="flex-1 min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
                         2. 국산쌀 생탁 출고
                     </label>
-                    <input type="number" id="qe-input-2" placeholder="0" 
-                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <div class="flex items-stretch gap-2">
+                        <!-- 이전 입력값 (수정 모드에서만 보임) — 박스 없이 텍스트만, 폭 3 -->
+                        <div id="qe-prev-2" class="hidden w-[30%] shrink-0 flex items-center justify-end gap-1.5 pr-1">
+                            <span class="text-[10px] font-bold text-gray-500">이전</span>
+                            <span id="qe-prev-2-val" class="text-gray-300 font-bold text-lg truncate">-</span>
+                        </div>
+                        <input type="number" id="qe-input-2" placeholder="0" 
+                               class="flex-1 min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">
                         3. 미출고 잔량
                     </label>
-                    <input type="number" id="qe-input-3" placeholder="0" 
-                           class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    <div class="flex items-stretch gap-2">
+                        <!-- 이전 입력값 (수정 모드에서만 보임) — 박스 없이 텍스트만, 폭 3 -->
+                        <div id="qe-prev-3" class="hidden w-[30%] shrink-0 flex items-center justify-end gap-1.5 pr-1">
+                            <span class="text-[10px] font-bold text-gray-500">이전</span>
+                            <span id="qe-prev-3-val" class="text-gray-300 font-bold text-lg truncate">-</span>
+                        </div>
+                        <input type="number" id="qe-input-3" placeholder="0" 
+                               class="flex-1 min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-lg outline-none focus:border-green-500/50 focus:bg-black/70 transition text-right placeholder-gray-600">
+                    </div>
                 </div>
             </div>
 

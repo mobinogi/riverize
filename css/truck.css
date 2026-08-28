@@ -217,7 +217,7 @@
     height: 40px;
     
     z-index: 1;
-    background: url('image_1d0097.png') no-repeat;
+    background: url('../img/image_1d0097.png') no-repeat;
     
     /* [3] 정렬: 박스 안에서 '왼쪽'에 붙어라! */
     background-position: left center; /* center center -> left center */

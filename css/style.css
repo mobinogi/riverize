@@ -1,32 +1,19 @@
-
-/* gmarket_font.css 파일 내용 */
-/* Nexon Lv1 Gothic 폰트 정의 (Light, Regular, Bold) */
-
-/* Light (300) */
+/* ── 웹 전체 공통 글꼴: SUIT ──────────────────────────────
+   가변 폰트 한 개로 100~900 굵기를 전부 커버합니다.
+   직접 호스팅이라 CSP(font-src 'self')에 걸리지 않습니다. */
 @font-face {
-    font-family: 'NexonLv1Gothic';
-    /* 파일명: NEXONLv1GothicLight.ttf */
-    src: url('NEXONLv1GothicLight.ttf') format('truetype');
-    font-weight: 300; 
+    font-family: 'SUIT';
+    /* 가변 폰트 인식용 3단 선언 (앞의 것부터 지원하는 브라우저가 집어감)
+       - tech(variations) : 최신 표준
+       - woff2-variations : 구형 사파리
+       - woff2            : 나머지 */
+    src: url('../fonts/SUIT-Variable.woff2') format('woff2') tech(variations),
+         url('../fonts/SUIT-Variable.woff2') format('woff2-variations'),
+         url('../fonts/SUIT-Variable.woff2') format('woff2');
+    /* ★ 이 줄이 있어야 font-weight:700 이 wght 축 700 으로 계산됩니다 (볼드 작동) */
+    font-weight: 100 900;
     font-style: normal;
-}
-
-/* Regular (400 - 기본 굵기) */
-@font-face {
-    font-family: 'NexonLv1Gothic';
-    /* 파일명: NEXONLv1GothicRegular.ttf */
-    src: url('NEXONLv1GothicRegular.ttf') format('truetype');
-    font-weight: 400; 
-    font-style: normal;
-}
-
-/* Bold (700) */
-@font-face {
-    font-family: 'NexonLv1Gothic';
-    /* 파일명: NEXONLv1GothicBold.ttf */
-    src: url('NEXONLv1GothicBold.ttf') format('truetype');
-    font-weight: 700; 
-    font-style: normal;
+    font-display: swap;
 }
 
 /* (스타일은 그대로 유지) */
@@ -40,8 +27,7 @@
     padding-bottom: constant(safe-area-inset-bottom); /* 구형 iOS 지원 */
     padding-bottom: env(safe-area-inset-bottom);      /* 최신 모바일 지원 */
      
-    /* ✅ GmarketSans로 변경 */
-    font-family: 'NexonLv1Gothic', sans-serif !important; 
+    font-family: 'SUIT', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif !important; 
     font-size: 15px; 
    }
 

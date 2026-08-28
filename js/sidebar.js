@@ -196,7 +196,7 @@ function renderConsolidatedList() {
     // 5. 링크 연결 함수 정의
     const openFunc = typeof openSalesSummary === 'function' ? 'openSalesSummary' : 'openSheetApp'; 
 
-    const iconUrl = "https://mobinogi.github.io/riverize/free-icon-text-files-72419.png"; 
+    const iconUrl = "img/free-icon-text-files-72419.png"; 
 
     // 6. 아이콘 생성 및 텍스트 수정 (폰트 크기 안정화)
     filteredFiles.forEach(file => {

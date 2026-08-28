@@ -5,7 +5,7 @@
  */
 
 // 1. [설정] API 주소
-const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycby5URDVswhQPo4sJwe2VQZxWRpDGv5F76AgHGA_AoXknJHUjVjgIbNmFT_qrQ8yDZ-2/exec";
+const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycbzycbvWPOowIqHxIN2-EWqHb3kRXFHBzZhv7J5QRsVFVWSm3q4ho5e2_0vFFxKEIOAn/exec";
 
 // 2. [통신]
 async function callCalendarApi(action, params = {}) {
