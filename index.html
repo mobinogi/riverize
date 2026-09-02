@@ -1083,6 +1083,22 @@ const markerColors = {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("🚀 앱 시작");
 
+    // [접속 기록] 누가 언제 들어왔는지 남깁니다.
+    //  지금까지 접속로그에는 '무엇을 눌렀는지'만 있고 '들어왔다'가 없었습니다.
+    //  서버에 '접속' 이라는 액션이 따로 있는 게 아니라, 화면 조작 기록에
+    //  이름만 붙여 보내는 방식입니다. 그래서 code.gs 는 손댈 필요가 없습니다.
+    //
+    //  성함이 없으면 곧 welcome 화면으로 넘어갈 참이므로 남기지 않습니다.
+    //  (담당이 '-' 인 쓸모없는 줄이 생기는 걸 막습니다)
+    try {
+      if (localStorage.getItem('gangseo.user') && typeof logClientActionAsync === 'function') {
+        // 설치한 앱으로 들어왔는지, 브라우저 주소창으로 들어왔는지 구분합니다.
+        const installed = window.matchMedia('(display-mode: standalone)').matches
+                       || window.navigator.standalone === true;
+        logClientActionAsync(installed ? '앱 접속 (설치형)' : '앱 접속 (브라우저)');
+      }
+    } catch (e) { /* 저장소가 막혀 있으면 기록 없이 진행 */ }
+
     // 1. 날짜 및 상태 표시
     const today = new Date();
     const dateEl = document.getElementById('current-date');
