@@ -217,6 +217,26 @@ async function submitQuickDailyReport() {
         });
 
         if (result.status === 'success') {
+            // [중요] 방금 서버가 오늘 일보를 만들었거나 열었습니다.
+            //  그런데 달력이 들고 있는 목록(reportsMap)은 앱을 켤 때 받아온 것이라
+            //  '오늘 일보가 생겼다'는 사실을 모릅니다.
+            //
+            //  이걸 안 알려주면, 저장 직후 '생성&열기'를 누를 때
+            //  "일보가 아직 없습니다" 라는 거짓말이 뜹니다.
+            //  (간편작성하고 1초 만에 생성&열기를 누르는 분이 계십니다)
+            //
+            //  주소는 아직 모르지만 '있다'는 사실만으로 충분합니다.
+            //  실제로 여는 건 서버가 하니까요.
+            try {
+                const t = new Date();
+                const key = t.getFullYear() + '-' +
+                            String(t.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(t.getDate()).padStart(2, '0');
+                if (typeof reportsMap === 'object' && reportsMap && !reportsMap[key]) {
+                    reportsMap[key] = { date: key, pending: true };
+                }
+            } catch (e) { /* 달력이 아직 준비 안 됐으면 그냥 넘어갑니다 */ }
+
             // 성공 시 토스트 알림 + 결과창 전환
             showToast(result.message, "success");
             showResultScreen(result);
