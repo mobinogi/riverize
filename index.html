@@ -812,7 +812,7 @@ function mergeSelectedBoxes() {
           <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
           <div class="flex justify-end space-x-3">
               <button onclick="closeModal()" class="py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">아니오</button>
-              <button id="modal-confirm-button" onclick="confirmGenerateReport()" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
+              <button id="modal-confirm-button" class="py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors">예</button>
           </div>
       </div>
   </div>
@@ -995,41 +995,7 @@ function mergeSelectedBoxes() {
   </div>
 </div>
 
-<!-- 오늘 일보가 아직 없을 때만 뜨는 확인 창.
-     이미 있으면 안 뜨고 그냥 열립니다. 평소 흐름은 그대로입니다. -->
-<div id="gen-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl transform translate-y-full transition-transform duration-300 z-[110] pb-10">
 
-  <div class="w-full flex justify-center pt-4 pb-2">
-      <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
-  </div>
-
-  <div class="px-6 pb-6 flex flex-col items-center space-y-4">
-    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-    </div>
-
-    <h3 id="gen-title" class="text-lg font-bold text-gray-900 text-center">
-      <span id="gen-target-date" class="text-green-600">오늘</span> 일보가<br>
-      아직 없습니다
-    </h3>
-
-    <p id="gen-desc" class="text-sm text-gray-500 text-center">
-      새로 만들까요?
-    </p>
-
-    <div class="flex w-full space-x-3 mt-2">
-      <button onclick="closeGenPrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
-        취소
-      </button>
-      <button id="gen-ok-btn" onclick="executeGenerate()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md">
-        만들기
-      </button>
-    </div>
-  </div>
-</div>
   <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center bg-white/95 backdrop-blur shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-5 py-3 rounded-full border border-gray-100 transition-all duration-500 opacity-0 -translate-y-10 pointer-events-none">
   <div id="toast-icon" class="mr-3 flex items-center justify-center">
     </div>
@@ -1262,7 +1228,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof setupSmoothSwipe === 'function') {
         setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
         setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
-        setupSmoothSwipe('gen-confirm-modal', closeGenPrompt);
         setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
     }
 
@@ -2054,34 +2019,40 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     }
 
     /**
+     * 오늘 일보 생성 확인.
+     *
+     * 달력에서 날짜를 눌렀을 때 뜨는 창(confirm-modal)을 그대로 씁니다.
+     * 같은 질문을 하는 창을 모양만 다르게 둘 이유가 없습니다.
+     *
      * @param {string} label  '10월 2일' 같은 날짜
      * @param {boolean} unsure  있는지 끝내 확인하지 못한 경우 true
      *   — 없다고 단정할 수 없으면 그렇게 말하지 않습니다.
      *     안 되는 걸 된다고 적는 창은 안 만드느니만 못합니다.
      */
     function openGenPrompt(label, unsure) {
-        const title = document.getElementById('gen-title');
-        const desc  = document.getElementById('gen-desc');
-        const okBtn = document.getElementById('gen-ok-btn');
         const day   = label || '오늘';
+        const title = document.getElementById('modal-title');
+        const msg   = document.getElementById('modal-message');
+        const okBtn = document.getElementById('modal-confirm-button');
 
         if (unsure) {
-            title.innerHTML = '<span class="text-green-600">' + day + '</span> 일보가<br>있는지 확인하지 못했습니다';
-            desc.textContent = '계속하면 없을 때 새로 만듭니다.';
+            title.textContent = '일보 확인 실패';
+            msg.innerHTML = '<b>' + day + '</b> 일보가 있는지 확인하지 못했습니다.<br>계속하면 없을 때 새로 만듭니다.';
             okBtn.textContent = '계속';
         } else {
-            title.innerHTML = '<span class="text-green-600">' + day + '</span> 일보가<br>아직 없습니다';
-            desc.textContent = '새로 만들까요?';
-            okBtn.textContent = '만들기';
+            title.textContent = '일보 생성 확인';
+            msg.innerHTML = '<b>' + day + '</b> 일보가 아직 없습니다.<br>새로 만들까요?';
+            okBtn.textContent = '예';
         }
 
-        document.getElementById('gen-confirm-modal').classList.remove('translate-y-full');
+        okBtn.onclick = executeGenerate;
+        openModal();
     }
     function closeGenPrompt() {
-        document.getElementById('gen-confirm-modal').classList.add('translate-y-full');
+        closeModal();
     }
     function executeGenerate() {
-        closeGenPrompt();
+        closeModal();
         doGenerateTodayReport();
     }
 
@@ -2636,7 +2607,10 @@ function renderCalendar() {
         openSheetApp(report.url);
       } else {
         const dateStr = currentYear + '년 ' + currentMonth + '월 ' + day + '일';
+        document.getElementById('modal-title').textContent = '보고서 생성 확인';
         document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
+        // 같은 창을 '생성&열기' 버튼도 쓰므로, 누를 때마다 자기 할 일을 꽂아 줍니다.
+        document.getElementById('modal-confirm-button').onclick = confirmGenerateReport;
         openModal();
       }
     }
@@ -3976,7 +3950,6 @@ function deleteHolidaySetting() {
   var LAYERS = [
     { name: 'nav',     open: function () { return slidUp('nav-confirm-modal'); },    close: 'closeNavPrompt' },
     { name: 'del',     open: function () { return slidUp('delete-confirm-modal'); }, close: 'closeDeletePrompt' },
-    { name: 'gen',     open: function () { return slidUp('gen-confirm-modal'); },    close: 'closeGenPrompt' },
     { name: 'report',  open: function () { return visible('report-option-modal'); }, close: 'closeReportOptionModal' },
     { name: 'confirm', open: function () { return visible('confirm-modal'); },       close: 'closeModal' },
     { name: 'client',  open: function () { return visible('add-client-modal'); },    close: 'closeAddClientModal' },
@@ -4045,7 +4018,6 @@ function deleteHolidaySetting() {
   wrapOpen('openReportOptionModal', 'report',  function () { return visible('report-option-modal'); });
   wrapOpen('openNavPrompt',         'nav',     function () { return slidUp('nav-confirm-modal'); });
   wrapOpen('openDeletePrompt',      'del',     function () { return slidUp('delete-confirm-modal'); });
-  wrapOpen('openGenPrompt',         'gen',     function () { return slidUp('gen-confirm-modal'); });
 
   // 탭도 한 층으로 봅니다. 날짜 검색에서 뒤로가기 하면 일보 작성으로 돌아갑니다.
   (function () {
