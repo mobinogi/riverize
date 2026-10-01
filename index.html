@@ -994,6 +994,43 @@ function mergeSelectedBoxes() {
     </div>
   </div>
 </div>
+
+<!-- 오늘 일보가 아직 없을 때만 뜨는 확인 창.
+     이미 있으면 안 뜨고 그냥 열립니다. 평소 흐름은 그대로입니다. -->
+<div id="gen-confirm-modal" class="fixed bottom-0 left-0 w-full bg-white rounded-t-2xl transform translate-y-full transition-transform duration-300 z-[110] pb-10">
+
+  <div class="w-full flex justify-center pt-4 pb-2">
+      <div class="w-14 h-1.5 bg-gray-300 rounded-full"></div>
+  </div>
+
+  <div class="px-6 pb-6 flex flex-col items-center space-y-4">
+    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+    </div>
+
+    <h3 class="text-lg font-bold text-gray-900 text-center">
+      <span id="gen-target-date" class="text-green-600">오늘</span> 일보가<br>
+      아직 없습니다
+    </h3>
+
+    <p class="text-sm text-gray-500 text-center">
+      새로 만들까요?<br>
+      어제 잔량을 이어받아 만듭니다.
+    </p>
+
+    <div class="flex w-full space-x-3 mt-2">
+      <button onclick="closeGenPrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+        취소
+      </button>
+      <button onclick="executeGenerate()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md">
+        만들기
+      </button>
+    </div>
+  </div>
+</div>
   <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] flex items-center bg-white/95 backdrop-blur shadow-[0_8px_30px_rgb(0,0,0,0.12)] px-5 py-3 rounded-full border border-gray-100 transition-all duration-500 opacity-0 -translate-y-10 pointer-events-none">
   <div id="toast-icon" class="mr-3 flex items-center justify-center">
     </div>
@@ -1226,6 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof setupSmoothSwipe === 'function') {
         setupSmoothSwipe('nav-confirm-modal', closeNavPrompt);
         setupSmoothSwipe('delete-confirm-modal', closeDeletePrompt);
+        setupSmoothSwipe('gen-confirm-modal', closeGenPrompt);
         setupSmoothSwipe('report-option-modal', closeReportOptionModal, 'ro-sheet');
     }
 
@@ -2016,6 +2054,18 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         deleteTargetClient = null;
     }
 
+    function openGenPrompt(label) {
+        document.getElementById('gen-target-date').textContent = label || '오늘';
+        document.getElementById('gen-confirm-modal').classList.remove('translate-y-full');
+    }
+    function closeGenPrompt() {
+        document.getElementById('gen-confirm-modal').classList.add('translate-y-full');
+    }
+    function executeGenerate() {
+        closeGenPrompt();
+        doGenerateTodayReport();
+    }
+
     async function executeDelete() {
         if (!deleteTargetClient || !deleteTargetUser) return;
         const name = deleteTargetClient.name, user = deleteTargetUser;
@@ -2220,7 +2270,42 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         }
     }
 
+    /**
+     * 생성&열기 버튼.
+     *
+     * 지금까지는 누르는 즉시 서버가 '없으면 만들어' 버렸습니다.
+     * 발주가 없는 날 무심코 누르면 빈 일보가 생깁니다.
+     *
+     * 그렇다고 "있나요?" 를 서버에 먼저 물으면 매번 1.6초가 더 붙습니다.
+     * 달력이 이미 그 달 목록을 받아와 두었으므로(reportsMap) 그걸 봅니다.
+     * 공짜이고, 이미 있는 날은 지금과 똑같이 바로 열립니다.
+     *
+     * 달력이 아직 그 달을 안 받아왔으면 '모르는' 상태이므로 묻지 않고 진행합니다.
+     * 반대로 목록이 조금 낡아 '없다'고 잘못 알더라도, 확인을 누르면
+     * 서버가 있는 파일을 그대로 열어줍니다. (락과 ID 기억 덕분에 중복이 안 생깁니다)
+     */
     async function generateTodayReport() {
+        try {
+            const t = new Date();
+            const y = t.getFullYear();
+            const m = t.getMonth() + 1;
+            const monthKey = y + '-' + m;                       // 그 달을 받아왔는지 표시
+            const dayKey   = y + '-' + String(m).padStart(2, '0') +
+                                 '-' + String(t.getDate()).padStart(2, '0');
+
+            const monthLoaded = (reportsMap && reportsMap[monthKey] === 'completed');
+            const exists      = !!(reportsMap && reportsMap[dayKey]);
+
+            if (monthLoaded && !exists) {
+                openGenPrompt(m + '월 ' + t.getDate() + '일');
+                return;
+            }
+        } catch (e) { /* 판단이 안 되면 그냥 진행합니다 */ }
+
+        doGenerateTodayReport();
+    }
+
+    async function doGenerateTodayReport() {
         const newWindow = getMobileOS() === "Other" ? window.open('', '_blank') : null;
         showLoader('새 일일 보고서 배송 중...', true);
     
@@ -3851,6 +3936,7 @@ function deleteHolidaySetting() {
   var LAYERS = [
     { name: 'nav',     open: function () { return slidUp('nav-confirm-modal'); },    close: 'closeNavPrompt' },
     { name: 'del',     open: function () { return slidUp('delete-confirm-modal'); }, close: 'closeDeletePrompt' },
+    { name: 'gen',     open: function () { return slidUp('gen-confirm-modal'); },    close: 'closeGenPrompt' },
     { name: 'report',  open: function () { return visible('report-option-modal'); }, close: 'closeReportOptionModal' },
     { name: 'confirm', open: function () { return visible('confirm-modal'); },       close: 'closeModal' },
     { name: 'client',  open: function () { return visible('add-client-modal'); },    close: 'closeAddClientModal' },
@@ -3919,6 +4005,7 @@ function deleteHolidaySetting() {
   wrapOpen('openReportOptionModal', 'report',  function () { return visible('report-option-modal'); });
   wrapOpen('openNavPrompt',         'nav',     function () { return slidUp('nav-confirm-modal'); });
   wrapOpen('openDeletePrompt',      'del',     function () { return slidUp('delete-confirm-modal'); });
+  wrapOpen('openGenPrompt',         'gen',     function () { return slidUp('gen-confirm-modal'); });
 
   // 탭도 한 층으로 봅니다. 날짜 검색에서 뒤로가기 하면 일보 작성으로 돌아갑니다.
   (function () {
