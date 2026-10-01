@@ -1011,12 +1011,12 @@ function mergeSelectedBoxes() {
         </svg>
     </div>
 
-    <h3 class="text-lg font-bold text-gray-900 text-center">
+    <h3 id="gen-title" class="text-lg font-bold text-gray-900 text-center">
       <span id="gen-target-date" class="text-green-600">오늘</span> 일보가<br>
       아직 없습니다
     </h3>
 
-    <p class="text-sm text-gray-500 text-center">
+    <p id="gen-desc" class="text-sm text-gray-500 text-center">
       새로 만들까요?
     </p>
 
@@ -1024,7 +1024,7 @@ function mergeSelectedBoxes() {
       <button onclick="closeGenPrompt()" class="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
         취소
       </button>
-      <button onclick="executeGenerate()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md">
+      <button id="gen-ok-btn" onclick="executeGenerate()" class="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-md">
         만들기
       </button>
     </div>
@@ -2053,8 +2053,28 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
         deleteTargetClient = null;
     }
 
-    function openGenPrompt(label) {
-        document.getElementById('gen-target-date').textContent = label || '오늘';
+    /**
+     * @param {string} label  '10월 2일' 같은 날짜
+     * @param {boolean} unsure  있는지 끝내 확인하지 못한 경우 true
+     *   — 없다고 단정할 수 없으면 그렇게 말하지 않습니다.
+     *     안 되는 걸 된다고 적는 창은 안 만드느니만 못합니다.
+     */
+    function openGenPrompt(label, unsure) {
+        const title = document.getElementById('gen-title');
+        const desc  = document.getElementById('gen-desc');
+        const okBtn = document.getElementById('gen-ok-btn');
+        const day   = label || '오늘';
+
+        if (unsure) {
+            title.innerHTML = '<span class="text-green-600">' + day + '</span> 일보가<br>있는지 확인하지 못했습니다';
+            desc.textContent = '계속하면 없을 때 새로 만듭니다.';
+            okBtn.textContent = '계속';
+        } else {
+            title.innerHTML = '<span class="text-green-600">' + day + '</span> 일보가<br>아직 없습니다';
+            desc.textContent = '새로 만들까요?';
+            okBtn.textContent = '만들기';
+        }
+
         document.getElementById('gen-confirm-modal').classList.remove('translate-y-full');
     }
     function closeGenPrompt() {
@@ -2291,15 +2311,36 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
             const monthKey = y + '-' + m;                       // 그 달을 받아왔는지 표시
             const dayKey   = y + '-' + String(m).padStart(2, '0') +
                                  '-' + String(t.getDate()).padStart(2, '0');
+            const label    = m + '월 ' + t.getDate() + '일';
 
-            const monthLoaded = (reportsMap && reportsMap[monthKey] === 'completed');
-            const exists      = !!(reportsMap && reportsMap[dayKey]);
+            const loaded = () => (reportsMap && reportsMap[monthKey] === 'completed');
+            const exists = () => !!(reportsMap && reportsMap[dayKey]);
 
-            if (monthLoaded && !exists) {
-                openGenPrompt(m + '월 ' + t.getDate() + '일');
+            // 앱을 켜자마자 누르면 달력이 아직 목록을 못 받아온 상태입니다.
+            //  그 2초 사이에 눌렀다고 아무것도 안 묻고 만들어 버리면,
+            //  이 창을 만든 이유가 없어집니다. 모르면 먼저 알아봅니다.
+            if (!loaded()) {
+                showLoader('일보가 있는지 확인 중...', true);
+                try {
+                    await fetchReportsForMonth(y, m);
+                } catch (e) {
+                    // 확인에 실패했습니다. 아래에서 '모른다'고 솔직히 말합니다.
+                } finally {
+                    hideLoader();
+                }
+            }
+
+            if (!loaded()) {
+                // 끝내 확인하지 못했습니다. 없다고 단정하지 않습니다.
+                openGenPrompt(label, true);
                 return;
             }
-        } catch (e) { /* 판단이 안 되면 그냥 진행합니다 */ }
+            if (!exists()) {
+                openGenPrompt(label, false);
+                return;
+            }
+            // 여기까지 왔으면 '있다'는 걸 아는 상태입니다. 바로 엽니다.
+        } catch (e) { /* 판단 자체가 안 되면 예전처럼 그냥 진행합니다 */ }
 
         doGenerateTodayReport();
     }
