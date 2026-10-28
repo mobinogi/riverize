@@ -1,205 +1,133 @@
-/* weather-animation.css - 최종 통합 및 최적화 버전 */
+/* ============================================================
+   사이드바 날씨 위젯 — 배경 연출
+   ------------------------------------------------------------
+   날씨에 맞는 연출이 0.6초 동안 나타나 5초쯤 보이고, 1.2초 동안 사라집니다.
+   연출은 글자 '뒤'에 깔려서 기온·날씨 글자를 가리지 않습니다.
+   요소는 js/weather.js 의 wxBuildFx() 가 그때그때 만들어 넣습니다.
 
-/* ---------------------------------------------------- */
-/* 1. 기본 레이어 설정 (모든 애니메이션에 공통 적용) */
-/* ---------------------------------------------------- */
+   · 맑음      햇살 줄기 회전 + 번지는 빛 + 떠오르는 빛 알갱이
+   · 구름      좌우에서 엇갈려 들어와 흘러가는 구름
+   · 비        비스듬한 빗줄기 + 위쪽이 살짝 어두워짐
+   · 눈        흔들리며 내리는 눈송이
+   · 맑은 밤   반짝이는 별
+   ============================================================ */
+
 .weather-animation-layer {
-    position: absolute; 
-    top: 0;
-    left: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: hidden !important; 
-    z-index: 99 !important; /* 🚨 [상향] 모든 요소 위에 보이도록 강제 상향 */
-    opacity: 0; 
-    transition: opacity 0.5s ease-in-out; 
-    pointer-events: none; 
-}
-
-/* ---------------------------------------------------- */
-/* 2. 비 애니메이션 (Rain) - CodeMyUI 기반 최적화 */
-/* ---------------------------------------------------- */
-
-.rain-active .weather-animation-layer {
-  opacity: 1.0 !important; /* 🚨 [강제 적용] 투명도 우선순위를 최상으로 높임 */
-}
-
-/* 개별 빗방울 (Drop) */
-.drop {
   position: absolute;
-  top: -20vh; /* 🚨 위젯 상단 밖(200px 위)에서 시작 */
-  width: 1px; /* 🚨 [핵심 수정] 빗줄기 너비를 1px로 최적화 */
-  height: 120px;
+  inset: 0;
+  overflow: hidden;
   pointer-events: none;
+  z-index: 0;                         /* 글자 뒤 */
+  opacity: 0;
+  transition: opacity 1.2s ease;      /* 사라질 땐 천천히 */
 }
-
-@keyframes drop {
-  0% { transform: translateY(0); }
-  /* 🚨 [최종 수정] 위젯 하단 밖으로 사라지도록 400px 하강 */
-  75% { transform: translateY(120vh); } 
-  100% { transform: translateY(120vh); }
-}
-
-/* 빗방울 몸통 (Stem) */
-.stem {
-  width: 1px;
-  height: 60%;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); /* 흰색 복구 */
-  animation: stem 2s linear infinite;
-}
-/* stem에 마진은 없습니다. */
-
-@keyframes stem {
-  0% { opacity: 1; }
-  65% { opacity: 1; }
-  75% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-/* 물 튀김 (Splat) */
-.splat {
-  width: 15px;
-  height: 10px;
-  border-top: 2px dotted rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
+.weather-animation-layer.fx-on {
   opacity: 1;
-  transform: scale(0);
-  animation: splat 0.5s linear infinite;
-  display: block; 
+  transition: opacity .6s ease;       /* 나타날 땐 조금 빠르게 */
+}
+/* 위젯의 실제 내용(아이콘·글자)은 연출 위로 */
+#weather-widget > :not(.weather-animation-layer) { position: relative; z-index: 1; }
+
+/* ── 맑음 ─────────────────────────────────────────────── */
+/* 해 아이콘(위젯 맨 위 가운데) 중심에 맞춥니다 */
+.fx-sun { position: absolute; left: 50%; top: 52px; width: 0; height: 0; }
+.fx-sun-rays {
+  position: absolute; left: -150px; top: -150px; width: 300px; height: 300px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 214, 110, .16) 0deg 4deg, transparent 4deg 22.5deg);
+  -webkit-mask-image: radial-gradient(circle, #000 14%, transparent 48%);
+          mask-image: radial-gradient(circle, #000 14%, transparent 48%);
+  animation: fx-spin 16s linear infinite, fx-sun-in 1.4s ease-out both;
+}
+.fx-sun-glow {
+  position: absolute; left: -110px; top: -110px; width: 220px; height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 200, 90, .55) 0%, rgba(255, 170, 60, .18) 38%, transparent 68%);
+  animation: fx-breathe 2.6s ease-in-out infinite alternate;
+}
+.fx-mote {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255, 238, 180, .95);
+  box-shadow: 0 0 6px 2px rgba(255, 214, 120, .55);
+  opacity: 0;
+  animation: fx-mote 3.6s ease-out infinite;
+}
+@keyframes fx-spin    { to { transform: rotate(360deg); } }
+@keyframes fx-sun-in  { from { transform: scale(.6); opacity: 0; } to { opacity: 1; } }
+@keyframes fx-breathe { from { transform: scale(.92); opacity: .75; } to { transform: scale(1.08); opacity: 1; } }
+@keyframes fx-mote {
+  0%   { transform: translateY(0) scale(.6); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(-70px) scale(1); opacity: 0; }
 }
 
-@keyframes splat {
-  0% { opacity: 1; transform: scale(0); }
-  80% { opacity: 1; transform: scale(0); }
-  90% { opacity: 0.5; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.5); }
+/* ── 구름 ─────────────────────────────────────────────── */
+/* 왼쪽에서 들어오는 구름 / 오른쪽에서 들어오는 구름이 엇갈립니다 */
+.fx-cloud {
+  position: absolute; width: 140px; height: 70px;
+  opacity: 0;
+  filter: blur(.4px);
+}
+.fx-cloud svg { width: 100%; height: 100%; display: block; }
+.fx-cloud.from-left  { left: -150px; animation: fx-cloud-l 6s cubic-bezier(.22, .7, .3, 1) both; }
+.fx-cloud.from-right { right: -150px; animation: fx-cloud-r 6s cubic-bezier(.22, .7, .3, 1) both; }
+@keyframes fx-cloud-l {
+  0%   { transform: translateX(0) scale(var(--s, 1)); opacity: 0; }
+  25%  { opacity: var(--o, .7); }
+  100% { transform: translateX(var(--to, 230px)) scale(var(--s, 1)); opacity: var(--o, .7); }
+}
+@keyframes fx-cloud-r {
+  0%   { transform: translateX(0) scale(var(--s, 1)); opacity: 0; }
+  25%  { opacity: var(--o, .7); }
+  100% { transform: translateX(calc(var(--to, 230px) * -1)) scale(var(--s, 1)); opacity: var(--o, .7); }
 }
 
-/* ---------------------------------------------------- */
-/* 3, 4, 5 섹션 (구름, 눈, 맑음) */
-/* ---------------------------------------------------- */
-
-/* ---------------------------------------------------- */
-/* 3. 구름 애니메이션 (Clouds) - FreebiesBug 스타일 통합 */
-/* ---------------------------------------------------- */
-
-.clouds-active .weather-animation-layer {
-    opacity: 0.9; 
-    /* 기존의 배경 패턴 방식은 제거합니다. (삭제했으므로 생략) */
+/* ── 비 ───────────────────────────────────────────────── */
+.fx-rain-dim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(15, 25, 45, .55), rgba(15, 25, 45, 0) 80%);
+}
+.fx-rain {
+  position: absolute; top: -50px; width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to bottom, rgba(170, 210, 255, 0), rgba(205, 232, 255, 1));
+  animation: fx-fall linear infinite;
+}
+@keyframes fx-fall {
+  from { transform: translate3d(0, 0, 0) rotate(14deg); }
+  to   { transform: translate3d(-90px, 380px, 0) rotate(14deg); }
 }
 
-.cloud-container {
-    position: absolute;
-    z-index: 10;
-    opacity: 0; 
+/* ── 눈 ───────────────────────────────────────────────── */
+.fx-snow {
+  position: absolute; top: -12px; border-radius: 50%;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 0 4px rgba(255, 255, 255, .6);
+  animation: fx-snow linear infinite;
 }
-/* ------------------ 누락된 구름 모양 CSS 추가 시작 ------------------ */
-
-/* 공통 구름 모양 (작은 크기로 축소) */
-.cloud-1 .cloud, .cloud-2 .cloud {
-    width: 120px; /* 구름1 크기 */
-    height: 40px;
-    background: #fff;
-    border-radius: 200px;
-    position: relative;
-    box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+@keyframes fx-snow {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(10px, 85px, 0); }
+  50%  { transform: translate3d(-8px, 170px, 0); }
+  75%  { transform: translate3d(10px, 255px, 0); }
+  100% { transform: translate3d(0, 340px, 0); }
 }
 
-.cloud-2 .cloud {
-    width: 70px; /* 구름2 크기 축소 */
-    height: 25px;
+/* ── 맑은 밤 ──────────────────────────────────────────── */
+.fx-star {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, .7);
+  animation: fx-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes fx-twinkle { 0%, 100% { opacity: .15; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.2); } }
+.fx-moon-glow {
+  position: absolute; left: 50%; top: 52px; width: 180px; height: 180px; margin: -90px 0 0 -90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 220, 255, .28), transparent 65%);
 }
 
-.cloud-1 .cloud:after, .cloud-1 .cloud:before,
-.cloud-2 .cloud:after, .cloud-2 .cloud:before {
-    content: '';
-    position: absolute;
-    background: #fff;
-    border-radius: 100px;
-    z-index: 10;
-}
-
-/* 덩어리 크기 조정 (Cloud 1) */
-.cloud-1 .cloud:after { width: 60px; height: 60px; top: -30px; left: 5px; }
-.cloud-1 .cloud:before { width: 80px; height: 80px; top: -40px; right: 10px; }
-
-/* 덩어리 크기 조정 (Cloud 2) */
-.cloud-2 .cloud:after { width: 35px; height: 35px; top: -15px; left: 3px; }
-.cloud-2 .cloud:before { width: 45px; height: 45px; top: -20px; right: 5px; }
-/* ------------------ 누락된 구름 모양 CSS 추가 끝 ------------------ */
-
-/* ------------------ 구름 1 (대형) ------------------ */
-.cloud-1 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    /* 🚨 [수정] 무한 반복 애니메이션으로 복구 (infinite alternate) */
-    animation: cloud-in-1 20s ease-in-out infinite alternate; 
-    transform: translate(-50%, -50%); /* 시작 위치는 중앙 근처 */
-}
-
-/* ------------------ 구름 2 (소형) ------------------ */
-.cloud-2 {
-    position: absolute;
-    top: 60%;
-    right: 50%;
-    opacity: 0.6;
-    /* 🚨 [수정] 무한 반복 애니메이션으로 복구 (infinite alternate) */
-    animation: cloud-in-2 25s ease-in-out infinite alternate; 
-    transform: translate(-50%, -50%); /* 시작 위치는 중앙 근처 */
-}
-
-/* 🚨 [키프레임 1] 사선 이동 + 페이드 인 */
-@keyframes cloud-in-1 {
-    0% { 
-        transform: translate(-150%, -150%); /* 시작 위치 (화면 밖) */
-        opacity: 0; /* 시작 투명도 0 */
-    }
-    10% { opacity: 0.5; } /* 빠르게 불투명도 증가 */
-    100% { 
-        transform: translate(-20%, -30%); /* 최종 위치 (위젯 중앙) */
-        opacity: 1; /* 최종 투명도 1 */
-    } 
-}
-
-/* 🚨 [키프레임 2] 사선 이동 + 페이드 인 */
-@keyframes cloud-in-2 {
-    0% { 
-        transform: translate(150%, -150%); /* 시작 위치 (화면 밖) */
-        opacity: 0; 
-    }
-    10% { opacity: 0.3; } /* 빠르게 불투명도 증가 */
-    100% { 
-        transform: translate(30%, -20%); /* 최종 위치 (위젯 중앙) */
-        opacity: 0.6; /* 구름 2는 약간 흐리게 유지 */
-    }
-}
-
-/* 4. 눈 애니메이션 (Snow Active) */
-.snow-active .weather-animation-layer {
-    opacity: 0.7; 
-    background-image: 
-        radial-gradient(circle at 50% 50%, #ffffff 1px, transparent 1px),
-        radial-gradient(circle at 50% 50%, #dddddd 1px, transparent 1px);
-    background-size: 10px 10px; 
-    animation: snow-drift 5s linear infinite; 
-}
-@keyframes snow-drift {
-    0% { background-position: 0 0; }
-    100% { background-position: 20px 50px; } 
-}
-
-/* 5. 맑음 애니메이션 (Sun Active) */
-.sun-active .weather-animation-layer {
-    opacity: 0.2; 
-    background: radial-gradient(circle at 50% 50%, 
-                rgba(255, 204, 0, 0.4) 0%, 
-                rgba(255, 140, 0, 0.2) 20%, 
-                transparent 70%);
-    background-size: 100% 100%; 
-    animation: sun-pulse 4s ease-in-out infinite alternate; 
-}
-@keyframes sun-pulse {
-    0% { transform: scale(1); opacity: 0.15; }
-    100% { transform: scale(1.05); opacity: 0.25; } 
+/* 움직임 줄이기 설정을 켠 기기에서는 연출을 하지 않습니다 */
+@media (prefers-reduced-motion: reduce) {
+  .weather-animation-layer { display: none; }
 }

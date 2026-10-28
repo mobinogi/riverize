@@ -104,41 +104,115 @@ function renderWeatherWidget(r, fresh) {
     if (elMax)  elMax.textContent = rnd(r.today && r.today.max);
     if (elMin)  elMin.textContent = rnd(r.today && r.today.min);
 
-    if (fresh) playWeatherAnimation(kind);
+    // 새 날씨를 받으면 연출을 한 번 틉니다. (위젯이 화면에 보일 때만)
+    window.__wxKind = kind;
+    if (fresh) wxFxRequest();
 }
 
-// 위젯 배경의 날씨 효과 (해·비·눈·구름). 몇 초 보여 주고 사라집니다.
+// ── 위젯 배경 연출 ───────────────────────────────────────────
+//  날씨에 맞는 연출이 0.6초 동안 나타나 5초쯤 보이고 1.2초 동안 사라집니다.
+//  모양·움직임은 css/weather-animation.css 에 있습니다.
+//
+//  폰에서는 위젯이 사이드바 안에 숨어 있어서, 앱을 켤 때 틀면 아무도 못 봅니다.
+//  그래서 '위젯이 화면에 보이는 순간' 틉니다. (폰: 사이드바를 열 때 / PC: 앱을 켤 때)
+//  너무 자주 나오면 거슬리므로 45초에 한 번까지만.
+const WX_FX_SHOW_MS = 5000;
+const WX_FX_GAP_MS  = 45000;
+let wxFxVisible = false, wxFxLastAt = 0, wxFxT1 = null, wxFxT2 = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+    const widget = document.getElementById('weather-widget');
+    if (!widget || !('IntersectionObserver' in window)) { wxFxVisible = true; return; }
+    new IntersectionObserver(function (entries) {
+        const vis = entries.some(function (e) { return e.isIntersecting && e.intersectionRatio > 0.5; });
+        if (vis && !wxFxVisible) { wxFxVisible = true; wxFxRequest(); }
+        else if (!vis) wxFxVisible = false;
+    }, { threshold: [0, 0.5, 1] }).observe(widget);
+});
+
+function wxFxRequest() {
+    if (!wxFxVisible || !window.__wxKind) return;
+    if (Date.now() - wxFxLastAt < WX_FX_GAP_MS) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    wxFxLastAt = Date.now();
+    playWeatherAnimation(window.__wxKind);
+}
+
 function playWeatherAnimation(kind) {
     const widget = document.getElementById('weather-widget');
     const layer = widget ? widget.querySelector('.weather-animation-layer') : null;
-    if (!widget || !layer) return;
+    if (!layer) return;
 
-    widget.classList.remove('rain-active', 'snow-active', 'clouds-active', 'sun-active');
+    clearTimeout(wxFxT1); clearTimeout(wxFxT2);
+    layer.classList.remove('fx-on');
+    layer.innerHTML = wxBuildFx(kind);
+    if (!layer.innerHTML) return;
 
-    let cls = null, ms = 4000;
+    void layer.offsetWidth;                 // 투명한 상태를 먼저 그린 뒤
+    layer.classList.add('fx-on');           // 서서히 나타납니다
+    wxFxT1 = setTimeout(function () { layer.classList.remove('fx-on'); }, WX_FX_SHOW_MS);
+    wxFxT2 = setTimeout(function () {       // 다 사라진 뒤 요소를 치웁니다
+        if (!layer.classList.contains('fx-on')) layer.innerHTML = '';
+    }, WX_FX_SHOW_MS + 1500);
+}
+
+function wxRand(a, b) { return a + Math.random() * (b - a); }
+
+// 구름 모양 (아이콘과 같은 꼴)
+const WX_CLOUD_SVG = '<svg viewBox="0 0 70 36" aria-hidden="true"><g fill="#cbd5e1">' +
+    '<circle cx="20" cy="22" r="11"/><circle cx="35" cy="15" r="14"/><circle cx="50" cy="23" r="10"/>' +
+    '<rect x="9" y="22" width="52" height="13" rx="6.5"/></g></svg>';
+
+function wxBuildFx(kind) {
+    let h = '';
     if (kind === 'sun') {
-        layer.innerHTML = '';
-        cls = 'sun-active'; ms = 4000;
-    } else if (kind === 'rain' || kind === 'sleet') {
-        if (!layer.querySelector('.drop')) makeItRainJS(layer);
-        cls = 'rain-active'; ms = 3000;
-    } else if (kind === 'snow') {
-        layer.innerHTML = '';
-        cls = 'snow-active'; ms = 3000;
-    } else if (kind === 'cloud' || kind === 'partly-day' || kind === 'partly-night') {
-        if (!layer.querySelector('.cloud-1')) {
-            layer.innerHTML = '<div class="cloud-1"><div class="cloud"></div></div>' +
-                              '<div class="cloud-2"><div class="cloud"></div></div>';
+        h += '<div class="fx-sun"><div class="fx-sun-glow"></div><div class="fx-sun-rays"></div>';
+        for (let i = 0; i < 7; i++) {
+            h += '<span class="fx-mote" style="left:' + wxRand(-60, 60).toFixed(0) + 'px;top:' + wxRand(-10, 40).toFixed(0) +
+                 'px;animation-delay:' + wxRand(0, 3).toFixed(2) + 's"></span>';
         }
-        cls = 'clouds-active'; ms = 10000;
-    } else {
-        layer.innerHTML = '';   // 맑은 밤: 효과 없음
+        h += '</div>';
+    } else if (kind === 'cloud' || kind === 'partly-day' || kind === 'partly-night') {
+        // 큰 구름은 왼쪽에서, 작은 구름은 오른쪽에서 엇갈려 들어옵니다.
+        const clouds = [
+            { side: 'from-left',  top: 8,   s: 1.0,  o: .34, to: 230, delay: 0 },
+            { side: 'from-right', top: 52,  s: .75,  o: .28, to: 215, delay: .45 },
+            { side: 'from-left',  top: 104, s: .58,  o: .22, to: 195, delay: .9 }
+        ];
+        clouds.forEach(function (c) {
+            h += '<div class="fx-cloud ' + c.side + '" style="top:' + c.top + 'px;--s:' + c.s + ';--o:' + c.o +
+                 ';--to:' + c.to + 'px;animation-delay:' + c.delay + 's">' + WX_CLOUD_SVG + '</div>';
+        });
+    } else if (kind === 'rain' || kind === 'sleet') {
+        h += '<div class="fx-rain-dim"></div>';
+        const n = kind === 'sleet' ? 40 : 60;
+        for (let i = 0; i < n; i++) {
+            h += '<i class="fx-rain" style="left:' + wxRand(-5, 125).toFixed(1) + '%;height:' + wxRand(18, 34).toFixed(0) +
+                 'px;opacity:' + wxRand(.55, 1).toFixed(2) + ';animation-duration:' + wxRand(.5, .8).toFixed(2) +
+                 's;animation-delay:-' + wxRand(0, .9).toFixed(2) + 's"></i>';
+        }
+        if (kind === 'sleet') h += wxSnowFlakes(12);
+    } else if (kind === 'snow') {
+        h += wxSnowFlakes(30);
+    } else if (kind === 'moon') {
+        h += '<div class="fx-moon-glow"></div>';
+        for (let i = 0; i < 14; i++) {
+            h += '<span class="fx-star" style="left:' + wxRand(4, 96).toFixed(0) + '%;top:' + wxRand(4, 70).toFixed(0) +
+                 '%;animation-delay:-' + wxRand(0, 2.4).toFixed(2) + 's"></span>';
+        }
     }
+    return h;
+}
 
-    if (cls) {
-        widget.classList.add(cls);
-        setTimeout(() => widget.classList.remove(cls), ms);
+function wxSnowFlakes(n) {
+    let h = '';
+    for (let i = 0; i < n; i++) {
+        const size = wxRand(2, 5).toFixed(1);
+        h += '<i class="fx-snow" style="left:' + wxRand(0, 100).toFixed(1) + '%;width:' + size + 'px;height:' + size +
+             'px;opacity:' + wxRand(.6, 1).toFixed(2) + ';animation-duration:' + wxRand(4, 7).toFixed(2) +
+             's;animation-delay:-' + wxRand(0, 6).toFixed(2) + 's"></i>';
     }
+    return h;
 }
 
 // ── 날씨 창 (위젯을 누르면) ──────────────────────────────────
@@ -526,22 +600,6 @@ function wxStat(label, value) {
              '<div class="text-[11px] md:text-xs text-white/60 whitespace-nowrap">' + label + '</div>' +
              '<div class="text-sm md:text-lg font-bold tabular-nums whitespace-nowrap md:mt-0.5">' + value + '</div>' +
            '</div>';
-}
-
-// ----------------------------------------------------
-// 빗방울 효과 (위젯 배경)
-// ----------------------------------------------------
-function makeItRainJS(targetLayer) {
-    targetLayer.innerHTML = '';
-    var increment = 0;
-    var dropsHtml = "";
-    while (increment < 400) {
-        var randoHundo = (Math.floor(Math.random() * (98 - 1 + 1) + 1));
-        var randoFiver = (Math.floor(Math.random() * (5 - 2 + 1) + 2));
-        increment += randoFiver;
-        dropsHtml += '<div class="drop" style="left: ' + increment + '%; bottom: ' + (randoFiver + randoFiver - 1 + 100) + '%; animation-delay: 0.' + randoHundo + 's; animation-duration: 0.5' + randoHundo + 's;"><div class="stem"></div><div class="splat"></div></div>';
-    }
-    targetLayer.innerHTML = dropsHtml;
 }
 
 // 숫자 카운트 효과 (음수도 자연스럽게)
