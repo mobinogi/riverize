@@ -5,11 +5,12 @@
    연출은 글자 '뒤'에 깔려서 기온·날씨 글자를 가리지 않습니다.
    요소는 js/weather.js 의 wxBuildFx() 가 그때그때 만들어 넣습니다.
 
-   · 맑음      햇살 줄기 회전 + 번지는 빛 + 떠오르는 빛 알갱이
+   · 맑음      오로라처럼 일렁이는 햇빛 + 번지는 빛 + 떠오르는 빛 알갱이
    · 구름      좌우에서 엇갈려 들어와 흘러가는 구름
    · 비        비스듬한 빗줄기 + 위쪽이 살짝 어두워짐
    · 눈        흔들리며 내리는 눈송이
    · 맑은 밤   반짝이는 별
+   연출이 나오는 동안 아이콘도 날씨에 맞게 움직입니다. (data-fx)
    ============================================================ */
 
 .weather-animation-layer {
@@ -20,6 +21,10 @@
   z-index: 0;                         /* 글자 뒤 */
   opacity: 0;
   transition: opacity 1.2s ease;      /* 사라질 땐 천천히 */
+  /* 위젯 윗변에서 칼같이 잘리지 않게, 맨 위 16px 는 서서히 흐려집니다.
+     (해 아이콘이 위젯 맨 위에 붙어 있어 빛 위쪽이 상자 밖으로 나갑니다) */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 16px);
 }
 .weather-animation-layer.fx-on {
   opacity: 1;
@@ -29,21 +34,32 @@
 #weather-widget > :not(.weather-animation-layer) { position: relative; z-index: 1; }
 
 /* ── 맑음 ─────────────────────────────────────────────── */
-/* 해 아이콘(위젯 맨 위 가운데) 중심에 맞춥니다 */
-.fx-sun { position: absolute; left: 50%; top: 52px; width: 0; height: 0; }
-.fx-sun-rays {
-  position: absolute; left: -150px; top: -150px; width: 300px; height: 300px;
-  border-radius: 50%;
-  background: repeating-conic-gradient(rgba(255, 214, 110, .16) 0deg 4deg, transparent 4deg 22.5deg);
-  -webkit-mask-image: radial-gradient(circle, #000 14%, transparent 48%);
-          mask-image: radial-gradient(circle, #000 14%, transparent 48%);
-  animation: fx-spin 16s linear infinite, fx-sun-in 1.4s ease-out both;
-}
+/* 해 아이콘 한가운데 (--cx, --cy 는 js/weather.js 의 wxFxPlace 가 재서 넣습니다) */
+.fx-sun { position: absolute; left: var(--cx, 50%); top: var(--cy, 40px); width: 0; height: 0; }
 .fx-sun-glow {
-  position: absolute; left: -110px; top: -110px; width: 220px; height: 220px;
+  position: absolute; left: -75px; top: -75px; width: 150px; height: 150px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 200, 90, .55) 0%, rgba(255, 170, 60, .18) 38%, transparent 68%);
+  background: radial-gradient(circle, rgba(255, 200, 90, .5) 0%, rgba(255, 170, 60, .16) 40%, transparent 70%);
   animation: fx-breathe 2.6s ease-in-out infinite alternate;
+}
+/* 오로라: 흐릿한 빛 덩어리 두 겹이 서로 반대로 돌며 늘었다 줄었다 일렁입니다.
+   (덩어리는 모두 상자 안에서 투명해지므로 가장자리가 잘리지 않습니다) */
+.fx-aurora {
+  position: absolute; left: -95px; top: -95px; width: 190px; height: 190px;
+}
+.fx-aurora.a {
+  background:
+    radial-gradient(ellipse 35% 22% at 38% 32%, rgba(255, 210, 100, .42), transparent),
+    radial-gradient(ellipse 24% 34% at 72% 58%, rgba(255, 150, 70, .34), transparent),
+    radial-gradient(ellipse 30% 18% at 45% 76%, rgba(255, 230, 140, .3), transparent);
+  animation: fx-aurora-a 6s ease-in-out infinite alternate, fx-sun-in 1.4s ease-out both;
+}
+.fx-aurora.b {
+  background:
+    radial-gradient(ellipse 30% 20% at 64% 30%, rgba(255, 180, 110, .32), transparent),
+    radial-gradient(ellipse 22% 32% at 28% 60%, rgba(255, 240, 160, .3), transparent),
+    radial-gradient(ellipse 20% 14% at 66% 80%, rgba(255, 195, 85, .3), transparent);
+  animation: fx-aurora-b 4.4s ease-in-out infinite alternate, fx-sun-in 1.4s ease-out both;
 }
 .fx-mote {
   position: absolute; width: 4px; height: 4px; border-radius: 50%;
@@ -52,9 +68,18 @@
   opacity: 0;
   animation: fx-mote 3.6s ease-out infinite;
 }
-@keyframes fx-spin    { to { transform: rotate(360deg); } }
+@keyframes fx-aurora-a {
+  0%   { transform: rotate(0deg)   scale(.9, 1)    skewX(0deg); }
+  50%  { transform: rotate(70deg)  scale(1.08, .9) skewX(8deg); }
+  100% { transform: rotate(140deg) scale(.95, 1.1) skewX(-6deg); }
+}
+@keyframes fx-aurora-b {
+  0%   { transform: rotate(0deg)    scale(1.05, .92) skewY(4deg); }
+  50%  { transform: rotate(-60deg)  scale(.9, 1.08)  skewY(-6deg); }
+  100% { transform: rotate(-120deg) scale(1.1, .96)  skewY(3deg); }
+}
 @keyframes fx-sun-in  { from { transform: scale(.6); opacity: 0; } to { opacity: 1; } }
-@keyframes fx-breathe { from { transform: scale(.92); opacity: .75; } to { transform: scale(1.08); opacity: 1; } }
+@keyframes fx-breathe { from { transform: scale(.9); opacity: .7; } to { transform: scale(1.1); opacity: 1; } }
 @keyframes fx-mote {
   0%   { transform: translateY(0) scale(.6); opacity: 0; }
   20%  { opacity: 1; }
@@ -122,10 +147,27 @@
 }
 @keyframes fx-twinkle { 0%, 100% { opacity: .15; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.2); } }
 .fx-moon-glow {
-  position: absolute; left: 50%; top: 52px; width: 180px; height: 180px; margin: -90px 0 0 -90px;
+  position: absolute; left: var(--cx, 50%); top: var(--cy, 40px); width: 180px; height: 180px; margin: -90px 0 0 -90px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(200, 220, 255, .28), transparent 65%);
 }
+
+/* ── 아이콘 움직임 ────────────────────────────────────── */
+/* 연출이 나오는 5초 동안만. 2.5초 왕복 두 번이라 끝나면 제자리에서 멈춥니다. */
+#weather-widget[data-fx] #weather-icon { animation: 2.5s ease-in-out infinite; }
+#weather-widget[data-fx="sun"]  #weather-icon { animation-name: fx-ic-sun; }
+#weather-widget[data-fx="cloud"] #weather-icon,
+#weather-widget[data-fx="partly-day"] #weather-icon,
+#weather-widget[data-fx="partly-night"] #weather-icon { animation-name: fx-ic-drift; }
+#weather-widget[data-fx="rain"] #weather-icon,
+#weather-widget[data-fx="sleet"] #weather-icon { animation-name: fx-ic-bob; animation-duration: 1.25s; }
+#weather-widget[data-fx="snow"] #weather-icon { animation-name: fx-ic-sway; }
+#weather-widget[data-fx="moon"] #weather-icon { animation-name: fx-ic-moon; }
+@keyframes fx-ic-sun   { 50% { transform: rotate(18deg) scale(1.07); } }
+@keyframes fx-ic-drift { 50% { transform: translateX(5px); } }
+@keyframes fx-ic-bob   { 50% { transform: translateY(3px) rotate(-2deg); } }
+@keyframes fx-ic-sway  { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes fx-ic-moon  { 50% { transform: rotate(-10deg) translateY(-2px); } }
 
 /* 움직임 줄이기 설정을 켠 기기에서는 연출을 하지 않습니다 */
 @media (prefers-reduced-motion: reduce) {

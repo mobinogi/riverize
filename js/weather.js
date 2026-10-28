@@ -147,13 +147,29 @@ function playWeatherAnimation(kind) {
     layer.classList.remove('fx-on');
     layer.innerHTML = wxBuildFx(kind);
     if (!layer.innerHTML) return;
+    wxFxPlace(widget, layer, kind);
 
     void layer.offsetWidth;                 // 투명한 상태를 먼저 그린 뒤
     layer.classList.add('fx-on');           // 서서히 나타납니다
-    wxFxT1 = setTimeout(function () { layer.classList.remove('fx-on'); }, WX_FX_SHOW_MS);
+    wxFxT1 = setTimeout(function () {
+        layer.classList.remove('fx-on');
+        delete widget.dataset.fx;           // 아이콘 움직임도 멈춥니다
+    }, WX_FX_SHOW_MS);
     wxFxT2 = setTimeout(function () {       // 다 사라진 뒤 요소를 치웁니다
         if (!layer.classList.contains('fx-on')) layer.innerHTML = '';
     }, WX_FX_SHOW_MS + 1500);
+}
+
+// 해·달 빛이 아이콘 한가운데서 퍼지도록 아이콘 중심을 재서 넘겨 줍니다.
+// 아이콘도 날씨에 맞게 움직입니다. (data-fx → css/weather-animation.css)
+function wxFxPlace(widget, layer, kind) {
+    const icon = widget.querySelector('#weather-icon');
+    if (icon) {
+        const a = icon.getBoundingClientRect(), b = layer.getBoundingClientRect();
+        layer.style.setProperty('--cx', (a.left - b.left + a.width / 2).toFixed(0) + 'px');
+        layer.style.setProperty('--cy', (a.top - b.top + a.height / 2).toFixed(0) + 'px');
+    }
+    widget.dataset.fx = kind;
 }
 
 function wxRand(a, b) { return a + Math.random() * (b - a); }
@@ -166,9 +182,9 @@ const WX_CLOUD_SVG = '<svg viewBox="0 0 70 36" aria-hidden="true"><g fill="#cbd5
 function wxBuildFx(kind) {
     let h = '';
     if (kind === 'sun') {
-        h += '<div class="fx-sun"><div class="fx-sun-glow"></div><div class="fx-sun-rays"></div>';
+        h += '<div class="fx-sun"><div class="fx-sun-glow"></div><div class="fx-aurora a"></div><div class="fx-aurora b"></div>';
         for (let i = 0; i < 7; i++) {
-            h += '<span class="fx-mote" style="left:' + wxRand(-60, 60).toFixed(0) + 'px;top:' + wxRand(-10, 40).toFixed(0) +
+            h += '<span class="fx-mote" style="left:' + wxRand(-45, 45).toFixed(0) + 'px;top:' + wxRand(-5, 35).toFixed(0) +
                  'px;animation-delay:' + wxRand(0, 3).toFixed(2) + 's"></span>';
         }
         h += '</div>';
