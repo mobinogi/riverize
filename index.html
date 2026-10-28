@@ -103,12 +103,54 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
       const val2Input = document.getElementById('qe-input-2');
       const val3Input = document.getElementById('qe-input-3');
 
-      const num1 = Number(val1Input.value) || 0; 
-      const num2 = Number(val2Input.value) || 0; 
-      const num3 = Number(val3Input.value) || 0; 
+      if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
+
+      // ── 수정 모드에서 비워둔 칸은 '이전 값 그대로' ──────────────
+      //  수정 화면은 왼쪽에 이전 값을 보여주고 오른쪽 입력칸은 비워 둡니다.
+      //  그 생김새는 "바꿀 칸만 넣고 나머지는 그대로" 로 읽힙니다.
+      //  그런데 예전에는 빈칸을 0 으로 바꿔 보내서, 빈박스만 고치려던 분이
+      //  발주까지 통째로 지워 버렸습니다. (2026-10-28)
+      //
+      //  · 새로 작성할 때의 빈칸 → 0 (발주 없음)  — 예전과 같습니다
+      //  · 수정할 때의 빈칸     → 이전 값 유지
+      //  · 일부러 0 을 넣으면   → 0 (0,0,0 이면 입력취소 — 의도된 기능 그대로)
+      //  서버(writeDailyLog)도 원래 '빈칸이면 안 건드림' 으로 짜여 있었습니다.
+      const recKey = (manager === '김원대') ? 'kim' : (manager === '정병준') ? 'jung' : null;
+      let prevRec = null;
+      try { prevRec = (recKey && qeTodayData) ? qeTodayData[recKey] : null; } catch (e) {}
+      const isEditMode = !!(prevRec && prevRec.time && prevRec.time !== '자동이월');
+
+      const blank = (inp) => String(inp.value).trim() === '';
+      const pick  = (inp, prevVal) =>
+          (isEditMode && blank(inp)) ? (Number(prevVal) || 0) : (Number(inp.value) || 0);
+
+      if (isEditMode && blank(val1Input) && blank(val2Input) && blank(val3Input)) {
+          showToast("바뀐 값이 없습니다. 고칠 칸에만 숫자를 넣어 주세요.", "error");
+          return;
+      }
+
+      const num1 = pick(val1Input, prevRec && prevRec.st);
+      const num2 = pick(val2Input, prevRec && prevRec.rice);
+      const num3 = pick(val3Input, prevRec && prevRec.empty);
       const dailyNet = (num1 + num2) - num3; 
 
-      if(!manager) { showToast("담당자를 선택해주세요!", "error"); return; }
+      // ── 0,0,0 안전장치 ─────────────────────────────────────
+      //  0,0,0 저장은 의도된 기능입니다. (수정 중이면 '오늘 기록 취소')
+      //  다만 한 번 누르면 바로 지워지므로, 한 번만 묻습니다.
+      if (num1 === 0 && num2 === 0 && num3 === 0) {
+          const title = isEditMode ? '기록 삭제 확인' : '발주 없음 확인';
+          const msg   = isEditMode
+              ? '<b>' + manager + '</b>님의 오늘 기록을 지웁니다.<br>출고·반납이 모두 0 이 됩니다.'
+              : '출고·반납이 모두 <b>0</b> 입니다.<br>오늘 발주 없음으로 저장할까요?';
+          const label = isEditMode ? '지우기' : '저장';
+          let ok = false;
+          try {
+              ok = (typeof window.askConfirm === 'function')
+                  ? await window.askConfirm(title, msg, label)
+                  : window.confirm(msg.replace(/<[^>]+>/g, ''));
+          } catch (e) { ok = false; }
+          if (!ok) return;
+      }
 
       const submitBtn = document.getElementById('qe-submit-btn');
       const originalText = submitBtn.innerHTML;
@@ -806,7 +848,7 @@ function mergeSelectedBoxes() {
 </div>
           <p class="text-center text-xs text-gray-400 mt-8 md:ml-0 ml-4 pb-4">Made with ☕ by Byungjun & Gemini</p>
   
-  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden" aria-modal="true" role="dialog">
+  <div id="confirm-modal" class="modal-overlay fixed inset-0 z-[1000] flex items-center justify-center hidden" aria-modal="true" role="dialog">
       <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all">
           <h3 class="text-xl font-bold text-gray-800 mb-4" id="modal-title">보고서 생성 확인</h3>
           <p class="text-gray-700 mb-6" id="modal-message">해당 일자의 일일 보고서가 없습니다. 새로 작성 하시겠습니까?</p>
@@ -1281,7 +1323,38 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
 }
     function hideLoader() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function openModal() { document.getElementById('confirm-modal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); selectedDateForGeneration = null; }
+    function closeModal() {
+        document.getElementById('confirm-modal').classList.add('hidden');
+        selectedDateForGeneration = null;
+        // 기다리는 질문(askConfirm)이 있으면 '아니오'로 끝냅니다.
+        if (window.__confirmResolve) {
+            const r = window.__confirmResolve; window.__confirmResolve = null; r(false);
+        }
+    }
+
+    /**
+     * 기존 중앙 확인창을 '기다릴 수 있는' 질문으로 씁니다.
+     *   const ok = await askConfirm('제목', '본문(html)', '지우기');
+     * 예 → true / 아니오·뒤로가기 → false
+     */
+    window.askConfirm = function (title, html, okLabel) {
+        return new Promise(function (resolve) {
+            // 혹시 앞선 질문이 남아 있으면 정리합니다.
+            if (window.__confirmResolve) { const r0 = window.__confirmResolve; window.__confirmResolve = null; r0(false); }
+
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = html;
+            const ok = document.getElementById('modal-confirm-button');
+            ok.textContent = okLabel || '예';
+            ok.onclick = function () {
+                const r = window.__confirmResolve; window.__confirmResolve = null;  // 먼저 떼야 closeModal 이 false 로 안 답합니다
+                closeModal();
+                if (r) r(true);
+            };
+            window.__confirmResolve = resolve;
+            openModal();
+        });
+    };
 
     function getMobileOS() {
       const ua = navigator.userAgent;
@@ -2635,6 +2708,7 @@ function renderCalendar() {
         document.getElementById('modal-message').innerHTML = '<b>' + dateStr + '</b> 일자의 보고서가 없습니다.<br>새로 작성하시겠습니까?';
         // 같은 창을 '생성&열기' 버튼도 쓰므로, 누를 때마다 자기 할 일을 꽂아 줍니다.
         document.getElementById('modal-confirm-button').onclick = confirmGenerateReport;
+        document.getElementById('modal-confirm-button').textContent = '예';
         openModal();
       }
     }

@@ -74,7 +74,8 @@ function qeApplyEditMode(manager) {
         if (titleText) titleText.textContent = '일보 수정';
         if (btn) btn.innerHTML = '수정 완료';
         if (hint) {
-            hint.textContent = `오늘 ${rec.time}에 작성하신 기록이 있습니다.`;
+            // 비워둔 칸은 그대로 남는다는 걸 화면에서 알려 줍니다.
+            hint.textContent = `오늘 ${rec.time}에 작성하신 기록이 있습니다. 고칠 칸만 입력하세요 — 비워두면 그대로 둡니다.`;
             hint.classList.remove('hidden');
         }
         // 입력칸 왼쪽에 이전 값을 띄우고, 입력칸은 절반으로 줄임
