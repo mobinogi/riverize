@@ -203,11 +203,15 @@ function renderWeatherModal(r) {
     const tomorrow = tmr.getFullYear() + String(tmr.getMonth() + 1).padStart(2, '0') + String(tmr.getDate()).padStart(2, '0');
 
     // ── 지금 ──
-    //  폰: 위아래로 쌓음 / PC(md 이상): 왼쪽 큰 기온, 오른쪽 습도·바람·강수 한 줄
+    //  왼쪽 큰 기온, 오른쪽 습도·바람·강수.
+    //  폰: 오른쪽 셋을 세로로 쌓습니다 (아래로 따로 두면 한 줄을 더 먹어 스크롤이 생깁니다)
+    //  PC: 오른쪽 셋을 가로로 늘어놓습니다
     let html =
-        '<div class="md:flex md:items-center md:gap-8">' +
-        '<div class="flex items-center gap-4 pt-1 md:shrink-0">' +
-          '<img src="' + weatherIcon(kindNow) + '" alt="" class="w-24 h-24 md:w-32 md:h-32 shrink-0 drop-shadow-xl">' +
+        '<div class="flex items-center gap-3 md:gap-8">' +
+        '<div class="flex items-center gap-2.5 md:gap-4 pt-1 shrink-0">' +
+          // 아주 좁은 폰(360px 미만)에선 아이콘을 숨겨 오른쪽 세 칸 자리를 내줍니다.
+          //  날씨는 아래 '맑음' 글자로 이미 보입니다.
+          '<img src="' + weatherIcon(kindNow) + '" alt="" class="w-16 h-16 md:w-32 md:h-32 shrink-0 drop-shadow-xl max-[359px]:hidden">' +
           '<div class="min-w-0">' +
             '<div class="flex items-start leading-none">' +
               '<span class="text-5xl md:text-6xl font-black tracking-tighter tabular-nums">' + rnd(now.temp) + '</span>' +
@@ -218,7 +222,7 @@ function renderWeatherModal(r) {
               ' · 최저 <b class="text-sky-200">' + rnd(r.today.min) + '°</b></div>' +
           '</div>' +
         '</div>' +
-        '<div class="grid grid-cols-3 gap-2 mt-4 md:mt-0 md:flex-1 text-center">' +
+        '<div class="flex-1 min-w-0 flex flex-col gap-1.5 md:grid md:grid-cols-3 md:gap-2">' +
           wxStat('습도', (now.hum !== null && now.hum !== undefined) ? now.hum + '%' : '--') +
           wxStat('바람', (now.wind !== null && now.wind !== undefined) ? now.wind + 'm/s' : '--') +
           wxStat('강수확률', (now.pop !== null && now.pop !== undefined) ? now.pop + '%' : '--') +
@@ -516,9 +520,11 @@ function wxDayView(d, i, today, lo, hi, span) {
 }
 
 function wxStat(label, value) {
-    return '<div class="rounded-2xl bg-white/10 py-2 md:py-3">' +
-             '<div class="text-[11px] md:text-xs text-white/60">' + label + '</div>' +
-             '<div class="text-sm md:text-lg font-bold tabular-nums mt-0.5">' + value + '</div>' +
+    // 폰: 한 줄짜리 (이름 왼쪽 · 값 오른쪽)  /  PC: 위아래 가운데 정렬 칸
+    return '<div class="rounded-xl md:rounded-2xl bg-white/10 px-3 py-1.5 md:px-0 md:py-3' +
+                  ' flex items-center justify-between gap-2 md:block md:text-center">' +
+             '<div class="text-[11px] md:text-xs text-white/60 whitespace-nowrap">' + label + '</div>' +
+             '<div class="text-sm md:text-lg font-bold tabular-nums whitespace-nowrap md:mt-0.5">' + value + '</div>' +
            '</div>';
 }
 
