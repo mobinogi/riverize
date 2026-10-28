@@ -659,10 +659,16 @@ body.sidebar-collapsed #main-content-wrapper {
     /* flex라서 vertical-align 필요 없음 */
 }
 
-/* 애니메이션 */
+/* 마지막 헤드라인 뒤에는 간격을 두지 않습니다. (붙어 있으면 다시 시작하기 전 1초쯤 빈 시간이 생깁니다) */
+.news-item:last-child { margin-right: 0; }
+
+/* 애니메이션
+   뉴스 칸 오른쪽 끝(left 100%)에서 출발해, 줄 전체가 칸 왼쪽 끝 밖으로 나가는 순간(left 0 + 자기 폭만큼 왼쪽) 끝납니다.
+   예전엔 '브라우저 창 폭(100vw)' 만큼 더 흘려보내서, 사이드바·라벨 폭만큼 빈 시간이 생긴 뒤에야 다시 나왔습니다.
+   left 는 뉴스 칸 기준 %, translateX 는 줄 자신의 폭 기준 % 라서 사이드바를 접고 펴도 딱 맞습니다. */
 @keyframes ticker-slide {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(calc(-100% - 100vw)); }
+    0%   { left: 100%; transform: translateX(0); }
+    100% { left: 0%;   transform: translateX(-100%); }
 }
 
 #news-ticker {

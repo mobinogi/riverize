@@ -89,7 +89,8 @@ async function fetchAndRenderNews() {
             // 애니메이션 속도 조절
             setTimeout(() => {
                 const trackWidth = track.scrollWidth;
-                const boxWidth = window.innerWidth;
+                // 실제로 지나가는 거리 = 줄 폭 + 뉴스 칸 폭 (창 전체 폭이 아닙니다)
+                const boxWidth = tickerText.clientWidth || window.innerWidth;
                 const totalDist = trackWidth + boxWidth;
                 const duration = totalDist / 60; // 속도 조절
                 if (duration > 0) track.style.animationDuration = duration + 's';
