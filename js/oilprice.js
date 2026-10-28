@@ -178,17 +178,31 @@ function confirmOilStationNav() {
         const { name, coords } = currentBestStationData;
         if (coords) {
             if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
+                logOilAction('주유소 길안내 시작 (' + name + ')');
                 location.href = `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${coords.lon}&goaly=${coords.lat}`;
             }
         } else {
             if(confirm(`'${name}'\n길안내를 시작할까요?`)) {
+                logOilAction('주유소 길안내 시작 (' + name + ')');
                 location.href = `tmap://search?name=${encodeURIComponent(name)}`;
             }
         }
     }
 }
 
+// 기름값 위젯에서 사람이 누른 것을 접속 로그에 남깁니다.
+//  같은 기록을 30초 안에 또 남기지는 않습니다. (새로고침 연타 등)
+let oilLogLast = { name: '', at: 0 };
+function logOilAction(name) {
+    if (typeof logClientActionAsync !== 'function') return;
+    const now = Date.now();
+    if (oilLogLast.name === name && now - oilLogLast.at < 30000) return;
+    oilLogLast = { name: name, at: now };
+    try { logClientActionAsync(name); } catch (e) {}
+}
+
 function refreshOilPrice() {
+    logOilAction('기름값 새로고침');
     const icon = document.getElementById('refresh-icon');
     if(icon) icon.classList.add('animate-spin');
     

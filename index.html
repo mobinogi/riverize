@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="css/weather-animation.css?v=8">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="js/sidebar.js?v=2"></script>
-  <script src="js/oilprice.js"></script>
+  <script src="js/oilprice.js?v=2"></script>
   <script src="js/weather.js?v=9"></script>
   <script src="js/newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1991,6 +1991,10 @@ function showLoader(message, useTruck = false) { // 기본값은 false(트럭 �
     // 4. 'T맵 실행' 버튼 클릭 시
     async function executeNavigation() {
         if (currentNavClient && currentNavUser) {
+            // 기름값 위젯에서 온 길안내는 접속 로그에 남깁니다. (T맵으로 넘어가기 전에 먼저 보냅니다)
+            if (currentNavUser === '유가위젯' && typeof logClientActionAsync === 'function') {
+                try { logClientActionAsync('주유소 길안내 시작 (' + currentNavClient.name + ')'); } catch (e) {}
+            }
             // 좌표 확인 후 실행
             await launchTMapApp(currentNavClient, currentNavUser);
             closeNavPrompt();
