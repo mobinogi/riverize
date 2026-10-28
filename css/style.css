@@ -1308,3 +1308,17 @@ body.editing-mode-active div#calendar-grid::before {
    그래서 이 카드만 아래에서부터 고정 높이로 바꿔, 접히든 펼치든 하단 모양을 같게 만듭니다. */
 #status-box.wide-switch-card::before { top: auto; height: 56px; }
 #status-box.wide-switch-card::after  { top: auto; height: 88px; }
+
+/* ── 숫자 입력칸의 위아래 화살표(스피너) 숨기기 ─────────────
+   PC 크롬·엣지는 type="number" 칸에 마우스를 올리면 ▲▼ 를 붙입니다.
+   간편작성 칸이 좁아서 조잡해 보이고, 쓸 일도 없습니다.
+   폰에서는 원래 안 보이고, 숫자 키패드는 그대로 뜹니다. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;   /* 파이어폭스 */
+  appearance: textfield;
+}
