@@ -356,12 +356,12 @@ function renderWeatherModal(r) {
             const linkable = !!hourDays[d.d];
             html +=
                 '<button type="button" data-day="' + d.d + '"' + (linkable ? '' : ' disabled') +
-                ' class="wx-day' + (d.d === today ? ' wx-day-on' : '') + ' snap-start flex-none w-[84px] md:flex-1 md:w-auto md:min-w-0' +
+                ' class="wx-day' + (d.d === today ? ' wx-day-on' : '') + ' snap-start flex-none w-[96px] md:flex-1 md:w-auto md:min-w-0' +
                 ' rounded-2xl bg-white/10 px-1 pt-3 pb-3 text-center transition-colors focus:outline-none' +
                 (linkable ? ' hover:bg-white/15' : ' cursor-default') + '">' +
                   '<div class="text-sm font-bold ' + v.weekend + '">' + v.name + '</div>' +
                   '<div class="text-[11px] text-white/55 tabular-nums">' + v.md + '</div>' +
-                  '<div class="flex justify-center mt-2">' +
+                  '<div class="flex justify-center gap-1.5 md:gap-0 mt-2">' +   // 폰: 오전·오후 아이콘 사이를 띄웁니다
                     '<div><img src="' + v.amIcon + '" alt="오전" class="w-9 h-9 md:w-11 md:h-11 mx-auto">' +
                       '<div class="text-[10px] text-white/45 -mt-0.5">오전</div></div>' +
                     '<div><img src="' + v.pmIcon + '" alt="오후" class="w-9 h-9 md:w-11 md:h-11 mx-auto">' +
