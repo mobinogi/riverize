@@ -174,26 +174,6 @@ function wxFxPlace(widget, layer, kind) {
     widget.dataset.fx = kind;
 }
 
-// ── 연출 시험 (사이드바 '날씨 연출 시험' 메뉴) ──
-// 지금 날씨와 상관없이 고른 연출을 바로 틀어 봅니다. 아이콘도 잠깐 바꿨다가 되돌립니다.
-let wxTestT = null;
-function wxFxTest(kind) {
-    const icon = document.getElementById('weather-icon');
-    if (icon) {
-        if (!icon.dataset.real) icon.dataset.real = icon.getAttribute('src') || '';
-        icon.src = weatherIcon(kind);
-    }
-    clearTimeout(wxTestT);
-    playWeatherAnimation(kind);
-    wxTestT = setTimeout(function () {
-        if (icon && icon.dataset.real) { icon.src = icon.dataset.real; delete icon.dataset.real; }
-    }, WX_FX_SHOW_MS + 1300);
-}
-function wxToggleFxTest() {
-    const box = document.getElementById('wx-fx-test');
-    if (box) box.classList.toggle('hidden');
-}
-
 function wxRand(a, b) { return a + Math.random() * (b - a); }
 
 // 구름 모양 (아이콘과 같은 꼴)
