@@ -305,16 +305,16 @@ function renderWeatherModal(r) {
             if (i === 0) h = Object.assign({}, h, { tmp: now.temp, pty: now.pty || h.pty });
             const hh = +h.t.slice(0, 2);
 
-            // 날짜가 바뀌는 자리엔 위에 붙지 않는 옅은 구분선만 둡니다.
-            if (h.d !== lastD) {
-                lastD = h.d;
-                html += '<div data-daystart="' + h.d + '" class="px-4 pt-3 pb-1 text-[10px] text-white/45 border-t border-white/15">' +
-                          wxDayLabel(h.d, today, tomorrow) + '</div>';
-            }
+            // 날짜가 바뀌는 자리는 그 줄의 윗선만 진하게 긋습니다.
+            //  날짜 글자는 위 머리줄이 이미 보여 주므로 여기엔 적지 않습니다.
+            //  (적어 두면 카드를 눌러 넘어갔을 때 머리줄과 같은 글자가 두 번 보입니다)
+            const newDay = h.d !== lastD;
+            if (newDay) lastD = h.d;
 
             const rain = (h.pty && h.pcp && h.pcp !== '강수없음') ? ' · ' + h.pcp : '';
             html +=
-                '<div data-d="' + h.d + '" class="wx-hrow flex items-center gap-3 px-4 h-12 border-t border-white/5">' +
+                '<div data-d="' + h.d + '" class="wx-hrow flex items-center gap-3 px-4 h-12 border-t ' +
+                  (newDay && i > 0 ? 'border-white/30' : 'border-white/5') + '">' +
                   '<div class="w-10 shrink-0 text-sm tabular-nums ' + (i === 0 ? 'font-bold' : 'text-white/80') + '">' +
                     (i === 0 ? '지금' : hh + '시') + '</div>' +
                   '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="" class="w-8 h-8 md:w-9 md:h-9 shrink-0">' +
@@ -439,11 +439,10 @@ function wxBindHours(hoursEl, daysEl, today, tomorrow) {
             const day = btn.dataset.day;
             const first = hoursEl.querySelector('.wx-hrow[data-d="' + day + '"]');
             if (!first) return;
-            const sep = first.previousElementSibling && first.previousElementSibling.dataset.daystart ? first.previousElementSibling : null;
             lockUntil = Date.now() + 500;
             markCard(day);
             swapHead(day);
-            wxSmoothScrollTop(hoursEl, sep ? sep.offsetTop : first.offsetTop, 350);
+            wxSmoothScrollTop(hoursEl, first.offsetTop, 350);
         });
     }
 }
