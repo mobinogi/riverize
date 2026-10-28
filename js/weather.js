@@ -369,18 +369,9 @@ function renderWeatherModal(r) {
                   '</div>' +
                   '<div class="mt-1.5 text-[12px] md:text-[13px] tabular-nums ' + popClass(v.pop) + '">' +
                     (v.pop === null ? '&nbsp;' : v.pop + '%') + '</div>' +
-                  // 폰: 카드가 좁아 막대를 세로로 세웁니다 (최고 위 · 최저 아래)
-                  '<div class="md:hidden">' +
-                    '<div class="mt-2 text-base font-bold text-red-200 tabular-nums">' + rnd(d.max) + '°</div>' +
-                    '<div class="relative mx-auto my-1 w-1.5 h-12 rounded-full bg-white/15">' +
-                      '<div class="absolute inset-x-0 rounded-full bg-gradient-to-t from-sky-300 to-amber-300"' +
-                      ' style="top:' + v.barB + '%;bottom:' + v.barA + '%"></div>' +
-                    '</div>' +
-                    '<div class="text-base font-bold text-sky-200 tabular-nums">' + rnd(d.min) + '°</div>' +
-                  '</div>' +
-                  // PC: 가로로 눕힙니다. 숫자는 위 양 끝(최저 왼쪽 · 최고 오른쪽),
-                  //  막대는 그 아래 카드 폭 전체로 — 숫자 옆에 끼우면 막대가 손톱만 해집니다.
-                  '<div class="hidden md:block mt-3 px-2.5">' +
+                  // 최저·최고는 위 양 끝(최저 왼쪽 · 최고 오른쪽), 막대는 그 아래 카드 폭 전체로 눕힙니다.
+                  //  (폰도 같습니다. 예전엔 폰에서 막대를 세로로 세웠는데, 카드가 길어져 창에 스크롤이 생겼습니다)
+                  '<div class="mt-3 px-2 md:px-2.5">' +
                     '<div class="flex justify-between text-sm font-bold tabular-nums">' +
                       '<span class="text-sky-200">' + rnd(d.min) + '°</span>' +
                       '<span class="text-red-200">' + rnd(d.max) + '°</span>' +
@@ -686,7 +677,7 @@ function wxDayView(d, i, today, lo, hi, span) {
         pmIcon: weatherIcon(weatherKind(pm ? pm.pty : 0, pm ? pm.sky : 1, false)),
         pop: p < 0 ? null : p,
         // 막대: 이번 주 최저~최고 사이에서 그날이 차지하는 구간
-        //  barA = 아래(폰은 왼쪽) 여백 %, barB = 위(폰은 오른쪽) 여백 %
+        //  barA = 왼쪽(최저 쪽) 여백 %, barB = 오른쪽(최고 쪽) 여백 %
         barA: (d.min === null ? 0 : (d.min - lo) / span * 100).toFixed(1),
         barB: (d.max === null ? 0 : (hi - d.max) / span * 100).toFixed(1)
     };
