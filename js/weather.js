@@ -387,44 +387,29 @@ function renderWeatherModal(r) {
         html += '</div>';
     }
 
-    // ── 시간별: 세로 목록, 5줄 정도 보이고 위아래로 끌어서 보기 ──
-    //  날짜가 바뀌는 자리에 '내일 · 10/29 (목)' 머리줄이 붙고, 끌어 내려도 위에 붙어 있습니다.
+    // ── 시간별: 하루치를 그래프로 ──
+    //  위 줄에 시각·날씨·기온, 가운데 기온 곡선(노랑)과 강수확률 선(하늘색), 아래 줄에 강수확률.
+    //  하루치만 보여 주고 옆으로 끌어서 봅니다. 주간 카드를 누르면 그날 그래프로 갈아끼웁니다.
+    let hrs = [];
     if (hours.length) {
-        //  머리줄은 목록 밖에 하나만 둡니다. 날짜가 넘어가면 글자만 바뀝니다.
-        //  (예전엔 날짜마다 머리줄이 위에 붙어서, 넘어갈 때 서로 밀어 올리며 겹쳐 보였습니다)
+        // 첫 칸 '지금' 은 위의 큰 숫자와 같은 관측값을 씁니다.
+        //  (예보값을 쓰면 같은 '지금' 인데 15° / 16° 처럼 숫자가 달라 헷갈립니다)
+        hrs = hours.slice();
+        hrs[0] = Object.assign({}, hrs[0], { tmp: now.temp, pty: now.pty || hrs[0].pty, now: true });
+
         html += '<div class="mt-5 mb-2 text-xs font-bold text-white/70">시간별</div>' +
                 '<div class="rounded-2xl bg-black/10 overflow-hidden">' +
-                  '<div class="wx-dayhead px-4 py-1.5 text-[11px] font-bold text-white/85 overflow-hidden">' +
-                    '<span id="wx-hours-head" class="wx-head-text">' + wxDayLabel(hours[0].d, today, tomorrow) + '</span>' +
+                  '<div class="wx-dayhead px-4 py-1.5 text-[11px] font-bold text-white/85 overflow-hidden flex items-center justify-between gap-3">' +
+                    '<span id="wx-hours-head" class="wx-head-text">' + wxDayLabel(hrs[0].d, today, tomorrow) + '</span>' +
+                    '<span class="flex items-center gap-3 font-normal text-white/55 whitespace-nowrap">' +
+                      '<span><i class="wx-key bg-amber-300"></i>기온</span>' +
+                      '<span><i class="wx-key bg-sky-300"></i>강수확률</span>' +
+                    '</span>' +
                   '</div>' +
-                '<div id="wx-hours" class="wx-hours wx-drag relative overflow-y-auto">';
-        let lastD = hours[0].d;
-        hours.forEach(function (h, i) {
-            // 첫 줄 '지금' 은 위의 큰 숫자와 같은 관측값을 씁니다.
-            //  (예보값을 쓰면 같은 '지금' 인데 15° / 16° 처럼 숫자가 달라 헷갈립니다)
-            if (i === 0) h = Object.assign({}, h, { tmp: now.temp, pty: now.pty || h.pty });
-            const hh = +h.t.slice(0, 2);
-
-            // 날짜가 바뀌는 자리는 그 줄의 윗선만 진하게 긋습니다.
-            //  날짜 글자는 위 머리줄이 이미 보여 주므로 여기엔 적지 않습니다.
-            //  (적어 두면 카드를 눌러 넘어갔을 때 머리줄과 같은 글자가 두 번 보입니다)
-            const newDay = h.d !== lastD;
-            if (newDay) lastD = h.d;
-
-            const rain = (h.pty && h.pcp && h.pcp !== '강수없음') ? ' · ' + h.pcp : '';
-            html +=
-                '<div data-d="' + h.d + '" class="wx-hrow flex items-center gap-3 px-4 h-12 border-t ' +
-                  (newDay && i > 0 ? 'border-white/30' : 'border-white/5') + '">' +
-                  '<div class="w-10 shrink-0 text-sm tabular-nums ' + (i === 0 ? 'font-bold' : 'text-white/80') + '">' +
-                    (i === 0 ? '지금' : hh + '시') + '</div>' +
-                  '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="" class="w-8 h-8 md:w-9 md:h-9 shrink-0">' +
-                  '<div class="flex-1 min-w-0 text-[13px] text-white/80 truncate">' + weatherText(h.pty, h.sky) + rain + '</div>' +
-                  '<div class="w-14 shrink-0 text-right text-[12px] tabular-nums ' + popClass(h.pop) + '">' +
-                    (h.pop === null ? '' : WX_DROP + h.pop + '%') + '</div>' +
-                  '<div class="w-11 shrink-0 text-right text-base font-bold tabular-nums">' + rnd(h.tmp) + '°</div>' +
+                  '<div id="wx-hours" class="wx-scroll wx-drag overflow-x-auto overflow-y-hidden">' +
+                    '<div id="wx-hstage" class="wx-hstage">' + wxHourPane(wxHoursOf(hrs, hrs[0].d)) + '</div>' +
+                  '</div>' +
                 '</div>';
-        });
-        html += '</div></div>';
     }
 
     // ── 출처 (이용 조건: 저작자표시) ──
@@ -442,30 +427,91 @@ function renderWeatherModal(r) {
     const daysEl = document.getElementById('wx-days');
     const hoursEl = document.getElementById('wx-hours');
     if (daysEl) { wxEnableDrag(daysEl, 'x'); wxWheelToX(daysEl); }
-    if (hoursEl) wxEnableDrag(hoursEl, 'y');
+    if (hoursEl) {
+        // 상자 폭을 알았으니 첫 그래프를 그 폭에 맞춰 다시 그립니다.
+        document.getElementById('wx-hstage').innerHTML = wxHourPane(wxHoursOf(hrs, hrs[0].d), hoursEl.clientWidth);
+        wxEnableDrag(hoursEl, 'x'); wxWheelToX(hoursEl);
+    }
 
-    if (hoursEl) wxBindHours(hoursEl, daysEl, today, tomorrow);
+    if (hoursEl) wxBindHours(hoursEl, daysEl, hrs, today, tomorrow);
+}
+
+// ── 시간별 그래프 ─────────────────────────────────────────
+const WX_COL = 56;     // 한 시간 칸 폭(px)
+const WX_GH  = 92;     // 그래프 높이(px)
+let wxGradSeq = 0;     // 그래프마다 채움색 id 를 다르게 (갈아끼우는 동안 두 장이 함께 있으므로)
+
+function wxHoursOf(hrs, day) { return hrs.filter(function (h) { return h.d === day; }); }
+function wxNum(v) { return v !== null && v !== undefined && !isNaN(v); }
+
+/** 점들을 부드러운 곡선으로 잇습니다. */
+function wxSmooth(p) {
+    const f = v => v.toFixed(1);
+    let d = 'M' + f(p[0][0]) + ',' + f(p[0][1]);
+    for (let i = 0; i < p.length - 1; i++) {
+        const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+        d += 'C' + f(p1[0] + (p2[0] - p0[0]) / 6) + ',' + f(p1[1] + (p2[1] - p0[1]) / 6) + ' ' +
+                   f(p2[0] - (p3[0] - p1[0]) / 6) + ',' + f(p2[1] - (p3[1] - p1[1]) / 6) + ' ' +
+                   f(p2[0]) + ',' + f(p2[1]);
+    }
+    return d;
 }
 
 /**
- * 목록을 정해진 위치까지 부드럽게 내립니다.
- *  브라우저 기본 '부드럽게 스크롤'은 브라우저마다 동작이 달라(안 움직이는 경우도 있음)
- *  직접 움직입니다. 처음엔 빠르게, 끝에서 천천히 섭니다.
+ * 하루치 그래프 한 장 (위 줄 · 곡선 · 아래 줄)
+ *  fitW: 상자 폭. 남은 시간이 적은 날(예: 오늘 밤)은 칸을 넓혀 상자를 채웁니다.
  */
-function wxSmoothScrollTop(el, to, ms) {
-    const from = el.scrollTop;
-    const max = el.scrollHeight - el.clientHeight;
-    const target = Math.max(0, Math.min(max, to));
-    if (Math.abs(target - from) < 1) return;
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) { el.scrollTop = target; return; }
-    const t0 = performance.now();
-    (function step(now) {
-        const k = Math.min(1, (now - t0) / ms);
-        const e = 1 - Math.pow(1 - k, 3);   // 끝에서 천천히
-        el.scrollTop = from + (target - from) * e;
-        if (k < 1) requestAnimationFrame(step);
-    })(t0);
+function wxHourPane(list, fitW) {
+    const n = list.length, H = WX_GH, top = 12, bot = 10;
+    const COL = Math.max(WX_COL, Math.floor((fitW || 0) / n)), W = n * COL;
+    const temps = list.map(h => h.tmp).filter(wxNum);
+    let lo = temps.length ? Math.min.apply(null, temps) : 0;
+    let hi = temps.length ? Math.max.apply(null, temps) : 1;
+    // 기온 차가 작은 날을 산처럼 부풀리지 않게, 최소 4도 폭으로 그립니다.
+    if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+    const yT = v => top + (hi - v) / (hi - lo) * (H - top - bot);
+    const yP = v => top + (100 - v) / 100 * (H - top - bot);
+    const x = i => i * COL + COL / 2;
+
+    // 양 끝 칸 바깥까지 이어 그려서 그래프가 칸 가운데서 뚝 끊기지 않게 합니다.
+    const ext = pts => [[0, pts[0][1]]].concat(pts, [[W, pts[pts.length - 1][1]]]);
+    const tLine = wxSmooth(ext(list.map((h, i) => [x(i), yT(wxNum(h.tmp) ? h.tmp : lo)])));
+    const pLine = wxSmooth(ext(list.map((h, i) => [x(i), yP(wxNum(h.pop) ? h.pop : 0)])));
+    const id = 'wxg' + (++wxGradSeq);
+
+    let grid = '';
+    for (let i = 1; i < n; i++) grid += '<line x1="' + i * COL + '" y1="0" x2="' + i * COL + '" y2="' + H + '"/>';
+
+    let labels = '', pops = '';
+    list.forEach(function (h) {
+        const hh = +h.t.slice(0, 2);
+        labels +=
+            '<div class="shrink-0 text-center pt-3" style="width:' + COL + 'px">' +
+              '<div class="text-[12px] tabular-nums ' + (h.now ? 'font-bold' : 'text-white/75') + '">' + (h.now ? '지금' : hh + '시') + '</div>' +
+              '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="' + weatherText(h.pty, h.sky) + '" class="w-8 h-8 mx-auto mt-1">' +
+              '<div class="text-sm font-bold tabular-nums mt-0.5">' + rnd(h.tmp) + '°</div>' +
+            '</div>';
+        pops +=
+            '<div class="shrink-0 text-center text-[11px] tabular-nums pb-2.5 ' + popClass(h.pop) + '" style="width:' + COL + 'px">' +
+              (wxNum(h.pop) ? h.pop + '%' : '') + '</div>';
+    });
+
+    return '<div class="wx-hpane" style="width:' + W + 'px">' +
+             '<div class="wx-hlabels flex">' + labels + '</div>' +
+             '<div class="wx-hgraph" style="height:' + H + 'px">' +
+               '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+                 '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+                   '<stop offset="0" stop-color="#fcd34d" stop-opacity=".42"/>' +
+                   '<stop offset="1" stop-color="#fcd34d" stop-opacity="0"/>' +
+                 '</linearGradient></defs>' +
+                 '<g stroke="rgba(255,255,255,.06)" stroke-width="1">' + grid + '</g>' +
+                 '<path d="' + tLine + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="url(#' + id + ')"/>' +
+                 '<path d="' + tLine + '" fill="none" stroke="#fcd34d" stroke-width="2" stroke-linecap="round"/>' +
+                 '<path d="' + pLine + '" fill="none" stroke="#7dd3fc" stroke-opacity=".85" stroke-width="1.5" stroke-linecap="round"/>' +
+               '</svg>' +
+             '</div>' +
+             '<div class="wx-hpops flex pt-1">' + pops + '</div>' +
+           '</div>';
 }
 
 /** 시간별 머리줄에 들어갈 글자: '내일 · 10/29 (목)' */
@@ -476,26 +522,22 @@ function wxDayLabel(ymd, today, tomorrow) {
 }
 
 /**
- * 시간별 목록 ↔ 머리줄 ↔ 주간 카드를 한 몸으로 묶습니다.
- *  · 목록을 끌어서 날짜가 넘어가면 머리줄 글자가 바뀌고, 위쪽 주간 카드 선택도 따라갑니다.
- *  · 주간 카드를 누르면 목록이 그날로 넘어가고 머리줄은 '한 번만' 바뀝니다.
- *    (오늘→모레를 누르면 중간에 내일을 거쳐 가는데, 그때마다 바뀌면 깜빡거리므로)
- *  · 머리줄 글자는 앞으로 가면 위로 빠지고 아래에서 올라오며, 뒤로 가면 반대입니다.
+ * 주간 카드 ↔ 시간별 그래프 ↔ 머리줄을 한 몸으로 묶습니다.
+ *  · 카드를 누르면 지금 그래프는 아래로 가라앉고, 그날 그래프가 아래에서 올라옵니다.
+ *  · 머리줄 글자는 앞날로 가면 위로 빠지고 아래에서 올라오며, 뒷날로 가면 반대입니다.
  */
-function wxBindHours(hoursEl, daysEl, today, tomorrow) {
+function wxBindHours(hoursEl, daysEl, hrs, today, tomorrow) {
     const headEl = document.getElementById('wx-hours-head');
-    let shownDay = (hoursEl.querySelector('.wx-hrow') || {}).dataset ? hoursEl.querySelector('.wx-hrow').dataset.d : null;
-    let lockUntil = 0;
+    const stage = document.getElementById('wx-hstage');
+    let shownDay = hrs.length ? hrs[0].d : null;
+    if (!daysEl || !stage) return;
 
     function markCard(day) {
-        if (!daysEl) return;
         daysEl.querySelectorAll('.wx-day').forEach(function (b) { b.classList.toggle('wx-day-on', b.dataset.day === day); });
     }
 
-    function swapHead(day) {
-        if (!headEl || day === shownDay) return;
-        const forward = !shownDay || day > shownDay;
-        shownDay = day;
+    function swapHead(day, forward) {
+        if (!headEl) return;
         headEl.classList.remove('wx-in-up', 'wx-in-down');
         headEl.classList.add(forward ? 'wx-out-up' : 'wx-out-down');
         setTimeout(function () {
@@ -507,44 +549,36 @@ function wxBindHours(hoursEl, daysEl, today, tomorrow) {
         }, 150);
     }
 
-    // 지금 맨 위에 보이는 줄의 날짜
-    function topDay() {
-        const rows = hoursEl.querySelectorAll('.wx-hrow');
-        const top = hoursEl.scrollTop + 4;
-        let day = rows.length ? rows[0].dataset.d : null;
-        for (let i = 0; i < rows.length; i++) {
-            if (rows[i].offsetTop + rows[i].offsetHeight > top) { day = rows[i].dataset.d; break; }
-        }
-        return day;
+    function swapGraph(day) {
+        // 빠르게 연달아 누른 경우: 가라앉던 장은 바로 치우고, 지금 장을 제자리에 앉힌 뒤 시작합니다.
+        stage.querySelectorAll('.wx-hpane.wx-out').forEach(function (el) { el.remove(); });
+        const old = stage.querySelector('.wx-hpane');
+        if (old) old.classList.remove('wx-float');
+
+        stage.insertAdjacentHTML('beforeend', wxHourPane(wxHoursOf(hrs, day), hoursEl.clientWidth));
+        const nu = stage.lastElementChild;
+        nu.classList.add('wx-float', 'wx-pre');          // 겹쳐 놓고, 그래프는 아래에 숨겨 둔 채로
+        void nu.offsetWidth;
+        if (old) old.classList.add('wx-out');            // 지금 장은 가라앉고
+        nu.classList.remove('wx-pre');                   // 새 장은 올라옵니다
+        hoursEl.scrollLeft = 0;
+        setTimeout(function () {
+            if (old) old.remove();
+            nu.classList.remove('wx-float');
+        }, 520);
     }
 
-    let ticking = false;
-    hoursEl.addEventListener('scroll', function () {
-        // 끝까지 내리면 아래쪽 흐림을 걷어 냅니다 (더 없다는 뜻)
-        hoursEl.classList.toggle('wx-at-end', hoursEl.scrollTop + hoursEl.clientHeight >= hoursEl.scrollHeight - 2);
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(function () {
-            ticking = false;
-            if (Date.now() < lockUntil) return;          // 카드를 눌러 넘어가는 중에는 가만히
-            const d = topDay();
-            if (d) { swapHead(d); markCard(d); }
-        });
-    }, { passive: true });
-
-    if (daysEl) {
-        daysEl.addEventListener('click', function (e) {
-            const btn = e.target.closest('.wx-day');
-            if (!btn || btn.disabled) return;
-            const day = btn.dataset.day;
-            const first = hoursEl.querySelector('.wx-hrow[data-d="' + day + '"]');
-            if (!first) return;
-            lockUntil = Date.now() + 500;
-            markCard(day);
-            swapHead(day);
-            wxSmoothScrollTop(hoursEl, first.offsetTop, 350);
-        });
-    }
+    daysEl.addEventListener('click', function (e) {
+        const btn = e.target.closest('.wx-day');
+        if (!btn || btn.disabled) return;
+        const day = btn.dataset.day;
+        if (day === shownDay || !wxHoursOf(hrs, day).length) return;
+        const forward = !shownDay || day > shownDay;
+        shownDay = day;
+        markCard(day);
+        swapHead(day, forward);
+        swapGraph(day);
+    });
 }
 
 /**

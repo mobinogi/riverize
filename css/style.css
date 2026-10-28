@@ -1379,18 +1379,24 @@ input[type="number"] {
 .wx-drag.wx-grabbing { cursor: grabbing; user-select: none; }
 .wx-drag img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
 
-/* 시간별은 5줄 정도만 보이고 나머지는 위아래로 끌어서 봅니다. */
-.wx-hours {
-  max-height: 15rem;                 /* 5줄 (한 줄 3rem) */
-  overscroll-behavior: contain;
-  /* 스크롤바는 숨깁니다. 끌어서 넘기므로 필요 없고 보기에 거슬립니다. */
-  scrollbar-width: none;
-  /* 대신 아래쪽을 살짝 흐리게 해서 '아래에 더 있다' 는 것만 알려 줍니다. */
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-          mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+/* 시간별 그래프: 범례 막대 */
+.wx-key { display: inline-block; width: 10px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 4px; }
+
+/* 시간별 그래프 갈아끼우기: 지금 그래프는 아래로 가라앉고, 새 그래프는 아래에서 올라옵니다.
+   글자 줄(시각·기온, 강수확률)은 자리에서 흐려졌다 나타납니다. */
+.wx-hstage { position: relative; }
+.wx-hpane.wx-float { position: absolute; left: 0; top: 0; }
+.wx-hgraph { overflow: hidden; }
+.wx-hgraph svg { display: block; transition: transform .5s cubic-bezier(.4, 0, .2, 1), opacity .5s ease; }
+.wx-hlabels, .wx-hpops { transition: opacity .3s ease; }
+.wx-hpane.wx-out .wx-hgraph svg { transform: translateY(100%); opacity: 0; transition-duration: .38s; }
+.wx-hpane.wx-out .wx-hlabels, .wx-hpane.wx-out .wx-hpops { opacity: 0; transition-duration: .2s; }
+.wx-hpane.wx-pre .wx-hgraph svg { transform: translateY(100%); opacity: 0; transition: none; }
+.wx-hpane.wx-pre .wx-hlabels, .wx-hpane.wx-pre .wx-hpops { opacity: 0; transition: none; }
+.wx-hpane:not(.wx-out) .wx-hlabels, .wx-hpane:not(.wx-out) .wx-hpops { transition-delay: .12s; }
+@media (prefers-reduced-motion: reduce) {
+  .wx-hgraph svg, .wx-hlabels, .wx-hpops { transition: none !important; }
 }
-.wx-hours::-webkit-scrollbar { display: none; }
-.wx-hours.wx-at-end { -webkit-mask-image: none; mask-image: none; }   /* 끝까지 내리면 흐림 없음 */
 
 /* 시간별 머리줄 (하나뿐) */
 .wx-dayhead { background: rgba(0, 0, 0, 0.14); }
