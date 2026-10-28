@@ -252,11 +252,14 @@ function openWeatherModal() {
         try { window.closeSidebarNow(); } catch (e) {}
     }
 
+    // 창을 먼저 띄운 뒤 그립니다. 숨긴 채로 그리면 상자 폭이 0으로 재져서
+    //  시간별 그래프가 칸을 넓히지 못하고 왼쪽에 몰립니다.
+    m.classList.remove('hidden');
+
     if (window.__weather) renderWeatherModal(window.__weather);
     else document.getElementById('wx-body').innerHTML =
         '<div class="py-16 text-center text-sm text-white/70">날씨를 불러오는 중입니다…</div>';
 
-    m.classList.remove('hidden');
     const body = document.getElementById('wx-body');
     if (body) body.scrollTop = 0;
 
