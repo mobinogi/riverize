@@ -2,6 +2,16 @@
 
 let newsInterval = null;
 let lastNewsData = "";
+let newsLastAt = 0;          // 마지막으로 받으러 간 시각
+const NEWS_REFRESH_MS = 600000;   // 10분
+
+// 화면을 껐다 켜거나 다른 창에서 돌아오면, 멈춰 있던 타이머를 기다리지 않고
+//  마지막으로 받은 지 10분이 넘었을 때 바로 새로 받습니다. (뉴스 줄이 켜져 있을 때만)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && newsInterval && Date.now() - newsLastAt > NEWS_REFRESH_MS) {
+        fetchAndRenderNews();
+    }
+});
 
 // 기본 설정값
 const DEFAULT_CATEGORIES = ['gangseo']; 
@@ -30,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function startNewsTicker() {
     fetchAndRenderNews();
     if (newsInterval) clearInterval(newsInterval);
-    newsInterval = setInterval(fetchAndRenderNews, 600000); // 10분마다 갱신
+    newsInterval = setInterval(fetchAndRenderNews, NEWS_REFRESH_MS); // 10분마다 갱신
 }
 
 async function fetchAndRenderNews() {
@@ -43,6 +53,7 @@ async function fetchAndRenderNews() {
     updateLabelText(selectedCats); // 라벨 이름 바꾸기
 
     if (!tickerText) return;
+    newsLastAt = Date.now();
 
     try {
         // 서버(code.js)로 요청

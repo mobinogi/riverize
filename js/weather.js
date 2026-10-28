@@ -21,13 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadWeather();
     setInterval(loadWeather, WEATHER_REFRESH_MS);
 
+    // 폰 화면을 껐다 켜거나 다른 앱에서 돌아오면, 그동안 멈춰 있던 타이머를 기다리지 않고
+    //  마지막으로 받은 지 30분이 넘었을 때 바로 새로 받습니다.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && Date.now() - wxLastLoadAt > WEATHER_REFRESH_MS) loadWeather();
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && weatherModalOpen()) closeWeatherModal();
     });
 });
 
+let wxLastLoadAt = 0;   // 마지막으로 받으러 간 시각
 async function loadWeather() {
     if (typeof callAppsScript !== 'function') return;
+    wxLastLoadAt = Date.now();
     try {
         const r = await callAppsScript('getWeather');
         if (!r || r.status !== 'success') {
