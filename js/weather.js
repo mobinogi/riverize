@@ -176,6 +176,9 @@ function closeWeatherModal() {
 }
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+// 강수확률 앞의 작은 물방울. (☔ 이모지는 회색 바탕에서 탁한 보라색으로 보여서 직접 그립니다)
+const WX_DROP = '<svg viewBox="0 0 10 12" class="inline-block w-2.5 h-3 mr-1 -mt-0.5 align-middle" aria-hidden="true">' +
+                '<path d="M5 0.5C3.2 3.4 1 5.6 1 7.9A4 4 0 0 0 9 7.9C9 5.6 6.8 3.4 5 0.5Z" fill="currentColor"/></svg>';
 function ymdToDate(ymd) { return new Date(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)); }
 function todayYmd() {
     const t = new Date();
@@ -196,94 +199,113 @@ function renderWeatherModal(r) {
     const nightNow = isNightHour(new Date().getHours());
     const kindNow = weatherKind(now.pty, now.sky, nightNow);
     const today = todayYmd();
+    const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+    const tomorrow = tmr.getFullYear() + String(tmr.getMonth() + 1).padStart(2, '0') + String(tmr.getDate()).padStart(2, '0');
 
     // ── 지금 ──
+    //  폰: 위아래로 쌓음 / PC(md 이상): 왼쪽 큰 기온, 오른쪽 습도·바람·강수 한 줄
     let html =
-        '<div class="flex items-center gap-4 pt-1">' +
-          '<img src="' + weatherIcon(kindNow) + '" alt="" class="w-20 h-20 shrink-0 drop-shadow-xl">' +
+        '<div class="md:flex md:items-center md:gap-8">' +
+        '<div class="flex items-center gap-4 pt-1 md:shrink-0">' +
+          '<img src="' + weatherIcon(kindNow) + '" alt="" class="w-24 h-24 md:w-32 md:h-32 shrink-0 drop-shadow-xl">' +
           '<div class="min-w-0">' +
             '<div class="flex items-start leading-none">' +
-              '<span class="text-5xl font-black tracking-tighter tabular-nums">' + rnd(now.temp) + '</span>' +
-              '<span class="text-2xl font-bold mt-1 text-white/80">°</span>' +
+              '<span class="text-5xl md:text-6xl font-black tracking-tighter tabular-nums">' + rnd(now.temp) + '</span>' +
+              '<span class="text-2xl md:text-3xl font-bold mt-1 text-white/80">°</span>' +
             '</div>' +
-            '<div class="text-sm font-bold mt-1.5">' + weatherText(now.pty, now.sky) + '</div>' +
-            '<div class="text-xs text-white/75 mt-0.5">최고 <b class="text-red-200">' + rnd(r.today.max) + '°</b>' +
+            '<div class="text-sm md:text-base font-bold mt-1.5">' + weatherText(now.pty, now.sky) + '</div>' +
+            '<div class="text-xs md:text-sm text-white/75 mt-0.5">최고 <b class="text-red-200">' + rnd(r.today.max) + '°</b>' +
               ' · 최저 <b class="text-sky-200">' + rnd(r.today.min) + '°</b></div>' +
           '</div>' +
         '</div>' +
-        '<div class="grid grid-cols-3 gap-2 mt-4 text-center">' +
+        '<div class="grid grid-cols-3 gap-2 mt-4 md:mt-0 md:flex-1 text-center">' +
           wxStat('습도', (now.hum !== null && now.hum !== undefined) ? now.hum + '%' : '--') +
           wxStat('바람', (now.wind !== null && now.wind !== undefined) ? now.wind + 'm/s' : '--') +
           wxStat('강수확률', (now.pop !== null && now.pop !== undefined) ? now.pop + '%' : '--') +
+        '</div>' +
         '</div>';
 
-    // ── 시간별 (24시간, 옆으로 밀어서 보기) ──
-    const hours = (r.hours || []).slice(0, 24);
-    if (hours.length) {
-        html += '<div class="mt-5 mb-2 text-xs font-bold text-white/70">시간별</div>' +
-                '<div class="wx-scroll flex overflow-x-auto pb-1 -mx-1">';
-        hours.forEach(function (h, i) {
-            // 첫 칸 '지금' 은 위의 큰 숫자와 같은 관측값을 씁니다.
-            //  (예보값을 쓰면 같은 '지금' 인데 15° / 16° 처럼 숫자가 달라 헷갈립니다)
-            if (i === 0) h = Object.assign({}, h, { tmp: now.temp, pty: now.pty || h.pty });
-            const hh = +h.t.slice(0, 2);
-            const newDay = i > 0 && hh === 0;
-            const label = i === 0 ? '지금' : (newDay ? (h.d === today ? '오늘' : '내일') : hh + '시');
-            html +=
-                '<div class="flex-none w-12 text-center px-0.5' + (newDay ? ' border-l border-white/20' : '') + '">' +
-                  '<div class="text-[11px] ' + (i === 0 || newDay ? 'font-bold text-white' : 'text-white/65') + '">' + label + '</div>' +
-                  '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="" class="w-8 h-8 mx-auto my-1">' +
-                  '<div class="text-sm font-bold tabular-nums">' + rnd(h.tmp) + '°</div>' +
-                  '<div class="text-[11px] tabular-nums ' + popClass(h.pop) + '">' + (h.pop === null ? '' : h.pop + '%') + '</div>' +
-                '</div>';
-        });
-        html += '</div>';
-    }
-
-    // ── 주간 ──
     const days = r.days || [];
+    const hours = r.hours || [];
+    const hourDays = {};
+    hours.forEach(function (h) { hourDays[h.d] = true; });
+
+    // ── 주간: 가로로 끌어서 보기 ──
+    //  폰에서는 4장 남짓 보이고 옆으로 끕니다. PC는 넓어서 7장이 한 줄에 다 들어갑니다.
+    //  카드를 누르면 아래 시간별이 그날로 넘어갑니다. (시간별은 이틀치까지라 그 안의 날만)
     if (days.length) {
         const lo = Math.min.apply(null, days.map(d => d.min).filter(v => v !== null));
         const hi = Math.max.apply(null, days.map(d => d.max).filter(v => v !== null));
         const span = Math.max(1, hi - lo);
 
-        html += '<div class="mt-5 mb-1 text-xs font-bold text-white/70">주간</div>' +
-                '<div class="divide-y divide-white/10">';
+        html += '<div class="mt-5 mb-2 flex items-baseline justify-between">' +
+                  '<span class="text-xs font-bold text-white/70">주간</span>' +
+                  '<span class="text-[10px] text-white/40 md:hidden">옆으로 밀어 보기</span>' +
+                '</div>' +
+                '<div id="wx-days" class="wx-scroll wx-drag flex gap-2 overflow-x-auto snap-x -mx-5 px-5 md:mx-0 md:px-0 pb-1">';
         days.forEach(function (d, i) {
-            const dt = ymdToDate(d.d);
-            const name = d.d === today ? '오늘' : (i === 1 && d.d > today ? '내일' : WEEKDAY[dt.getDay()]);
-            const weekend = dt.getDay() === 0 ? 'text-red-200' : (dt.getDay() === 6 ? 'text-sky-200' : '');
-            const am = d.am || d.pm, pm = d.pm || d.am;
-            const pop = Math.max(am && am.pop !== null ? am.pop : -1, pm && pm.pop !== null ? pm.pop : -1);
-            const left  = d.min === null ? 0 : ((d.min - lo) / span * 100);
-            const right = d.max === null ? 0 : ((hi - d.max) / span * 100);
-
+            const v = wxDayView(d, i, today, lo, hi, span);
+            const linkable = !!hourDays[d.d];
             html +=
-                '<div class="flex items-center gap-2 py-2.5">' +
-                  '<div class="w-11 shrink-0 leading-tight">' +
-                    '<div class="text-sm font-bold ' + weekend + '">' + name + '</div>' +
-                    '<div class="text-[10px] text-white/55 tabular-nums">' + (dt.getMonth() + 1) + '/' + dt.getDate() + '</div>' +
+                '<button type="button" data-day="' + d.d + '"' + (linkable ? '' : ' disabled') +
+                ' class="wx-day' + (d.d === today ? ' wx-day-on' : '') + ' snap-start flex-none w-[84px] md:flex-1 md:w-auto md:min-w-0' +
+                ' rounded-2xl bg-white/10 px-1 pt-3 pb-3 text-center transition-colors focus:outline-none' +
+                (linkable ? ' hover:bg-white/15' : ' cursor-default') + '">' +
+                  '<div class="text-sm font-bold ' + v.weekend + '">' + v.name + '</div>' +
+                  '<div class="text-[11px] text-white/55 tabular-nums">' + v.md + '</div>' +
+                  '<div class="flex justify-center mt-2">' +
+                    '<div><img src="' + v.amIcon + '" alt="오전" class="w-9 h-9 md:w-11 md:h-11 mx-auto">' +
+                      '<div class="text-[10px] text-white/45 -mt-0.5">오전</div></div>' +
+                    '<div><img src="' + v.pmIcon + '" alt="오후" class="w-9 h-9 md:w-11 md:h-11 mx-auto">' +
+                      '<div class="text-[10px] text-white/45 -mt-0.5">오후</div></div>' +
                   '</div>' +
-                  '<div class="flex items-center shrink-0" title="오전 / 오후">' +
-                    '<img src="' + weatherIcon(weatherKind(am ? am.pty : 0, am ? am.sky : 1, false)) + '" alt="오전" class="w-7 h-7">' +
-                    '<img src="' + weatherIcon(weatherKind(pm ? pm.pty : 0, pm ? pm.sky : 1, false)) + '" alt="오후" class="w-7 h-7">' +
+                  '<div class="mt-1.5 text-[12px] md:text-[13px] tabular-nums ' + popClass(v.pop) + '">' +
+                    (v.pop === null ? '&nbsp;' : v.pop + '%') + '</div>' +
+                  '<div class="mt-2 text-base font-bold text-red-200 tabular-nums">' + rnd(d.max) + '°</div>' +
+                  '<div class="relative mx-auto my-1 w-1.5 h-12 md:h-14 rounded-full bg-white/15">' +
+                    '<div class="absolute inset-x-0 rounded-full bg-gradient-to-t from-sky-300 to-amber-300"' +
+                    ' style="top:' + v.barB + '%;bottom:' + v.barA + '%"></div>' +
                   '</div>' +
-                  '<div class="w-10 shrink-0 text-right text-[12px] tabular-nums ' + popClass(pop < 0 ? null : pop) + '">' +
-                    (pop < 0 ? '' : pop + '%') + '</div>' +
-                  '<div class="flex-1 min-w-0 flex items-center gap-1.5">' +
-                    '<span class="w-7 shrink-0 text-right text-sm font-bold text-sky-200 tabular-nums">' + rnd(d.min) + '°</span>' +
-                    '<div class="relative flex-1 h-1.5 rounded-full bg-white/15">' +
-                      '<div class="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 to-amber-300"' +
-                      ' style="left:' + left.toFixed(1) + '%;right:' + right.toFixed(1) + '%"></div>' +
-                    '</div>' +
-                    '<span class="w-7 shrink-0 text-sm font-bold text-red-200 tabular-nums">' + rnd(d.max) + '°</span>' +
-                  '</div>' +
+                  '<div class="text-base font-bold text-sky-200 tabular-nums">' + rnd(d.min) + '°</div>' +
+                '</button>';
+        });
+        html += '</div>';
+    }
+
+    // ── 시간별: 세로 목록, 5줄 정도 보이고 위아래로 끌어서 보기 ──
+    //  날짜가 바뀌는 자리에 '내일 · 10/29 (목)' 머리줄이 붙고, 끌어 내려도 위에 붙어 있습니다.
+    if (hours.length) {
+        html += '<div class="mt-5 mb-2 text-xs font-bold text-white/70">시간별</div>' +
+                '<div id="wx-hours" class="wx-hours wx-drag relative overflow-y-auto rounded-2xl bg-black/10">';
+        let lastD = null;
+        hours.forEach(function (h, i) {
+            // 첫 줄 '지금' 은 위의 큰 숫자와 같은 관측값을 씁니다.
+            //  (예보값을 쓰면 같은 '지금' 인데 15° / 16° 처럼 숫자가 달라 헷갈립니다)
+            if (i === 0) h = Object.assign({}, h, { tmp: now.temp, pty: now.pty || h.pty });
+            const hh = +h.t.slice(0, 2);
+
+            if (h.d !== lastD) {
+                lastD = h.d;
+                const dt = ymdToDate(h.d);
+                const nm = h.d === today ? '오늘' : (h.d === tomorrow ? '내일' : '모레');
+                html += '<div data-dayhead="' + h.d + '" class="wx-dayhead sticky top-0 z-10 px-4 py-1.5 text-[11px] font-bold text-white/85">' +
+                          nm + ' · ' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' (' + WEEKDAY[dt.getDay()] + ')' +
+                        '</div>';
+            }
+
+            const rain = (h.pty && h.pcp && h.pcp !== '강수없음') ? ' · ' + h.pcp : '';
+            html +=
+                '<div class="flex items-center gap-3 px-4 h-12 border-t border-white/5">' +
+                  '<div class="w-10 shrink-0 text-sm tabular-nums ' + (i === 0 ? 'font-bold' : 'text-white/80') + '">' +
+                    (i === 0 ? '지금' : hh + '시') + '</div>' +
+                  '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="" class="w-8 h-8 md:w-9 md:h-9 shrink-0">' +
+                  '<div class="flex-1 min-w-0 text-[13px] text-white/80 truncate">' + weatherText(h.pty, h.sky) + rain + '</div>' +
+                  '<div class="w-14 shrink-0 text-right text-[12px] tabular-nums ' + popClass(h.pop) + '">' +
+                    (h.pop === null ? '' : WX_DROP + h.pop + '%') + '</div>' +
+                  '<div class="w-11 shrink-0 text-right text-base font-bold tabular-nums">' + rnd(h.tmp) + '°</div>' +
                 '</div>';
         });
         html += '</div>';
-        if (days.length < 7) {
-            html += '<div class="mt-1 text-[11px] text-white/45">그 뒤 날짜는 준비 중입니다.</div>';
-        }
     }
 
     // ── 출처 (이용 조건: 저작자표시) ──
@@ -296,25 +318,99 @@ function renderWeatherModal(r) {
 
     body.innerHTML = html;
 
-    // PC 마우스 휠은 위아래로만 굴러서 옆으로 긴 시간별 줄을 넘기기 어렵습니다.
-    //  그 줄 위에서는 휠을 옆으로 바꿔 줍니다. (터치·트랙패드는 원래대로)
-    const strip = body.querySelector('.wx-scroll');
-    if (strip) {
-        strip.addEventListener('wheel', function (e) {
-            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-            const atStart = strip.scrollLeft <= 0 && e.deltaY < 0;
-            const atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1 && e.deltaY > 0;
-            if (atStart || atEnd) return;      // 끝에 닿으면 창 전체가 위아래로 스크롤되게 놔둡니다
-            strip.scrollLeft += e.deltaY;
-            e.preventDefault();
-        }, { passive: false });
+    // ── 끌기 ──
+    //  폰은 손가락으로 원래 끌립니다. PC 마우스로도 잡아 끌 수 있게 합니다.
+    const daysEl = document.getElementById('wx-days');
+    const hoursEl = document.getElementById('wx-hours');
+    if (daysEl) { wxEnableDrag(daysEl, 'x'); wxWheelToX(daysEl); }
+    if (hoursEl) wxEnableDrag(hoursEl, 'y');
+
+    // 주간 카드를 누르면 시간별이 그날로 넘어갑니다.
+    if (daysEl && hoursEl) {
+        daysEl.addEventListener('click', function (e) {
+            const btn = e.target.closest('.wx-day');
+            if (!btn || btn.disabled) return;
+            const head = hoursEl.querySelector('[data-dayhead="' + btn.dataset.day + '"]');
+            const firstRow = head && head.nextElementSibling;
+            if (!firstRow) return;
+            hoursEl.scrollTo({ top: firstRow.offsetTop - head.offsetHeight, behavior: 'smooth' });
+            daysEl.querySelectorAll('.wx-day').forEach(function (b) { b.classList.toggle('wx-day-on', b === btn); });
+        });
     }
 }
 
+/**
+ * PC 마우스로 잡아 끌어서 넘기기. (터치는 원래 되므로 마우스만 다룹니다)
+ *  조금(4px) 움직여야 끌기로 치고, 그 전에 놓으면 그냥 '누르기' 입니다.
+ *  끌다가 놓은 자리의 카드가 눌린 것으로 처리되지 않게 막습니다.
+ */
+function wxEnableDrag(el, axis) {
+    let down = false, moved = false, startPos = 0, startScroll = 0;
+    el.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        down = true; moved = false;
+        startPos = axis === 'x' ? e.clientX : e.clientY;
+        startScroll = axis === 'x' ? el.scrollLeft : el.scrollTop;
+    });
+    el.addEventListener('pointermove', function (e) {
+        if (!down) return;
+        const d = (axis === 'x' ? e.clientX : e.clientY) - startPos;
+        if (!moved && Math.abs(d) > 4) {
+            moved = true;
+            try { el.setPointerCapture(e.pointerId); } catch (err) {}
+            el.classList.add('wx-grabbing');
+        }
+        if (!moved) return;
+        if (axis === 'x') el.scrollLeft = startScroll - d;
+        else el.scrollTop = startScroll - d;
+    });
+    const end = function () {
+        if (!down) return;
+        down = false;
+        el.classList.remove('wx-grabbing');
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('click', function (e) {
+        if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+}
+
+/** 옆으로 긴 줄 위에서는 마우스 휠을 옆으로 바꿔 줍니다. 끝에 닿으면 창 전체가 굴러가게 놔둡니다. */
+function wxWheelToX(el) {
+    el.addEventListener('wheel', function (e) {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+        const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && e.deltaY > 0;
+        if (atStart || atEnd) return;
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+    }, { passive: false });
+}
+
+/** 주간 한 칸에 필요한 값을 한 곳에서 계산합니다. (폰 목록·PC 카드 공용) */
+function wxDayView(d, i, today, lo, hi, span) {
+    const dt = ymdToDate(d.d);
+    const am = d.am || d.pm, pm = d.pm || d.am;
+    const p = Math.max(am && am.pop !== null ? am.pop : -1, pm && pm.pop !== null ? pm.pop : -1);
+    return {
+        name: d.d === today ? '오늘' : (i === 1 && d.d > today ? '내일' : WEEKDAY[dt.getDay()]),
+        md: (dt.getMonth() + 1) + '/' + dt.getDate(),
+        weekend: dt.getDay() === 0 ? 'text-red-200' : (dt.getDay() === 6 ? 'text-sky-200' : ''),
+        amIcon: weatherIcon(weatherKind(am ? am.pty : 0, am ? am.sky : 1, false)),
+        pmIcon: weatherIcon(weatherKind(pm ? pm.pty : 0, pm ? pm.sky : 1, false)),
+        pop: p < 0 ? null : p,
+        // 막대: 이번 주 최저~최고 사이에서 그날이 차지하는 구간
+        //  barA = 아래(폰은 왼쪽) 여백 %, barB = 위(폰은 오른쪽) 여백 %
+        barA: (d.min === null ? 0 : (d.min - lo) / span * 100).toFixed(1),
+        barB: (d.max === null ? 0 : (hi - d.max) / span * 100).toFixed(1)
+    };
+}
+
 function wxStat(label, value) {
-    return '<div class="rounded-2xl bg-white/10 py-2">' +
-             '<div class="text-[11px] text-white/60">' + label + '</div>' +
-             '<div class="text-sm font-bold tabular-nums mt-0.5">' + value + '</div>' +
+    return '<div class="rounded-2xl bg-white/10 py-2 md:py-3">' +
+             '<div class="text-[11px] md:text-xs text-white/60">' + label + '</div>' +
+             '<div class="text-sm md:text-lg font-bold tabular-nums mt-0.5">' + value + '</div>' +
            '</div>';
 }
 
