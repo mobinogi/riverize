@@ -1381,15 +1381,27 @@ input[type="number"] {
 
 /* 시간별은 5줄 정도만 보이고 나머지는 위아래로 끌어서 봅니다. */
 .wx-hours {
-  max-height: 17rem;
+  max-height: 15rem;                 /* 5줄 (한 줄 3rem) */
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.28) transparent;
+  /* 스크롤바는 숨깁니다. 끌어서 넘기므로 필요 없고 보기에 거슬립니다. */
+  scrollbar-width: none;
+  /* 대신 아래쪽을 살짝 흐리게 해서 '아래에 더 있다' 는 것만 알려 줍니다. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
-.wx-hours::-webkit-scrollbar { width: 6px; }
-.wx-hours::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
-/* 날짜 머리줄: 끌어 내려도 위에 붙어 있도록 불투명하게 */
-.wx-dayhead { background: rgba(86, 86, 86, 0.97); }
+.wx-hours::-webkit-scrollbar { display: none; }
+.wx-hours.wx-at-end { -webkit-mask-image: none; mask-image: none; }   /* 끝까지 내리면 흐림 없음 */
+
+/* 시간별 머리줄 (하나뿐) */
+.wx-dayhead { background: rgba(0, 0, 0, 0.14); }
+
+/* 머리줄 글자 갈아끼우기: 앞으로 가면 위로 빠지고 아래에서 올라옵니다 */
+.wx-head-text { display: inline-block; transition: transform .15s ease, opacity .15s ease; }
+.wx-head-text.wx-out-up   { transform: translateY(-8px); opacity: 0; }
+.wx-head-text.wx-out-down { transform: translateY(8px);  opacity: 0; }
+.wx-head-text.wx-in-up    { transform: translateY(8px);  opacity: 0; transition: none; }
+.wx-head-text.wx-in-down  { transform: translateY(-8px); opacity: 0; transition: none; }
+@media (prefers-reduced-motion: reduce) { .wx-head-text { transition: none; } }
 
 /* 고른 주간 카드: 테두리 대신 바탕만 밝게 */
 .wx-day-on { background-color: rgba(255, 255, 255, 0.24) !important; }

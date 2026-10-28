@@ -261,12 +261,27 @@ function renderWeatherModal(r) {
                   '</div>' +
                   '<div class="mt-1.5 text-[12px] md:text-[13px] tabular-nums ' + popClass(v.pop) + '">' +
                     (v.pop === null ? '&nbsp;' : v.pop + '%') + '</div>' +
-                  '<div class="mt-2 text-base font-bold text-red-200 tabular-nums">' + rnd(d.max) + '°</div>' +
-                  '<div class="relative mx-auto my-1 w-1.5 h-12 md:h-14 rounded-full bg-white/15">' +
-                    '<div class="absolute inset-x-0 rounded-full bg-gradient-to-t from-sky-300 to-amber-300"' +
-                    ' style="top:' + v.barB + '%;bottom:' + v.barA + '%"></div>' +
+                  // 폰: 카드가 좁아 막대를 세로로 세웁니다 (최고 위 · 최저 아래)
+                  '<div class="md:hidden">' +
+                    '<div class="mt-2 text-base font-bold text-red-200 tabular-nums">' + rnd(d.max) + '°</div>' +
+                    '<div class="relative mx-auto my-1 w-1.5 h-12 rounded-full bg-white/15">' +
+                      '<div class="absolute inset-x-0 rounded-full bg-gradient-to-t from-sky-300 to-amber-300"' +
+                      ' style="top:' + v.barB + '%;bottom:' + v.barA + '%"></div>' +
+                    '</div>' +
+                    '<div class="text-base font-bold text-sky-200 tabular-nums">' + rnd(d.min) + '°</div>' +
                   '</div>' +
-                  '<div class="text-base font-bold text-sky-200 tabular-nums">' + rnd(d.min) + '°</div>' +
+                  // PC: 가로로 눕힙니다. 숫자는 위 양 끝(최저 왼쪽 · 최고 오른쪽),
+                  //  막대는 그 아래 카드 폭 전체로 — 숫자 옆에 끼우면 막대가 손톱만 해집니다.
+                  '<div class="hidden md:block mt-3 px-2.5">' +
+                    '<div class="flex justify-between text-sm font-bold tabular-nums">' +
+                      '<span class="text-sky-200">' + rnd(d.min) + '°</span>' +
+                      '<span class="text-red-200">' + rnd(d.max) + '°</span>' +
+                    '</div>' +
+                    '<div class="relative mt-1 h-1.5 rounded-full bg-white/15">' +
+                      '<div class="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 to-amber-300"' +
+                      ' style="left:' + v.barA + '%;right:' + v.barB + '%"></div>' +
+                    '</div>' +
+                  '</div>' +
                 '</button>';
         });
         html += '</div>';
@@ -275,27 +290,31 @@ function renderWeatherModal(r) {
     // ── 시간별: 세로 목록, 5줄 정도 보이고 위아래로 끌어서 보기 ──
     //  날짜가 바뀌는 자리에 '내일 · 10/29 (목)' 머리줄이 붙고, 끌어 내려도 위에 붙어 있습니다.
     if (hours.length) {
+        //  머리줄은 목록 밖에 하나만 둡니다. 날짜가 넘어가면 글자만 바뀝니다.
+        //  (예전엔 날짜마다 머리줄이 위에 붙어서, 넘어갈 때 서로 밀어 올리며 겹쳐 보였습니다)
         html += '<div class="mt-5 mb-2 text-xs font-bold text-white/70">시간별</div>' +
-                '<div id="wx-hours" class="wx-hours wx-drag relative overflow-y-auto rounded-2xl bg-black/10">';
-        let lastD = null;
+                '<div class="rounded-2xl bg-black/10 overflow-hidden">' +
+                  '<div class="wx-dayhead px-4 py-1.5 text-[11px] font-bold text-white/85 overflow-hidden">' +
+                    '<span id="wx-hours-head" class="wx-head-text">' + wxDayLabel(hours[0].d, today, tomorrow) + '</span>' +
+                  '</div>' +
+                '<div id="wx-hours" class="wx-hours wx-drag relative overflow-y-auto">';
+        let lastD = hours[0].d;
         hours.forEach(function (h, i) {
             // 첫 줄 '지금' 은 위의 큰 숫자와 같은 관측값을 씁니다.
             //  (예보값을 쓰면 같은 '지금' 인데 15° / 16° 처럼 숫자가 달라 헷갈립니다)
             if (i === 0) h = Object.assign({}, h, { tmp: now.temp, pty: now.pty || h.pty });
             const hh = +h.t.slice(0, 2);
 
+            // 날짜가 바뀌는 자리엔 위에 붙지 않는 옅은 구분선만 둡니다.
             if (h.d !== lastD) {
                 lastD = h.d;
-                const dt = ymdToDate(h.d);
-                const nm = h.d === today ? '오늘' : (h.d === tomorrow ? '내일' : '모레');
-                html += '<div data-dayhead="' + h.d + '" class="wx-dayhead sticky top-0 z-10 px-4 py-1.5 text-[11px] font-bold text-white/85">' +
-                          nm + ' · ' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' (' + WEEKDAY[dt.getDay()] + ')' +
-                        '</div>';
+                html += '<div data-daystart="' + h.d + '" class="px-4 pt-3 pb-1 text-[10px] text-white/45 border-t border-white/15">' +
+                          wxDayLabel(h.d, today, tomorrow) + '</div>';
             }
 
             const rain = (h.pty && h.pcp && h.pcp !== '강수없음') ? ' · ' + h.pcp : '';
             html +=
-                '<div class="flex items-center gap-3 px-4 h-12 border-t border-white/5">' +
+                '<div data-d="' + h.d + '" class="wx-hrow flex items-center gap-3 px-4 h-12 border-t border-white/5">' +
                   '<div class="w-10 shrink-0 text-sm tabular-nums ' + (i === 0 ? 'font-bold' : 'text-white/80') + '">' +
                     (i === 0 ? '지금' : hh + '시') + '</div>' +
                   '<img src="' + weatherIcon(weatherKind(h.pty, h.sky, isNightHour(hh))) + '" alt="" class="w-8 h-8 md:w-9 md:h-9 shrink-0">' +
@@ -305,7 +324,7 @@ function renderWeatherModal(r) {
                   '<div class="w-11 shrink-0 text-right text-base font-bold tabular-nums">' + rnd(h.tmp) + '°</div>' +
                 '</div>';
         });
-        html += '</div>';
+        html += '</div></div>';
     }
 
     // ── 출처 (이용 조건: 저작자표시) ──
@@ -325,16 +344,106 @@ function renderWeatherModal(r) {
     if (daysEl) { wxEnableDrag(daysEl, 'x'); wxWheelToX(daysEl); }
     if (hoursEl) wxEnableDrag(hoursEl, 'y');
 
-    // 주간 카드를 누르면 시간별이 그날로 넘어갑니다.
-    if (daysEl && hoursEl) {
+    if (hoursEl) wxBindHours(hoursEl, daysEl, today, tomorrow);
+}
+
+/**
+ * 목록을 정해진 위치까지 부드럽게 내립니다.
+ *  브라우저 기본 '부드럽게 스크롤'은 브라우저마다 동작이 달라(안 움직이는 경우도 있음)
+ *  직접 움직입니다. 처음엔 빠르게, 끝에서 천천히 섭니다.
+ */
+function wxSmoothScrollTop(el, to, ms) {
+    const from = el.scrollTop;
+    const max = el.scrollHeight - el.clientHeight;
+    const target = Math.max(0, Math.min(max, to));
+    if (Math.abs(target - from) < 1) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { el.scrollTop = target; return; }
+    const t0 = performance.now();
+    (function step(now) {
+        const k = Math.min(1, (now - t0) / ms);
+        const e = 1 - Math.pow(1 - k, 3);   // 끝에서 천천히
+        el.scrollTop = from + (target - from) * e;
+        if (k < 1) requestAnimationFrame(step);
+    })(t0);
+}
+
+/** 시간별 머리줄에 들어갈 글자: '내일 · 10/29 (목)' */
+function wxDayLabel(ymd, today, tomorrow) {
+    const dt = ymdToDate(ymd);
+    const nm = ymd === today ? '오늘' : (ymd === tomorrow ? '내일' : '모레');
+    return nm + ' · ' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' (' + WEEKDAY[dt.getDay()] + ')';
+}
+
+/**
+ * 시간별 목록 ↔ 머리줄 ↔ 주간 카드를 한 몸으로 묶습니다.
+ *  · 목록을 끌어서 날짜가 넘어가면 머리줄 글자가 바뀌고, 위쪽 주간 카드 선택도 따라갑니다.
+ *  · 주간 카드를 누르면 목록이 그날로 넘어가고 머리줄은 '한 번만' 바뀝니다.
+ *    (오늘→모레를 누르면 중간에 내일을 거쳐 가는데, 그때마다 바뀌면 깜빡거리므로)
+ *  · 머리줄 글자는 앞으로 가면 위로 빠지고 아래에서 올라오며, 뒤로 가면 반대입니다.
+ */
+function wxBindHours(hoursEl, daysEl, today, tomorrow) {
+    const headEl = document.getElementById('wx-hours-head');
+    let shownDay = (hoursEl.querySelector('.wx-hrow') || {}).dataset ? hoursEl.querySelector('.wx-hrow').dataset.d : null;
+    let lockUntil = 0;
+
+    function markCard(day) {
+        if (!daysEl) return;
+        daysEl.querySelectorAll('.wx-day').forEach(function (b) { b.classList.toggle('wx-day-on', b.dataset.day === day); });
+    }
+
+    function swapHead(day) {
+        if (!headEl || day === shownDay) return;
+        const forward = !shownDay || day > shownDay;
+        shownDay = day;
+        headEl.classList.remove('wx-in-up', 'wx-in-down');
+        headEl.classList.add(forward ? 'wx-out-up' : 'wx-out-down');
+        setTimeout(function () {
+            headEl.textContent = wxDayLabel(day, today, tomorrow);
+            headEl.classList.remove('wx-out-up', 'wx-out-down');
+            headEl.classList.add(forward ? 'wx-in-up' : 'wx-in-down');
+            void headEl.offsetWidth;                         // 시작 위치를 먼저 그리게 한 뒤
+            headEl.classList.remove('wx-in-up', 'wx-in-down'); // 제자리로 미끄러져 들어옵니다
+        }, 150);
+    }
+
+    // 지금 맨 위에 보이는 줄의 날짜
+    function topDay() {
+        const rows = hoursEl.querySelectorAll('.wx-hrow');
+        const top = hoursEl.scrollTop + 4;
+        let day = rows.length ? rows[0].dataset.d : null;
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].offsetTop + rows[i].offsetHeight > top) { day = rows[i].dataset.d; break; }
+        }
+        return day;
+    }
+
+    let ticking = false;
+    hoursEl.addEventListener('scroll', function () {
+        // 끝까지 내리면 아래쪽 흐림을 걷어 냅니다 (더 없다는 뜻)
+        hoursEl.classList.toggle('wx-at-end', hoursEl.scrollTop + hoursEl.clientHeight >= hoursEl.scrollHeight - 2);
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () {
+            ticking = false;
+            if (Date.now() < lockUntil) return;          // 카드를 눌러 넘어가는 중에는 가만히
+            const d = topDay();
+            if (d) { swapHead(d); markCard(d); }
+        });
+    }, { passive: true });
+
+    if (daysEl) {
         daysEl.addEventListener('click', function (e) {
             const btn = e.target.closest('.wx-day');
             if (!btn || btn.disabled) return;
-            const head = hoursEl.querySelector('[data-dayhead="' + btn.dataset.day + '"]');
-            const firstRow = head && head.nextElementSibling;
-            if (!firstRow) return;
-            hoursEl.scrollTo({ top: firstRow.offsetTop - head.offsetHeight, behavior: 'smooth' });
-            daysEl.querySelectorAll('.wx-day').forEach(function (b) { b.classList.toggle('wx-day-on', b === btn); });
+            const day = btn.dataset.day;
+            const first = hoursEl.querySelector('.wx-hrow[data-d="' + day + '"]');
+            if (!first) return;
+            const sep = first.previousElementSibling && first.previousElementSibling.dataset.daystart ? first.previousElementSibling : null;
+            lockUntil = Date.now() + 500;
+            markCard(day);
+            swapHead(day);
+            wxSmoothScrollTop(hoursEl, sep ? sep.offsetTop : first.offsetTop, 350);
         });
     }
 }
