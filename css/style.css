@@ -529,7 +529,9 @@ body.sidebar-collapsed #main-content-wrapper {
     overflow: visible !important; 
     
     z-index: 40 !important;
-    transition: left 0.3s ease-in-out, width 0.3s ease-in-out !important;
+    /* 사이드바(#sidebar)·본문(#main-content-wrapper)과 같은 곡선이어야 같이 움직입니다.
+       예전엔 이것만 ease-in-out 이라 출발이 느려서 반박자 늦게 따라오는 것처럼 보였습니다. */
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     
     /* 디자인 */
     background-color: rgba(17, 24, 39, 0.95) !important; 
