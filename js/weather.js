@@ -350,7 +350,9 @@ function renderWeatherModal(r) {
                   '<span class="text-xs font-bold text-white/70">주간</span>' +
                   '<span class="text-[10px] text-white/40 md:hidden">옆으로 밀어 보기</span>' +
                 '</div>' +
-                '<div id="wx-days" class="wx-scroll wx-drag flex gap-2 overflow-x-auto snap-x -mx-5 px-5 md:mx-0 md:px-0 pb-1">';
+                '<div id="wx-days" class="wx-scroll wx-drag flex gap-2 overflow-x-auto snap-x scroll-px-5 md:scroll-px-0 -mx-5 px-5 md:mx-0 md:px-0 pb-1">';
+        //  scroll-px-5: 카드가 멈춰 설 때도 창 끝에서 20px 띄웁니다.
+        //   (없으면 밀었다 놓을 때 첫 카드가 창 가장자리에 딱 붙어 섭니다)
         days.forEach(function (d, i) {
             const v = wxDayView(d, i, today, lo, hi, span);
             const linkable = !!hourDays[d.d];
