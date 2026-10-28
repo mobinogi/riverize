@@ -1364,3 +1364,11 @@ input[type="number"] {
     .news-ticker-wrap { left: 16rem !important; }
     body.sidebar-collapsed .news-ticker-wrap { left: 0 !important; }
 }
+
+/* ── 날씨 창: 시간별 줄은 옆으로 밀어서 봅니다. 스크롤바는 숨깁니다. ── */
+.wx-scroll { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.wx-scroll::-webkit-scrollbar { display: none; }
+.wx-body { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.28) transparent; }
+.wx-body::-webkit-scrollbar { width: 6px; }
+.wx-body::-webkit-scrollbar-track { background: transparent; }
+.wx-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
