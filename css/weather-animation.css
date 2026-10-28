@@ -164,7 +164,25 @@
 @keyframes fx-ic-sway  { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
 @keyframes fx-ic-moon  { 50% { transform: rotate(-10deg) translateY(-2px); } }
 
+/* ── '눌러서 주간 날씨 보기' 안내 글자 ─────────────────── */
+/* 스켈레톤 화면처럼 밝은 사선 띠가 글자 위를 지나가서 눈에 띄게 합니다.
+   띠가 한 번 지나간 뒤 잠깐 쉬었다가 다시 지나갑니다. */
+.wx-hint {
+  color: #9ca3af;
+  background: linear-gradient(110deg, #9ca3af 42%, #f3f4f6 50%, #9ca3af 58%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wx-hint-sweep 3.2s ease-in-out infinite;
+}
+@keyframes wx-hint-sweep {
+  0%        { background-position: 100% 0; }
+  55%, 100% { background-position: 0% 0; }
+}
+
 /* 움직임 줄이기 설정을 켠 기기에서는 연출을 하지 않습니다 */
 @media (prefers-reduced-motion: reduce) {
   .weather-animation-layer { display: none; }
+  .wx-hint { animation: none; -webkit-text-fill-color: currentColor; background: none; }
 }
