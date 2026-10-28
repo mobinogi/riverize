@@ -533,12 +533,13 @@ function wxHourPane(list, fitW) {
            '</div>';
 }
 
-/** 시간별 머리줄에 들어갈 글자: '내일 · 10/29 (목)' */
+/** 시간별 머리줄에 들어갈 글자: '오늘 · 10/28 (수)' / '목요일 · 10/29' */
 function wxDayLabel(ymd, today, tomorrow) {
     const dt = ymdToDate(ymd);
-    const diff = Math.round((dt - ymdToDate(today)) / 86400000);
-    const nm = ['오늘', '내일', '모레', '글피'][diff] || WEEKDAY[dt.getDay()] + '요일';
-    return nm + ' · ' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' (' + WEEKDAY[dt.getDay()] + ')';
+    const md = (dt.getMonth() + 1) + '/' + dt.getDate();
+    // 오늘만 '오늘' 이라 쓰고, 나머지는 요일로 씁니다. (주간 카드와 같은 규칙)
+    return ymd === today ? '오늘 · ' + md + ' (' + WEEKDAY[dt.getDay()] + ')'
+                         : WEEKDAY[dt.getDay()] + '요일 · ' + md;
 }
 
 /**
@@ -677,7 +678,8 @@ function wxDayView(d, i, today, lo, hi, span) {
     const am = d.am || d.pm, pm = d.pm || d.am;
     const p = Math.max(am && am.pop !== null ? am.pop : -1, pm && pm.pop !== null ? pm.pop : -1);
     return {
-        name: d.d === today ? '오늘' : (i === 1 && d.d > today ? '내일' : WEEKDAY[dt.getDay()]),
+        // 오늘만 '오늘', 나머지는 요일. ('두 번째 칸 = 내일' 로 정해 두면 오늘이 빠졌을 때 어긋납니다)
+        name: d.d === today ? '오늘' : WEEKDAY[dt.getDay()],
         md: (dt.getMonth() + 1) + '/' + dt.getDate(),
         weekend: dt.getDay() === 0 ? 'text-red-200' : (dt.getDay() === 6 ? 'text-sky-200' : ''),
         amIcon: weatherIcon(weatherKind(am ? am.pty : 0, am ? am.sky : 1, false)),
