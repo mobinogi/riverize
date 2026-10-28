@@ -292,20 +292,12 @@ function toggleSidebar() {
         if (isClosed) {
             // [닫힘] 사이드바 사라짐 -> 티커가 왼쪽 구석(0)부터 끝(100%)까지 차지
             body.classList.add('sidebar-collapsed');
-            
-            if (ticker) {
-                ticker.style.left = '0px';      // 왼쪽 벽에 딱 붙임
-                ticker.style.width = '100%';    // 너비를 화면 전체로 늘림
-            }
+            // 뉴스라인 위치는 CSS 가 이 표시(sidebar-collapsed)를 보고 정합니다. (style.css)
 
         } else {
             // [열림] 사이드바 나옴 -> 티커가 16rem만큼 비키고 나머지만 차지
             body.classList.remove('sidebar-collapsed');
-            
-            if (ticker) {
-                ticker.style.left = '16rem';              // 사이드바 너비만큼 오른쪽으로 밀어냄
-                ticker.style.width = 'calc(100% - 16rem)'; // 전체에서 사이드바만큼 뺀 나머지만 가짐
-            }
+            // 뉴스라인 위치는 CSS 가 이 표시(sidebar-collapsed)를 보고 정합니다. (style.css)
         }
     }
 }

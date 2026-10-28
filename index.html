@@ -34,7 +34,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
   <link rel="stylesheet" href="css/truck.css?v=3">
   <link rel="stylesheet" href="css/weather-animation.css?v=2">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
@@ -1244,15 +1244,10 @@ document.addEventListener('DOMContentLoaded', () => {
                   // (1) 일단 원래 설정대로 표시
                   ticker.style.display = ''; 
 
-                  // (2) PC라면? -> sidebar.js가 하는 것처럼 '강제로' 위치 잡아줌 (지도 기능 호환용)
-                  if(window.innerWidth >= 768) {
-                      ticker.style.left = '16rem';               
-                      ticker.style.width = 'calc(100% - 16rem)'; 
-                  } else {
-                      // 모바일이면 스타일 초기화
-                      ticker.style.left = '';
-                      ticker.style.width = '';
-                  }
+                  // (2) 위치는 CSS 가 sidebar-collapsed 표시를 보고 정합니다. (style.css)
+                  //     예전에 여기서 직접 넣던 값이 남아 있을 수 있어 비워 둡니다.
+                  ticker.style.left = '';
+                  ticker.style.width = '';
               }
               
               renderCalendar(); 

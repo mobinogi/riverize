@@ -531,7 +531,7 @@ body.sidebar-collapsed #main-content-wrapper {
     z-index: 40 !important;
     /* 사이드바(#sidebar)·본문(#main-content-wrapper)과 같은 곡선이어야 같이 움직입니다.
        예전엔 이것만 ease-in-out 이라 출발이 느려서 반박자 늦게 따라오는 것처럼 보였습니다. */
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     
     /* 디자인 */
     background-color: rgba(17, 24, 39, 0.95) !important; 
@@ -1345,4 +1345,22 @@ input[type="number"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .qe-reveal { transition: none; }
+}
+
+/* ── 뉴스라인 위치 (여기 한 곳에서만 정합니다) ─────────────────
+   오른쪽 끝은 화면 끝(right:0)에 못 박고, 왼쪽 끝만 움직입니다.
+   그래서 사이드바를 접고 펼 때 왼쪽으로만 늘어나고 줄어듭니다.
+
+   예전에는 처음 위치가 left:auto 였고(→ 숫자로 바뀔 때 애니메이션 없이 순간이동),
+   오른쪽 끝을 '왼쪽 + 폭' 으로 계산해서 둘이 어긋나면 오른쪽까지 출렁였습니다.
+   그게 접을 때 '양옆으로 늘어나는' 것처럼 보이던 이유입니다.
+   JS 는 이제 body 의 sidebar-collapsed 표시만 붙였다 뗍니다. */
+.news-ticker-wrap {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+}
+@media (min-width: 768px) {
+    .news-ticker-wrap { left: 16rem !important; }
+    body.sidebar-collapsed .news-ticker-wrap { left: 0 !important; }
 }
