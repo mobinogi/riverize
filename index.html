@@ -36,11 +36,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css?v=13">
   <link rel="stylesheet" href="css/truck.css?v=3">
-  <link rel="stylesheet" href="css/weather-animation.css?v=5">
+  <link rel="stylesheet" href="css/weather-animation.css?v=6">
   <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=QePeg5ee414bGfjbIx13L55PmUEim1vl9tvBSyp0"></script>
   <script src="js/sidebar.js"></script>
   <script src="js/oilprice.js"></script>
-  <script src="js/weather.js?v=2"></script>
+  <script src="js/weather.js?v=3"></script>
   <script src="js/newsTicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/chart1.js"></script>
@@ -368,10 +368,23 @@ function mergeSelectedBoxes() {
        class="hover-line flex items-center px-4 py-3 cursor-pointer text-gray-400">
        <span class="font-medium text-lg transition-colors">매출 현황 분석</span>
     </a>
+
+    <!-- 시험용: 날씨 연출 다섯 가지를 바로 틀어 봅니다. 확인이 끝나면 지웁니다. -->
+    <a onclick="wxToggleFxTest()" id="menu-wx-test"
+       class="hover-line flex items-center px-4 py-3 cursor-pointer text-gray-400">
+       <span class="font-medium text-lg transition-colors">날씨 연출 시험</span>
+    </a>
+    <div id="wx-fx-test" class="hidden grid grid-cols-5 gap-1 px-3">
+       <button type="button" onclick="wxFxTest('sun')"   class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300">맑음</button>
+       <button type="button" onclick="wxFxTest('cloud')" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300">구름</button>
+       <button type="button" onclick="wxFxTest('rain')"  class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300">비</button>
+       <button type="button" onclick="wxFxTest('snow')"  class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300">눈</button>
+       <button type="button" onclick="wxFxTest('moon')"  class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-gray-300">밤</button>
+    </div>
 </nav>
          </div> 
       <div class="w-full px-2 pb-6 pt-1 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10">
-        <div id="weather-widget" onclick="openWeatherModal()" role="button" aria-label="날씨 자세히 보기" class="px-2 -mt-4 mb-8 group cursor-pointer select-none flex flex-col items-center relative overflow-hidden">
+        <div id="weather-widget" onclick="openWeatherModal()" role="button" aria-label="날씨 자세히 보기" class="px-2 -mt-4 mb-8 group cursor-pointer select-none flex flex-col items-center relative">
     <div class="weather-animation-layer"></div>        
             <div class="relative w-full flex justify-center mb-1">
                 <img id="weather-icon" src="" alt="Weather" 

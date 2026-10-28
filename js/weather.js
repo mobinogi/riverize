@@ -147,6 +147,7 @@ function playWeatherAnimation(kind) {
     layer.classList.remove('fx-on');
     layer.innerHTML = wxBuildFx(kind);
     if (!layer.innerHTML) return;
+    layer.classList.toggle('fx-tall', kind === 'sun' || kind === 'moon');
     wxFxPlace(widget, layer, kind);
 
     void layer.offsetWidth;                 // 투명한 상태를 먼저 그린 뒤
@@ -172,6 +173,26 @@ function wxFxPlace(widget, layer, kind) {
     widget.dataset.fx = kind;
 }
 
+// ── 연출 시험 (사이드바 '날씨 연출 시험' 메뉴) ──
+// 지금 날씨와 상관없이 고른 연출을 바로 틀어 봅니다. 아이콘도 잠깐 바꿨다가 되돌립니다.
+let wxTestT = null;
+function wxFxTest(kind) {
+    const icon = document.getElementById('weather-icon');
+    if (icon) {
+        if (!icon.dataset.real) icon.dataset.real = icon.getAttribute('src') || '';
+        icon.src = weatherIcon(kind);
+    }
+    clearTimeout(wxTestT);
+    playWeatherAnimation(kind);
+    wxTestT = setTimeout(function () {
+        if (icon && icon.dataset.real) { icon.src = icon.dataset.real; delete icon.dataset.real; }
+    }, WX_FX_SHOW_MS + 1300);
+}
+function wxToggleFxTest() {
+    const box = document.getElementById('wx-fx-test');
+    if (box) box.classList.toggle('hidden');
+}
+
 function wxRand(a, b) { return a + Math.random() * (b - a); }
 
 // 구름 모양 (아이콘과 같은 꼴)
@@ -182,7 +203,11 @@ const WX_CLOUD_SVG = '<svg viewBox="0 0 70 36" aria-hidden="true"><g fill="#cbd5
 function wxBuildFx(kind) {
     let h = '';
     if (kind === 'sun') {
-        h += '<div class="fx-sun"><div class="fx-sun-glow"></div><div class="fx-aurora a"></div><div class="fx-aurora b"></div>';
+        h += '<div class="fx-sun"><div class="fx-sun-glow"></div>';
+        for (let i = 0; i < 12; i++) {
+            h += '<i class="fx-flare" style="--a:' + (i * 30 + wxRand(-8, 8)).toFixed(0) + 'deg;--d:' + wxRand(1.4, 2.8).toFixed(2) +
+                 's;--dl:-' + wxRand(0, 2.8).toFixed(2) + 's"></i>';
+        }
         for (let i = 0; i < 7; i++) {
             h += '<span class="fx-mote" style="left:' + wxRand(-45, 45).toFixed(0) + 'px;top:' + wxRand(-5, 35).toFixed(0) +
                  'px;animation-delay:' + wxRand(0, 3).toFixed(2) + 's"></span>';
