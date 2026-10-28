@@ -147,7 +147,8 @@ function playWeatherAnimation(kind) {
     layer.classList.remove('fx-on');
     layer.innerHTML = wxBuildFx(kind);
     if (!layer.innerHTML) return;
-    layer.classList.toggle('fx-tall', kind === 'sun' || kind === 'moon');
+    // 구름만 위젯 안에서 놀고, 나머지는 위로 넘쳐 위 메뉴 위에서부터 보입니다.
+    layer.classList.toggle('fx-tall', !/cloud|partly/.test(kind));
     wxFxPlace(widget, layer, kind);
 
     void layer.offsetWidth;                 // 투명한 상태를 먼저 그린 뒤
