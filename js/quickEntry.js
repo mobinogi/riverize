@@ -91,6 +91,38 @@ function qeApplyEditMode(manager) {
         qeSetPrev(2, null);
         qeSetPrev(3, null);
     }
+    qeUpdateSubmitLabel();
+}
+
+// ── 버튼 이름을 지금 상태에 맞춥니다 ────────────────────────
+//  수정 화면에서 아무것도 안 넣었으면 바꿀 게 없습니다.
+//  그런데 버튼이 '수정 완료' 라고 써 있으면 눌러야 할 것 같고,
+//  눌러도 바뀌는 게 없으니 "왜 반응이 없지?" 가 됩니다.
+//  그래서 그때는 '확인' 으로 보이고, 누르면 창만 닫습니다.
+//
+//  · 수정 + 전부 빈칸   → 확인       (창 닫기)
+//  · 수정 + 하나라도 입력 → 수정 완료  (저장)
+//  · 새로 작성          → 입력 완료  (예전과 같음 — 빈칸은 0, 발주 없음)
+function qeIsEditing() {
+    const manager = (document.getElementById('qe-manager') || {}).value;
+    const key = (manager === '김원대') ? 'kim' : (manager === '정병준') ? 'jung' : null;
+    const rec = (key && qeTodayData) ? qeTodayData[key] : null;
+    return !!(rec && rec.time && rec.time !== '자동이월');
+}
+function qeAllBlank() {
+    return [1, 2, 3].every(function (n) {
+        const el = document.getElementById('qe-input-' + n);
+        return !el || String(el.value).trim() === '';
+    });
+}
+function qeUpdateSubmitLabel() {
+    const btn = document.getElementById('qe-submit-btn');
+    if (!btn || btn.disabled) return;          // 저장 중·확인 중에는 손대지 않습니다
+    if (qeIsEditing()) {
+        btn.innerHTML = qeAllBlank() ? '확인' : '수정 완료';
+    } else {
+        btn.innerHTML = '입력 완료';
+    }
 }
 
 // 이전 값 칸 표시/숨김. value가 null이면 숨기고 입력칸이 다시 전체 폭을 차지합니다.
@@ -338,6 +370,11 @@ function attachMobileKeyboardFix() {
 // 스크립트 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
     attachMobileKeyboardFix();
+
+    [1, 2, 3].forEach(function (n) {
+        const el = document.getElementById('qe-input-' + n);
+        if (el) el.addEventListener('input', qeUpdateSubmitLabel);
+    });
 });
 
 

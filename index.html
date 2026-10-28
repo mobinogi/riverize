@@ -124,8 +124,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
       const pick  = (inp, prevVal) =>
           (isEditMode && blank(inp)) ? (Number(prevVal) || 0) : (Number(inp.value) || 0);
 
+      // 수정 화면에서 아무것도 안 넣고 누르면 = '확인' 버튼 → 창만 닫습니다.
+      //  (버튼 이름도 그때는 '확인' 으로 바뀌어 있습니다)
       if (isEditMode && blank(val1Input) && blank(val2Input) && blank(val3Input)) {
-          showToast("바뀐 값이 없습니다. 고칠 칸에만 숫자를 넣어 주세요.", "error");
+          if (typeof closeQuickEntryModal === 'function') closeQuickEntryModal();
           return;
       }
 
