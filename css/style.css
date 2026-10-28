@@ -1379,6 +1379,9 @@ input[type="number"] {
 .wx-drag.wx-grabbing { cursor: grabbing; user-select: none; }
 .wx-drag img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
 
+/* 시간별 그래프는 옆으로 밀어 날짜를 넘깁니다. 옆 손짓은 페이지가 가져가지 않게, 위아래는 창 스크롤로. */
+.wx-swipe { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+
 /* 시간별 그래프: 범례 막대 */
 .wx-key { display: inline-block; width: 10px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 4px; }
 
