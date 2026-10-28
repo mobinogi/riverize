@@ -21,6 +21,9 @@
   z-index: 0;                         /* 글자 뒤 */
   opacity: 0;
   transition: opacity 1.2s ease;      /* 사라질 땐 천천히 */
+  /* 빗줄기·눈이 위젯 윗변에서 툭 생기지 않게 맨 위 20px 는 서서히 나타납니다 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
 }
 /* 해·달은 아이콘이 위젯 맨 위에 붙어 있어서 빛이 위로 넘칩니다.
    그래서 연출 판을 위로 90px 늘려 위 메뉴 위에 얹어 보이게 합니다.
@@ -100,7 +103,9 @@
 /* ── 비 ───────────────────────────────────────────────── */
 .fx-rain-dim {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(15, 25, 45, .55), rgba(15, 25, 45, 0) 80%);
+  /* 위쪽 끝이 가장 진하면 윗변에 구분선처럼 보이므로, 아이콘 근처가 가장 어둡고
+     사방으로 갈수록 옅어지는 타원으로 깝니다. (어느 가장자리에도 경계가 생기지 않습니다) */
+  background: radial-gradient(ellipse closest-side at 50% 38%, rgba(15, 25, 45, .55), rgba(15, 25, 45, .3) 55%, transparent);
 }
 .fx-rain {
   position: absolute; top: -50px; width: 2px;
