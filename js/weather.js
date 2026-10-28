@@ -329,7 +329,12 @@ function renderWeatherModal(r) {
         '</div>';
 
     const days = r.days || [];
-    const hours = r.hours || [];
+    // 기상청 자료의 마지막 칸은 글피 다음날 0시 한 칸뿐이라, 그대로 두면 점 하나짜리 '하루' 가 생깁니다.
+    //  오늘이 아닌 날 중 3시간이 안 되는 날은 시간별에서 뺍니다.
+    const hoursAll = r.hours || [];
+    const perDay = {};
+    hoursAll.forEach(function (h) { perDay[h.d] = (perDay[h.d] || 0) + 1; });
+    const hours = hoursAll.filter(function (h) { return h.d === hoursAll[0].d || perDay[h.d] >= 3; });
     const hourDays = {};
     hours.forEach(function (h) { hourDays[h.d] = true; });
 
@@ -531,7 +536,8 @@ function wxHourPane(list, fitW) {
 /** 시간별 머리줄에 들어갈 글자: '내일 · 10/29 (목)' */
 function wxDayLabel(ymd, today, tomorrow) {
     const dt = ymdToDate(ymd);
-    const nm = ymd === today ? '오늘' : (ymd === tomorrow ? '내일' : '모레');
+    const diff = Math.round((dt - ymdToDate(today)) / 86400000);
+    const nm = ['오늘', '내일', '모레', '글피'][diff] || WEEKDAY[dt.getDay()] + '요일';
     return nm + ' · ' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' (' + WEEKDAY[dt.getDay()] + ')';
 }
 
