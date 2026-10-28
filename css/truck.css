@@ -142,7 +142,7 @@
     height: 100px;
     width: 35px;
     bottom: 0;
-    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/tree.svg) no-repeat;
+    background: url('../img/tree.svg') no-repeat;
 }
 
 .tr-rock {
@@ -174,7 +174,7 @@
 
 /* [트럭 몸통] */
 .tr-truck {
-    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/truck.svg) no-repeat;
+    background: url('../img/truck.svg') no-repeat;
     background-size: contain;
     height: 60px;         /* 원본 높이 */
     
@@ -185,7 +185,7 @@
 
 /* [바퀴] */
 .tr-wheels {
-    background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/130015/wheels.svg) no-repeat;
+    background: url('../img/wheels.svg') no-repeat;
     height: 15px;         /* 원본 높이 */
     margin-bottom: 0;
     
