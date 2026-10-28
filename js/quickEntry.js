@@ -76,7 +76,7 @@ function qeApplyEditMode(manager) {
         if (hint) {
             // 비워둔 칸은 그대로 남는다는 걸 화면에서 알려 줍니다.
             hint.textContent = `오늘 ${rec.time}에 작성하신 기록이 있습니다. 고칠 칸만 입력하세요 — 비워두면 그대로 둡니다.`;
-            hint.classList.remove('hidden');
+            qeRevealHint(true);
         }
         // 입력칸 왼쪽에 이전 값을 띄우고, 입력칸은 절반으로 줄임
         qeSetPrev(1, rec.st);
@@ -86,7 +86,7 @@ function qeApplyEditMode(manager) {
         if (titleIcon) titleIcon.textContent = '🔥';
         if (titleText) titleText.textContent = '간편 일보 작성';
         if (btn) btn.innerHTML = '입력 완료';
-        if (hint) hint.classList.add('hidden');
+        qeRevealHint(false);
         qeSetPrev(1, null);
         qeSetPrev(2, null);
         qeSetPrev(3, null);
@@ -123,6 +123,12 @@ function qeUpdateSubmitLabel() {
     } else {
         btn.innerHTML = '입력 완료';
     }
+}
+
+// 수정 안내 문구를 부드럽게 펼치고 접습니다. (툭 튀어나오지 않게)
+function qeRevealHint(open) {
+    const wrap = document.getElementById('qe-edit-hint-wrap');
+    if (wrap) wrap.classList.toggle('open', !!open);
 }
 
 // 이전 값 칸 표시/숨김. value가 null이면 숨기고 입력칸이 다시 전체 폭을 차지합니다.
@@ -194,6 +200,9 @@ function openQuickEntryModal() {
 // 2. 닫기
 function closeQuickEntryModal() {
     document.getElementById('quick-entry-modal').classList.add('hidden');
+    // 다음에 열 때 지난번 안내가 펼쳐진 채로 남아 있지 않게 접어 둡니다.
+    //  (그래야 다시 열었을 때도 '펼쳐지는' 모습으로 나옵니다)
+    qeRevealHint(false);
 }
 
 // 3. 담당자 선택

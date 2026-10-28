@@ -1322,3 +1322,25 @@ input[type="number"] {
   -moz-appearance: textfield;   /* 파이어폭스 */
   appearance: textfield;
 }
+
+/* ── 부드럽게 펼쳐지는 상자 (간편작성 수정 안내 등) ─────────────
+   높이를 0 ↔ '내용만큼' 으로 움직입니다.
+   max-height 로 하면 숫자를 어림해야 하고 끝에서 멈칫하는데,
+   grid 의 0fr ↔ 1fr 은 실제 내용 높이까지 정확히 펴집니다. */
+.qe-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .3s ease, opacity .25s ease;
+}
+.qe-reveal.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.qe-reveal > .qe-reveal-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qe-reveal { transition: none; }
+}
