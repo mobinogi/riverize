@@ -8,10 +8,38 @@ let allConsolidatedFiles = [];
 // 2. 뷰 전환 및 UI 제어 함수
 // ===============================================
 
+// 사이드바 메뉴를 사람이 직접 눌렀을 때 접속 로그에 남길 이름
+const SIDEBAR_LOG_NAMES = {
+  write: '사이드바: 일보 작성',
+  consolidated: '사이드바: 일보 통합본',
+  dashboard: '사이드바: 매출 현황 분석',
+  sales: '사이드바: 매출표 열기'
+};
+let sidebarLogLast = { name: '', at: 0 };
+
+/**
+ * 사이드바 메뉴 누름을 접속 로그에 남깁니다.
+ *  같은 메뉴를 30초 안에 또 누르면 한 번만 남깁니다.
+ *  (기록 한 줄마다 서버가 로그 문서를 열고 닫으므로, 연타까지 다 남길 필요는 없습니다)
+ */
+function logSidebarMenu(key) {
+  const name = SIDEBAR_LOG_NAMES[key];
+  if (!name || typeof logClientActionAsync !== 'function') return;
+  const now = Date.now();
+  if (sidebarLogLast.name === name && now - sidebarLogLast.at < 30000) return;
+  sidebarLogLast = { name: name, at: now };
+  try { logClientActionAsync(name); } catch (e) {}
+}
+
 /**
  * 메인 뷰(화면)을 전환하는 함수 (최종_진짜완성: ID매핑 + 스켈레톤 + 데이터로딩)
+ *  fromMenu: 사이드바 메뉴를 사람이 눌렀을 때만 true.
+ *   앱을 켤 때도 이 함수로 '일보 작성' 화면을 띄우는데, 그건 로그에 남기지 않습니다.
+ *   (남기면 접속할 때마다 '앱 접속' 과 함께 한 줄씩 더 쌓입니다)
  */
-function changeView(viewName) {
+function changeView(viewName, fromMenu) {
+  if (fromMenu) logSidebarMenu(viewName);
+
   // 1. 모든 뷰 숨기기
   const views = document.querySelectorAll('.view-content');
   views.forEach(el => el.classList.add('hidden'));
@@ -89,6 +117,7 @@ function toggleSubTab(tabName) {
 }
 
 function openSalesSheet() {
+    logSidebarMenu('sales');
     const url = 'https://docs.google.com/spreadsheets/d/1p2glfJaac4EZG4vDD4n290hYwZyj7sXHJNkXv1YYtq8/edit?gid=0#gid=0';
     window.open(url, '_blank');
 }
